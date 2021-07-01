@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- test trajectory file -->
+<SignalSrc>
+    <Time type="UTC">
+        <Year>2020</Year>
+        <Month>4</Month>
+        <Day>4</Day>
+        <Hour>10</Hour>
+        <Minute>05</Minute>
+        <Second>30</Second>
+    </Time>
+    <Trajectory name="test flight">
+        <InitPosition>
+            <Longitude>-121.915773</Longitude>
+            <Latitude>37.352721</Latitude>
+            <Altitude>20</Altitude>
+        </InitPosition>
+        <InitVelocity type="SCU">
+            <Speed>5</Speed>
+            <Course>318.91</Course>
+        </InitVelocity>
+        <TrajectoryList>
+            <Const>
+                <TimeSpan>5</TimeSpan>
+            </Const>
+            <Jerk>
+                <TimeSpan>3</TimeSpan>
+                <Acceleration>3</Acceleration>
+            </Jerk>
+            <ConstAcc>
+                <TimeSpan>20</TimeSpan>
+                <Acceleration>3</Acceleration>
+            </ConstAcc>
+            <Jerk>
+                <TimeSpan>6</TimeSpan>
+                <Acceleration>0</Acceleration>
+            </Jerk>
+            <VerticalAcc>
+                <Speed>20</Speed>
+                <Acceleration>2</Acceleration>
+            </VerticalAcc>
+            <Const>
+                <TimeSpan>100</TimeSpan>
+            </Const>
+            <VerticalAcc>
+                <Speed>0</Speed>
+                <Acceleration>1</Acceleration>
+            </VerticalAcc>
+            <Const>
+                <TimeSpan>30</TimeSpan>
+            </Const>
+            <HorizontalTurn>
+                <Acceleration>2</Acceleration>
+                <TurnAngle>225</TurnAngle>
+            </HorizontalTurn>
+            <Const>
+                <TimeSpan>200</TimeSpan>
+            </Const>
+            <HorizontalTurn>
+                <TimeSpan>120</TimeSpan>
+                <TurnAngle>-45</TurnAngle>
+            </HorizontalTurn>
+            <VerticalAcc>
+                <Speed>0</Speed>
+                <Acceleration>0.1</Acceleration>
+            </VerticalAcc>
+            <Const>
+                <TimeSpan>120</TimeSpan>
+            </Const>
+            <HorizontalTurn>
+                <Radius>4676.66</Radius>
+                <TurnAngle>-180</TurnAngle>
+            </HorizontalTurn>
+            <Const>
+                <TimeSpan>10</TimeSpan>
+            </Const>
+            <VerticalAcc>
+                <Speed>-20</Speed>
+                <Acceleration>-1</Acceleration>
+            </VerticalAcc>
+            <Const>
+                <TimeSpan>19.384785</TimeSpan>
+            </Const>
+            <VerticalAcc>
+                <Speed>0</Speed>
+                <Acceleration>0.10811</Acceleration>
+            </VerticalAcc>
+            <VerticalAcc>
+                <Speed>0</Speed>
+                <TimeSpan>1</TimeSpan>
+            </VerticalAcc>
+            <Const>
+                <TimeSpan>2</TimeSpan>
+            </Const>
+            <Jerk>
+                <Acceleration>-6</Acceleration>
+                <TimeSpan>3</TimeSpan>
+            </Jerk>
+            <ConstAcc>
+                <Speed>10</Speed>
+                <Acceleration>-6</Acceleration>
+            </ConstAcc>
+            <Const>
+                <TimeSpan>5</TimeSpan>
+            </Const>
+        </TrajectoryList>
+    </Trajectory>
+    <Ephemeris source="file" type="RINEX">EphData/JPLM00USA_R_20200950000_01D_GN.rnx</Ephemeris>
+    <Output type="observation" format="RINEX">
+        <Interval unit="s">1</Interval>
+        <Name>test.o</Name>
+        <ConfigParam>
+            <ElevationMask>10</ElevationMask>
+        </ConfigParam>
+    </Output>
+</SignalSrc>
