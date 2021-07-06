@@ -30,7 +30,7 @@ BOOL AssignStartTime(CXmlElement *Element, UTC_TIME &UtcTime)
 	GNSS_TIME GnssTime;
 	GLONASS_TIME GlonassTime;
 	CSimpleDict *Attributes = Element->GetAttributes();
-	CXmlElement *SubElement;
+	CXmlElement *SubElement = 0;
 
 	for (i = 0; i < Attributes->DictItemNumber; i ++)
 	{
@@ -40,25 +40,19 @@ BOOL AssignStartTime(CXmlElement *Element, UTC_TIME &UtcTime)
 		}
 	}
 
-	i = 0;
-	while ((SubElement = Element->GetElement(i ++)) != NULL)
+	while ((SubElement = Element->EnumSubElement(SubElement)) != NULL)
 	{
-		if (strcmp(SubElement->GetTag(), "Week") == 0)
-			Week = atoi(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "LeapYear") == 0)
-			LeapYear = atoi(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "Day") == 0)
-			UtcTime.Day = atoi(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "Second") == 0)
-			UtcTime.Second = atof(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "Year") == 0)
-			UtcTime.Year = atoi(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "Month") == 0)
-			UtcTime.Month = atoi(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "Hour") == 0)
-			UtcTime.Hour = atoi(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "Minute") == 0)
-			UtcTime.Minute = atoi(SubElement->GetText());
+		switch (GetElementIndex(SubElement->GetTag(), StartTimeElements))
+		{
+		case 0: Week = atoi(SubElement->GetText()); break;
+		case 1: LeapYear = atoi(SubElement->GetText()); break;
+		case 2: UtcTime.Day = atoi(SubElement->GetText()); break;
+		case 3: UtcTime.Second = atof(SubElement->GetText()); break;
+		case 4: UtcTime.Year = atoi(SubElement->GetText()); break;
+		case 5: UtcTime.Month = atoi(SubElement->GetText()); break;
+		case 6: UtcTime.Hour = atoi(SubElement->GetText()); break;
+		case 7: UtcTime.Minute = atoi(SubElement->GetText()); break;
+		}
 	}
 
 	if (Type == 0)
@@ -80,20 +74,28 @@ BOOL AssignStartTime(CXmlElement *Element, UTC_TIME &UtcTime)
 
 BOOL SetTrajectory(CXmlElement *Element, LLA_POSITION &StartPos, LOCAL_SPEED &StartVel, CTrajectory &Trajectory)
 {
-	int i;
-	CXmlElement *SubElement;
+	int i, Content = 0;
+	CXmlElement *SubElement = 0;
+	CSimpleDict *Attributes = Element->GetAttributes();
 
-	i = 0;
-	while ((SubElement = Element->GetElement(i ++)) != NULL)
+	for (i = 0; i < Attributes->DictItemNumber; i ++)
 	{
-		if (strcmp(SubElement->GetTag(), "InitPosition") == 0)
-			AssignStartPosition(SubElement, StartPos);
-		else if (strcmp(SubElement->GetTag(), "InitVelocity") == 0)
-			AssignStartVelocity(SubElement, StartVel);
-		else if (strcmp(SubElement->GetTag(), "TrajectoryList") == 0)
+		if (strcmp(Attributes->Dictionary[i].key, "name") == 0)
+			Trajectory.SetTrajectoryName(Attributes->Dictionary[i].value);
+	}
+
+	while ((SubElement = Element->EnumSubElement(SubElement)) != NULL)
+	{
+		switch (GetElementIndex(SubElement->GetTag(), TrajectoryElements))
 		{
+		case 0: AssignStartPosition(SubElement, StartPos); Content |= 1; break;
+		case 1: AssignStartVelocity(SubElement, StartVel); Content |= 2; break;
+		case 2:
+			if ((Content & 3) != 3)
+				return FALSE;
 			Trajectory.SetInitPosVel(StartPos, StartVel, FALSE);
 			AssignTrajectoryList(SubElement, Trajectory);
+			break;
 		}
 	}
 
@@ -103,7 +105,7 @@ BOOL SetTrajectory(CXmlElement *Element, LLA_POSITION &StartPos, LOCAL_SPEED &St
 BOOL AssignStartPosition(CXmlElement *Element, LLA_POSITION &StartPos)
 {
 	int i;
-	CXmlElement *SubElement;
+	CXmlElement *SubElement = 0;
 	int Type = 0;
 	CSimpleDict *Attributes = Element->GetAttributes();
 	KINEMATIC_INFO Position;
@@ -116,21 +118,17 @@ BOOL AssignStartPosition(CXmlElement *Element, LLA_POSITION &StartPos)
 		}
 	}
 
-	i = 0;
-	while ((SubElement = Element->GetElement(i ++)) != NULL)
+	while ((SubElement = Element->EnumSubElement(SubElement)) != NULL)
 	{
-		if (strcmp(SubElement->GetTag(), "Longitude") == 0)
-			StartPos.lon = DEG2RAD(atof(SubElement->GetText()));
-		else if (strcmp(SubElement->GetTag(), "Latitude") == 0)
-			StartPos.lat = DEG2RAD(atof(SubElement->GetText()));
-		else if (strcmp(SubElement->GetTag(), "Altitude") == 0)
-			StartPos.alt = atof(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "x") == 0)
-			Position.x = atof(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "y") == 0)
-			Position.y = atof(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "z") == 0)
-			Position.z = atof(SubElement->GetText());
+		switch (GetElementIndex(SubElement->GetTag(), StartPosElements))
+		{
+		case 0: StartPos.lon = DEG2RAD(atof(SubElement->GetText())); break;
+		case 1: StartPos.lat = DEG2RAD(atof(SubElement->GetText())); break;
+		case 2: StartPos.alt = atof(SubElement->GetText()); break;
+		case 3: Position.x = atof(SubElement->GetText()); break;
+		case 4: Position.y = atof(SubElement->GetText()); break;
+		case 5: Position.z = atof(SubElement->GetText()); break;
+		}
 	}
 	if (Type)
 		StartPos = EcefToLla(Position);
@@ -141,7 +139,7 @@ BOOL AssignStartPosition(CXmlElement *Element, LLA_POSITION &StartPos)
 BOOL AssignStartVelocity(CXmlElement *Element, LOCAL_SPEED &StartVel)
 {
 	int i, Type = 0;	// 0 for SCU, 1 for ENU
-	CXmlElement *SubElement;
+	CXmlElement *SubElement = 0;
 	CSimpleDict *Attributes = Element->GetAttributes();
 
 	for (i = 0; i < Attributes->DictItemNumber; i ++)
@@ -153,19 +151,16 @@ BOOL AssignStartVelocity(CXmlElement *Element, LOCAL_SPEED &StartVel)
 	}
 
 	StartVel.vu = 0;
-	i = 0;
-	while ((SubElement = Element->GetElement(i ++)) != NULL)
+	while ((SubElement = Element->EnumSubElement(SubElement)) != NULL)
 	{
-		if (strcmp(SubElement->GetTag(), "Speed") == 0)
-			StartVel.speed = atof(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "Course") == 0)
-			StartVel.course = DEG2RAD(atof(SubElement->GetText()));
-		else if (strcmp(SubElement->GetTag(), "East") == 0)
-			StartVel.ve = atof(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "North") == 0)
-			StartVel.vn = atof(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "Up") == 0)
-			StartVel.vu = atof(SubElement->GetText());
+		switch (GetElementIndex(SubElement->GetTag(), StartVelElements))
+		{
+		case 0: StartVel.speed = atof(SubElement->GetText()); break;
+		case 1: StartVel.course = DEG2RAD(atof(SubElement->GetText())); break;
+		case 2: StartVel.ve = atof(SubElement->GetText()); break;
+		case 3: StartVel.vn = atof(SubElement->GetText()); break;
+		case 4: StartVel.vu = atof(SubElement->GetText()); break;
+		}
 	}
 
 	if (Type == 0)
@@ -178,15 +173,13 @@ BOOL AssignStartVelocity(CXmlElement *Element, LOCAL_SPEED &StartVel)
 
 BOOL AssignTrajectoryList(CXmlElement *Element, CTrajectory &Trajectory)
 {
-	int i;
-	CXmlElement *SubElement;
+	CXmlElement *SubElement = 0;
 	TrajectoryType Type;
 	TrajectoryDataType DataType1, DataType2;
 	double Data1, Data2;
 
 	Trajectory.ClearTrajectoryList();
-	i = 0;
-	while ((SubElement = Element->GetElement(i ++)) != NULL)
+	while ((SubElement = Element->EnumSubElement(SubElement)) != NULL)
 	{
 		Type = GetTrajectorySegment(SubElement, DataType1, Data1, DataType2, Data2);
 		if (Type != TrajTypeUnknown)
@@ -199,77 +192,38 @@ BOOL AssignTrajectoryList(CXmlElement *Element, CTrajectory &Trajectory)
 TrajectoryType GetTrajectorySegment(CXmlElement *Element, TrajectoryDataType &DataType1, double &Data1, TrajectoryDataType &DataType2, double &Data2)
 {
 	TrajectoryType Type = TrajTypeUnknown;
-	CXmlElement *SubElement;
+	CXmlElement *SubElement = 0;
 
-	if (strcmp(Element->GetTag(), "Const") == 0)
-		Type = TrajTypeConstSpeed;
-	else if (strcmp(Element->GetTag(), "ConstAcc") == 0)
-		Type = TrajTypeConstAcc;
-	else if (strcmp(Element->GetTag(), "VerticalAcc") == 0)
-		Type = TrajTypeVerticalAcc;
-	else if (strcmp(Element->GetTag(), "Jerk") == 0)
-		Type = TrajTypeJerk;
-	else if (strcmp(Element->GetTag(), "HorizontalTurn") == 0)
-		Type = TrajTypeHorizontalCircular;
+	Type = (TrajectoryType)(GetElementIndex(Element->GetTag(), TrajectoryTypeElements) + 1);
 
 	if (Type == TrajTypeUnknown)
 		return TrajTypeUnknown;
 
-	if ((SubElement = Element->GetElement(0)) == NULL)
+	if ((SubElement = Element->EnumSubElement(SubElement)) == NULL)
 		return TrajTypeUnknown;
-	GetTrajectorySegmentData(SubElement, DataType1, Data1);
-	if (Type != TrajTypeConstSpeed && (SubElement = Element->GetElement(1)) == NULL)
+	if (!GetTrajectorySegmentData(SubElement, DataType1, Data1))
 		return TrajTypeUnknown;
-	GetTrajectorySegmentData(SubElement, DataType2, Data2);
+	if (Type != TrajTypeConstSpeed && (SubElement = Element->EnumSubElement(SubElement)) == NULL)
+		return TrajTypeUnknown;
+	if (!GetTrajectorySegmentData(SubElement, DataType2, Data2))
+		return TrajTypeUnknown;
 
 	return Type;
 }
 
 BOOL GetTrajectorySegmentData(CXmlElement *Element, TrajectoryDataType &DataType, double &Data)
 {
-	if (strcmp(Element->GetTag(), "TimeSpan") == 0)
-	{
-		DataType = TrajDataTimeSpan;
-		Data = atof(Element->GetText());
-	}
-	else if (strcmp(Element->GetTag(), "Acceleration") == 0)
-	{
-		DataType = TrajDataAcceleration;
-		Data = atof(Element->GetText());
-	}
-	else if (strcmp(Element->GetTag(), "Speed") == 0)
-	{
-		DataType = TrajDataSpeed;
-		Data = atof(Element->GetText());
-	}
-	else if (strcmp(Element->GetTag(), "AccRate") == 0)
-	{
-		DataType = TrajDataAccRate;
-		Data = atof(Element->GetText());
-	}
-	else if (strcmp(Element->GetTag(), "TurnAngle") == 0)
-	{
-		DataType = TrajDataAngle;
-		Data = DEG2RAD(atof(Element->GetText()));
-	}
-	else if (strcmp(Element->GetTag(), "AngularRate") == 0)
-	{
-		DataType = TrajDataAngularRate;
-		Data = atof(Element->GetText());
-	}
-	else if (strcmp(Element->GetTag(), "Radius") == 0)
-	{
-		DataType = TrajDataRadius;
-		Data = atof(Element->GetText());
-	}
-
-	return TRUE;
+	DataType = (TrajectoryDataType)(GetElementIndex(Element->GetTag(), TrajectoryArgumentElements));
+	Data = atof(Element->GetText());
+	if (DataType == TrajDataAngle)
+		Data = DEG2RAD(Data);
+	return DataType >= 0;
 }
 
 BOOL SetOutputParam(CXmlElement *Element, OUTPUT_PARAM &OutputParam)
 {
 	int i;
-	CXmlElement *SubElement;
+	CXmlElement *SubElement = 0;
 	CSimpleDict *Attributes = Element->GetAttributes();
 
 	// set default value
@@ -288,15 +242,14 @@ BOOL SetOutputParam(CXmlElement *Element, OUTPUT_PARAM &OutputParam)
 		}
 	}
 
-	i = 0;
-	while ((SubElement = Element->GetElement(i ++)) != NULL)
+	while ((SubElement = Element->EnumSubElement(SubElement)) != NULL)
 	{
-		if (strcmp(SubElement->GetTag(), "Interval") == 0)
-			OutputParam.Interval = atof(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "Name") == 0)
-			strcpy(OutputParam.filename, SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "ConfigParam") == 0)
-			ProcessConfigParam(SubElement, OutputParam);
+		switch (GetElementIndex(SubElement->GetTag(), OutputParamElements))
+		{
+		case 0: OutputParam.Interval = atof(SubElement->GetText()); break;
+		case 1: strcpy(OutputParam.filename, SubElement->GetText()); break;
+		case 2: ProcessConfigParam(SubElement, OutputParam); break;
+		}
 	}
 
 	return TRUE;
@@ -304,25 +257,24 @@ BOOL SetOutputParam(CXmlElement *Element, OUTPUT_PARAM &OutputParam)
 
 BOOL ProcessConfigParam(CXmlElement *Element, OUTPUT_PARAM &OutputParam)
 {
-	int i, index;
-	CXmlElement *SubElement;
+	int index;
+	CXmlElement *SubElement = 0;
 	CSimpleDict *Attributes;
 	int system = 0, svid;
 
-	i = 0;
-	while ((SubElement = Element->GetElement(i ++)) != NULL)
+	while ((SubElement = Element->EnumSubElement(SubElement)) != NULL)
 	{
-		if (strcmp(SubElement->GetTag(), "ElevationMask") == 0)
+		switch (GetElementIndex(SubElement->GetTag(), ConfigParamElements))
 		{
+		case 0:
 			Attributes = SubElement->GetAttributes();
 			index = Attributes->Find("unit");
 			if ((index >= 0) && strcmp(Attributes->Dictionary[index].value, "rad") == 0)
 				OutputParam.ElevationMask = atof(SubElement->GetText());
 			else
 				OutputParam.ElevationMask = DEG2RAD(atof(SubElement->GetText()));
-		}
-		else if (strcmp(SubElement->GetTag(), "MaskOut") == 0)
-		{
+			break;
+		case 1:
 			Attributes = SubElement->GetAttributes();
 			index = Attributes->Find("system");
 			if (index >= 0)
@@ -354,6 +306,7 @@ BOOL ProcessConfigParam(CXmlElement *Element, OUTPUT_PARAM &OutputParam)
 					OutputParam.GalileoMaskOut |= (1LL << (svid-1));
 				break;
 			}
+			break;
 		}
 	}
 
@@ -364,7 +317,7 @@ BOOL SetBasebandConfig(CXmlElement *Element, BASEBAND_CONFIG &BasebandConfig)
 {
 	int i, Type = 0;	// 0 for GPS, 1 for GLONASS, 4 for UTC
 	CSimpleDict *Attributes = Element->GetAttributes();
-	CXmlElement *SubElement;
+	CXmlElement *SubElement = 0;
 
 	for (i = 0; i < Attributes->DictItemNumber; i ++)
 	{
@@ -374,15 +327,14 @@ BOOL SetBasebandConfig(CXmlElement *Element, BASEBAND_CONFIG &BasebandConfig)
 		}
 	}
 
-	i = 0;
-	while ((SubElement = Element->GetElement(i ++)) != NULL)
+	while ((SubElement = Element->EnumSubElement(SubElement)) != NULL)
 	{
-		if (strcmp(SubElement->GetTag(), "ChannelNumber") == 0)
-			BasebandConfig.ChannelNumber = atoi(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "CorrelatorNumber") == 0)
-			BasebandConfig.CorNumber = atoi(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "NoiseFloor") == 0)
-			BasebandConfig.NoiseFloor = atof(SubElement->GetText());
+		switch (GetElementIndex(SubElement->GetTag(), BasebandConfigElements))
+		{
+		case 0: BasebandConfig.ChannelNumber = atoi(SubElement->GetText()); break;
+		case 1: BasebandConfig.CorNumber = atoi(SubElement->GetText()); break;
+		case 2: BasebandConfig.NoiseFloor = atof(SubElement->GetText()); break;
+		}
 	}
 
 	return TRUE;
@@ -392,7 +344,7 @@ BOOL SetSatInitParam(CXmlElement *Element, CHANNEL_INIT_PARAM SatInitParam[])
 {
 	int i, svid = 0, enable = 0, Type = 0;	// 0 for GPS, 1 for GLONASS, 4 for UTC
 	CSimpleDict *Attributes = Element->GetAttributes();
-	CXmlElement *SubElement;
+	CXmlElement *SubElement = 0;
 	static CHANNEL_INIT_PARAM DefaultParam = {0, 2, 4, 0.0, 0.0, 0.0, 5.0 };
 	CHANNEL_INIT_PARAM CurrentParam = DefaultParam;
 
@@ -409,21 +361,17 @@ BOOL SetSatInitParam(CXmlElement *Element, CHANNEL_INIT_PARAM SatInitParam[])
 	if (svid > 0)
 		CurrentParam.Enable = enable + 1;
 
-	i = 0;
-	while ((SubElement = Element->GetElement(i ++)) != NULL)
+	while ((SubElement = Element->EnumSubElement(SubElement)) != NULL)
 	{
-		if (strcmp(SubElement->GetTag(), "CorrelatorInterval") == 0)
-			CurrentParam.CorInterval = atoi(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "PeakCorrelator") == 0)
-			CurrentParam.PeakCor = atoi(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "InitFreqError") == 0)
-			CurrentParam.InitFreqError = atof(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "InitPhaseError") == 0)
-			CurrentParam.InitPhaseError = atof(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "InitCodeError") == 0)
-			CurrentParam.InitCodeError = atof(SubElement->GetText());
-		else if (strcmp(SubElement->GetTag(), "SNR") == 0)
-			CurrentParam.SnrRatio = atof(SubElement->GetText());
+		switch (GetElementIndex(SubElement->GetTag(), SatInitElements))
+		{
+		case 0: CurrentParam.CorInterval = atoi(SubElement->GetText()); break;
+		case 1: CurrentParam.PeakCor = atoi(SubElement->GetText()); break;
+		case 2: CurrentParam.InitFreqError = atof(SubElement->GetText()); break;
+		case 3: CurrentParam.InitPhaseError = atof(SubElement->GetText()); break;
+		case 4: CurrentParam.InitCodeError = atof(SubElement->GetText()); break;
+		case 5: CurrentParam.SnrRatio = atof(SubElement->GetText()); break;
+		}
 	}
 
 	if (svid > 0 && svid <= 32)
@@ -460,6 +408,20 @@ int GetAttributeIndex(char *value, PATTRIBUTE_TYPE Attribute)
 		if (strcmp(value, Attribute->values[i]) == 0)
 			break;
 	return (i == Attribute->value_size) ? Attribute->default_value : i;
+}
+
+int GetElementIndex(char *tag, char **ElementList)
+{
+	int i = 0;
+
+	while (ElementList[i] != NULL)
+	{
+		if (strcmp(tag, ElementList[i]) == 0)
+			break;
+		i ++;
+	}
+
+	return (ElementList[i] ? i : -1);
 }
 
 int FindTagIndex(char *Tag, ELEMENT_PROCESS *ProcessList, int ProcessListNumber)

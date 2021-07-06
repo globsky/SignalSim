@@ -17,19 +17,32 @@
 class CNavData
 {
 public:
+	enum GnssSystem { SystemGps, SystemBds, SystemGalileo, SystemGlonass };
 	CNavData();
 	~CNavData();
 
 	bool AddNavData(NavDataType Type, void *NavData);
-	PGPS_EPHEMERIS FindGpsEphemeris(GNSS_TIME time, int svid);
+	PGPS_EPHEMERIS FindEphemeris(GnssSystem system, GNSS_TIME time, int svid);
 	PIONO_PARAM GetGpsIono() { return &GpsIono; }
 	void ReadNavFile(char *filename);
 
 private:
-	int EphemerisNumber;
+	int GpsEphemerisNumber;
+	int BdsEphemerisNumber;
+	int GalileoEphemerisNumber;
 	int GpsEphmerisPoolSize;
+	int BdsEphmerisPoolSize;
+	int GalileoEphmerisPoolSize;
 	PGPS_EPHEMERIS GpsEphmerisPool;
+	PGPS_EPHEMERIS BdsEphmerisPool;
+	PGPS_EPHEMERIS GalileoEphmerisPool;
 	IONO_PARAM GpsIono;
+	IONO_PARAM BdsIono[24];
+	double GalileoIono[3];
+	UTC_PARAM GpsUtcParam;
+	UTC_PARAM BdsUtcParam;
+	UTC_PARAM GalileoUtcParam;
+//	UTC_PARAM GalileoGpsParam;
 };
 
 #endif // __NAV_DATA_H__

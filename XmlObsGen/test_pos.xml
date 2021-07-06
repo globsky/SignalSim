@@ -111,9 +111,9 @@
     <Ephemeris source="file" type="RINEX">EphData/JPLM00USA_R_20200950000_01D_GN.rnx</Ephemeris>
     <Ephemeris source="file" type="RINEX">EphData/MGUE00ARG_R_20200950000_01D_GN.rnx</Ephemeris>
     <Ephemeris source="file" type="RINEX">EphData/OWMG00NZL_R_20200950000_01D_GN.rnx</Ephemeris>
-    <Output type="position" format="LLA">
+    <Output type="position" format="KML">
         <Interval unit="s">0.5</Interval>
-        <Name>reference.pos</Name>
+        <Name>reference.kml</Name>
         <ConfigParam>
             <ElevationMask>3</ElevationMask>
         </ConfigParam>

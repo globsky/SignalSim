@@ -12,7 +12,12 @@
 #include <stdio.h>
 #include "BasicTypes.h"
 
-enum NavDataType { NavDataEnd = 0, NavDataUnknown, NavDataGpsIono, NavDataBdsIono, NavDataGpsEph, NavDataGlonassEph, NavDataBdsEph, NavDataGalileoEph };
+enum NavDataType {
+	NavDataEnd = 0, NavDataUnknown,
+	NavDataGpsIono, NavDataBdsIonoA, NavDataBdsIonoB, NavDataGalileoIono,
+	NavDataGpsUtc, NavDataBdsUtc, NavDataGalileoUtc,
+	NavDataGpsEph, NavDataBdsEph, NavDataGalileoEph, NavDataGlonassEph
+};
 
 NavDataType LoadNavFileHeader(FILE *fp_nav, void *NavData);
 NavDataType LoadNavFileEphemeris(FILE *fp_nav, void *NavData);

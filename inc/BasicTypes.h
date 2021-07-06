@@ -158,8 +158,21 @@ typedef struct
     double	b1;  // 2**14
     double	b2;  // 2**16
     double	b3;  // 2**16
-    unsigned long	flag; // 1, availble   
+    unsigned long	flag; // bit0:1, availble, bit8~13: svid
 } IONO_PARAM, *PIONO_PARAM;
 
+// UTC parameters
+typedef  struct _PACKED_
+{
+	double	A0;  // second, 2**-30
+	double	A1;  // second/second, 2**-50
+	short	WN;
+	short	WNLSF;
+	unsigned char	tot; // 2**12 for GPS/BDS and 3600 for Galileo
+	unsigned char	TLS; // leap second
+	unsigned char	TLSF;
+	unsigned char	DN;
+	unsigned long	flag; // 1, availble   
+} UTC_PARAM, *PUTC_PARAM;
 
 #endif //__BASIC_TYPE_H__

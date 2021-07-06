@@ -12,56 +12,104 @@
 
 CNavData::CNavData()
 {
-	EphemerisNumber = 0;
+	GpsEphemerisNumber = BdsEphemerisNumber = GalileoEphemerisNumber = 0;
 	GpsEphmerisPool = (PGPS_EPHEMERIS)malloc(sizeof(GPS_EPHEMERIS) * EPH_NUMBER_INC);
-	GpsEphmerisPoolSize = EPH_NUMBER_INC;
+	BdsEphmerisPool = (PGPS_EPHEMERIS)malloc(sizeof(GPS_EPHEMERIS) * EPH_NUMBER_INC);
+	GalileoEphmerisPool = (PGPS_EPHEMERIS)malloc(sizeof(GPS_EPHEMERIS) * EPH_NUMBER_INC);
+	GpsEphmerisPoolSize = BdsEphmerisPoolSize = GalileoEphmerisPoolSize = EPH_NUMBER_INC;
 }
 
 CNavData::~CNavData()
 {
 	free(GpsEphmerisPool);
+	free(BdsEphmerisPool);
+	free(GalileoEphmerisPool);
 }
 
 bool CNavData::AddNavData(NavDataType Type, void *NavData)
 {
 	PGPS_EPHEMERIS NewGpsEphmerisPool;
+	PIONO_PARAM Iono = (PIONO_PARAM)NavData;
+	int TimeMark;
 
 	if (Type == NavDataGpsIono)
 	{
 		memcpy(&GpsIono, NavData, sizeof(IONO_PARAM));
 		return true;
 	}
-
-	if (Type != NavDataGpsEph)
-		return false;
-
-	if (EphemerisNumber == GpsEphmerisPoolSize)
+	else if (Type == NavDataBdsIonoA)
 	{
-		GpsEphmerisPoolSize += EPH_NUMBER_INC;
-		NewGpsEphmerisPool = (PGPS_EPHEMERIS)realloc(GpsEphmerisPool, sizeof(GPS_EPHEMERIS) * GpsEphmerisPoolSize);
-		if (NewGpsEphmerisPool == NULL)
-			return false;
-		GpsEphmerisPool = NewGpsEphmerisPool;
+		TimeMark = Iono->flag & 0x1f;
+		if (TimeMark >= 0 && TimeMark < 24)
+		{
+			BdsIono[TimeMark].a0 = Iono->a0;
+			BdsIono[TimeMark].a1 = Iono->a1;
+			BdsIono[TimeMark].a2 = Iono->a2;
+			BdsIono[TimeMark].a3 = Iono->a3;
+			BdsIono[TimeMark].flag = Iono->flag & 0x3f00;	// assign svid
+		}
+		return true;
 	}
-	memcpy(&GpsEphmerisPool[EphemerisNumber], NavData, sizeof(GPS_EPHEMERIS));
-	EphemerisNumber ++;
-
+	else if (Type == NavDataBdsIonoB)
+	{
+		TimeMark = Iono->flag & 0x1f;
+		if (TimeMark >= 0 && TimeMark < 24 && (BdsIono[TimeMark].flag == (Iono->flag & 0x3f00)))
+		{
+			BdsIono[TimeMark].b0 = Iono->b0;
+			BdsIono[TimeMark].b1 = Iono->b1;
+			BdsIono[TimeMark].b2 = Iono->b2;
+			BdsIono[TimeMark].b3 = Iono->b3;
+			BdsIono[TimeMark].flag |= 1;	// set valid flag
+		}
+		return true;
+	}
+	else if (Type == NavDataGpsEph)
+	{
+		if (GpsEphemerisNumber == GpsEphmerisPoolSize)
+		{
+			GpsEphmerisPoolSize += EPH_NUMBER_INC;
+			NewGpsEphmerisPool = (PGPS_EPHEMERIS)realloc(GpsEphmerisPool, sizeof(GPS_EPHEMERIS) * GpsEphmerisPoolSize);
+			if (NewGpsEphmerisPool == NULL)
+				return false;
+			GpsEphmerisPool = NewGpsEphmerisPool;
+		}
+		memcpy(&GpsEphmerisPool[GpsEphemerisNumber], NavData, sizeof(GPS_EPHEMERIS));
+		GpsEphemerisNumber ++;
+	}
 	return true;
 }
 
-PGPS_EPHEMERIS CNavData::FindGpsEphemeris(GNSS_TIME time, int svid)
+PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int svid)
 {
 	int i, time_diff, diff;
 	PGPS_EPHEMERIS Eph = NULL;
+	PGPS_EPHEMERIS EphmerisPool;
+	int EphemerisNumber;
+
+	if (system == SystemGps)
+	{
+		EphmerisPool = GpsEphmerisPool;
+		EphemerisNumber = GpsEphemerisNumber;
+	}
+	else if (system == SystemBds)
+	{
+		EphmerisPool = BdsEphmerisPool;
+		EphemerisNumber = BdsEphemerisNumber;
+	}
+	else if (system == SystemGalileo)
+	{
+		EphmerisPool = GalileoEphmerisPool;
+		EphemerisNumber = GalileoEphemerisNumber;
+	}
 
 	for (i = 0; i < EphemerisNumber; i ++)
 	{
-		diff = (time.Week - GpsEphmerisPool[i].week) * 604800 + ((int)(time.Seconds) - GpsEphmerisPool[i].toe);
+		diff = (time.Week - EphmerisPool[i].week) * 604800 + ((int)(time.Seconds) - EphmerisPool[i].toe);
 		if (diff < 0)
 			diff = -diff;
-		if ((svid == GpsEphmerisPool[i].svid) && (diff < 7200) && ((Eph == NULL) || ((Eph != NULL) && (diff < time_diff))))
+		if ((svid == EphmerisPool[i].svid) && (diff < 7200) && ((Eph == NULL) || ((Eph != NULL) && (diff < time_diff))))
 		{
-			Eph = &GpsEphmerisPool[i];
+			Eph = &EphmerisPool[i];
 			time_diff = diff;
 		}
 	}

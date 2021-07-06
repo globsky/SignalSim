@@ -6,6 +6,7 @@
 //
 //----------------------------------------------------------------------
 #include <math.h>
+#include <string.h>
 
 #include "ConstVal.h"
 #include "Coordinate.h"
@@ -595,4 +596,9 @@ CTrajectorySegment *CTrajectory::GetLastSegment()
 	}
 
 	return pSegment;
+}
+
+void CTrajectory::SetTrajectoryName(char *Name)
+{
+	strncpy(TrajectoryName, Name, 127);
 }

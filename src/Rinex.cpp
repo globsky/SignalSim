@@ -25,6 +25,7 @@ NavDataType LoadNavFileHeader(FILE *fp_nav, void *NavData)
 {
 	char str[256];
 	PIONO_PARAM Iono = (PIONO_PARAM)NavData;
+	int TimeMark, Svid;
 
 	if (!fgets(str, 255, fp_nav))
 		return NavDataEnd;
@@ -47,16 +48,16 @@ NavDataType LoadNavFileHeader(FILE *fp_nav, void *NavData)
 		else if (strstr(str, "BDSA") == str)
 		{
 			ConvertD2E(str);
-			sscanf(str + 4, "%lf %lf %lf %lf", &(Iono->a0), &(Iono->a1), &(Iono->a2), &(Iono->a3));
-			if (fgets(str, 255, fp_nav) && strstr(str, "BDSB") == str)
-			{
-				ConvertD2E(str);
-				sscanf(str + 4, "%lf %lf %lf %lf", &(Iono->b0), &(Iono->b1), &(Iono->b2), &(Iono->b3));
-				Iono->flag = 1;
-				return NavDataBdsIono;
-			}
-			else
-				return NavDataUnknown;
+			sscanf(str + 4, "%lf %lf %lf %lf %c %d", &(Iono->a0), &(Iono->a1), &(Iono->a2), &(Iono->a3), &TimeMark, &Svid);
+			Iono->flag = (Svid << 8) + TimeMark - 'A';
+			return NavDataBdsIonoA;
+		}
+		else if (strstr(str, "BDSA") == str)
+		{
+			ConvertD2E(str);
+			sscanf(str + 4, "%lf %lf %lf %lf %c %d", &(Iono->a0), &(Iono->a1), &(Iono->a2), &(Iono->a3), &TimeMark, &Svid);
+			Iono->flag = (Svid << 8) + TimeMark - 'A';
+			return NavDataBdsIonoB;
 		}
 		return NavDataUnknown;
 	}

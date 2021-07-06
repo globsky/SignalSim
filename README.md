@@ -12,3 +12,9 @@ This program support multiple stage of simulation output:
 Change list as below:
 7/1/2021
 	An optimized initial version re-published on github
+7/5/2021
+	Add XML format trajectory output
+	Add support to load BDS ionosphere parameter in RINEX header
+	Add support to load GPS/BDS/Galileo UTC parameters in RINEX header
+	Add support to load BDS/Galileo ephemeris in RINEX file
+	Optimize XML file content interpreter

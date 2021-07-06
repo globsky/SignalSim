@@ -46,7 +46,7 @@ void main(void)
 	CXmlElementTree XmlTree;
 	CXmlElement *RootElement, *Element;
 
-	XmlTree.parse("test_pos.xml");
+	XmlTree.parse("test_obs.xml");
 	RootElement = XmlTree.getroot();
 	i = 0;
 	while ((Element = RootElement->GetElement(i ++)) != NULL)
@@ -70,7 +70,7 @@ void main(void)
 	UtcTime = GpsTimeToUtc(time, FALSE);
 
 	for (i = 1; i <= 32; i ++)
-		Eph[i-1] = NavData.FindGpsEphemeris(time, i);
+		Eph[i-1] = NavData.FindEphemeris(CNavData::SystemGps, time, i);
 
 
 	fp = fopen(OutputParam.filename, "w");
@@ -87,8 +87,20 @@ void main(void)
 	}
 	else if (OutputParam.Format == OutputFormatEcef)
 		fprintf(fp, "%%  GPST                      x-ecef(m)      y-ecef(m)      z-ecef(m)   Q  ns\n");
-	else
+	else if (OutputParam.Format == OutputFormatLla)
 		fprintf(fp, "%%  GPST                  latitude(deg) longitude(deg)  height(m)   Q  ns\n");
+	else if (OutputParam.Format == OutputFormatKml)
+	{
+		fprintf(fp, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+		fprintf(fp, "<kml xmlns=\"http://www.opengis.net/kml/2.2\"> <Document>\n");
+		fprintf(fp, "\t<name>Paths</name>\n");
+		fprintf(fp, "\t<Style id=\"YellowLine\">\n");
+		fprintf(fp, "\t\t<LineStyle>\n\t\t\t<color>7f00ffff</color>\n\t\t\t<width>4</width>\n\t\t</LineStyle>\n");
+		fprintf(fp, "\t</Style>\n\t<Placemark>\n");
+		fprintf(fp, "\t\t<name>Path Name</name>\n\t\t<styleUrl>#YellowLine</styleUrl>\n");
+		fprintf(fp, "\t\t<LineString>\n\t\t\t<tessellate>1</tessellate>\n\t\t\t<altitudeMode>absolute</altitudeMode>\n");
+		fprintf(fp, "\t\t\t<coordinates>\n");
+	}
 	if (OutputParam.Format == OutputFormatRinex)
 	{
 		fprintf(fp, "> %4d %02d %02d %02d %02d %10.7f  0 %2d      -0.000000000000\n",
@@ -107,10 +119,14 @@ void main(void)
 		fprintf(fp, "%4d/%02d/%02d %02d:%02d:%06.3f", UtcTime.Year, UtcTime.Month, UtcTime.Day, UtcTime.Hour, UtcTime.Minute, UtcTime.Second);
 		fprintf(fp, " %14.4f %14.4f %14.4f   5  12\n", PosVel.x, PosVel.y, PosVel.z);
 	}
-	else
+	else if (OutputParam.Format == OutputFormatLla)
 	{
 		fprintf(fp, "%4d/%02d/%02d %02d:%02d:%06.3f", UtcTime.Year, UtcTime.Month, UtcTime.Day, UtcTime.Hour, UtcTime.Minute, UtcTime.Second);
 		fprintf(fp, " %14.9f %14.9f %10.4f   5  12\n", RAD2DEG(CurPos.lat), RAD2DEG(CurPos.lon), CurPos.alt);
+	}
+	else if (OutputParam.Format == OutputFormatKml)
+	{
+		fprintf(fp, "\t\t\t\t%.9f,%.9f,%.4f\n", RAD2DEG(CurPos.lon), RAD2DEG(CurPos.lat), CurPos.alt);
 	}
 	while (Trajectory.GetNextPosVelECEF(OutputParam.Interval, PosVel))
 	{
@@ -135,13 +151,21 @@ void main(void)
 			fprintf(fp, "%4d/%02d/%02d %02d:%02d:%06.3f", UtcTime.Year, UtcTime.Month, UtcTime.Day, UtcTime.Hour, UtcTime.Minute, UtcTime.Second);
 			fprintf(fp, " %14.4f %14.4f %14.4f   5  12\n", PosVel.x, PosVel.y, PosVel.z);
 		}
-		else
+		else if (OutputParam.Format == OutputFormatLla)
 		{
 			fprintf(fp, "%4d/%02d/%02d %02d:%02d:%06.3f", UtcTime.Year, UtcTime.Month, UtcTime.Day, UtcTime.Hour, UtcTime.Minute, UtcTime.Second);
 			fprintf(fp, " %14.9f %14.9f %10.4f   5  12\n", RAD2DEG(CurPos.lat), RAD2DEG(CurPos.lon), CurPos.alt);
 		}
+		else if (OutputParam.Format == OutputFormatKml)
+		{
+			fprintf(fp, "\t\t\t\t%.9f,%.9f,%.4f\n", RAD2DEG(CurPos.lon), RAD2DEG(CurPos.lat), CurPos.alt);
+		}
 	}
 #endif
+	if (OutputParam.Format == OutputFormatKml)
+	{
+		fprintf(fp, "\t\t\t</coordinates>\n\t\t</LineString>\n\t</Placemark>\n</Document> </kml>\n");
+	}
 	fclose(fp);
 }
 

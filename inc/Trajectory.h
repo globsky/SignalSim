@@ -23,7 +23,7 @@
 #define TRAJECTORY_NEGATIVE 5
 
 enum TrajectoryType { TrajTypeUnknown = 0, TrajTypeConstSpeed, TrajTypeConstAcc, TrajTypeVerticalAcc, TrajTypeJerk, TrajTypeHorizontalCircular };
-enum TrajectoryDataType { TrajDataTimeSpan, TrajDataAcceleration, TrajDataSpeed, TrajDataAccRate, TrajDataAngle, TrajDataAngularRate, TrajDataRadius };
+enum TrajectoryDataType { TrajDataTimeSpan = 0, TrajDataAcceleration, TrajDataSpeed, TrajDataAccRate, TrajDataAngle, TrajDataAngularRate, TrajDataRadius };
 
 class CTrajectorySegment
 {
@@ -108,6 +108,8 @@ public:
 	BOOL GetNextPosVelECEF(double TimeStep, KINEMATIC_INFO &PosVel);
 	BOOL GetNextPosVelLLA(double TimeStep, LLA_POSITION &Position, LOCAL_SPEED &Velocity);
 	double GetTimeLength();
+	void SetTrajectoryName(char *Name);
+	char *GetTrajectoryName() { return TrajectoryName; }
 
 private:
 	KINEMATIC_INFO	m_InitPosVel;
@@ -115,6 +117,7 @@ private:
 	CTrajectorySegment *m_pTrajectoryList;
 	CTrajectorySegment *m_pCurrentTrajectory;
 	double RelativeTime;
+	char TrajectoryName[128];
 
 	CTrajectorySegment *GetLastSegment();
 };

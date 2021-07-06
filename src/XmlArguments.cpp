@@ -18,7 +18,7 @@ char *AngleUnit[] = { "degree", "rad" };
 char *EphSrc[] = { "file" };
 char *EphType[] = { "RINEX" };
 char *OutputType[] = { "position", "observation" };
-char *OutputFormat[] = { "ECEF", "LLA", "NMEA", "RINEX" };
+char *OutputFormat[] = { "ECEF", "LLA", "NMEA", "KML", "RINEX" };
 char *TimeUnit[] = { "s", "ms" };
 char *ChannelEnable[] = { "auto", "true" };
 
@@ -52,6 +52,17 @@ PATTRIBUTE_TYPE BasebandConfigAttributes[] = { &TimeTypeAttr, NULL };
 PATTRIBUTE_TYPE ElevationMaskAttributes[] = { &ElevationMaskAttr, NULL };
 PATTRIBUTE_TYPE MaskOutAttributes[] = { &SystemAttr, NULL };
 PATTRIBUTE_TYPE ChannelInitAttributes[] = { &SystemAttr, &SvidAttr, &ChannelEnableAttr, NULL };
+
+char *StartTimeElements[] = { "Week", "LeapYear", "Day", "Second", "Year", "Month", "Hour", "Minute", NULL };
+char *StartPosElements[] = { "Longitude", "Latitude", "Altitude", "x", "y", "z", NULL };
+char *StartVelElements[] = { "Speed", "Course", "East", "North", "Up", NULL };
+char *TrajectoryElements[] = { "InitPosition", "InitVelocity", "TrajectoryList", NULL };
+char *TrajectoryTypeElements[] = { "Const", "ConstAcc", "VerticalAcc", "Jerk", "HorizontalTurn", NULL };
+char *TrajectoryArgumentElements[] = { "TimeSpan", "Acceleration", "Speed", "AccRate", "TurnAngle", "AngularRate", "Radius", NULL };
+char *OutputParamElements[] = { "Interval", "Name", "ConfigParam", NULL };
+char *ConfigParamElements[] = { "ElevationMask", "MaskOut", NULL };
+char *BasebandConfigElements[] = { "ChannelNumber", "CorrelatorNumber", "NoiseFloor", NULL };
+char *SatInitElements[] = { "CorrelatorInterval", "PeakCorrelator", "InitFreqError", "InitPhaseError", "InitCodeError", "SNR", NULL };
 
 ELEMENT_PROCESS RootProcess[] = {
 	{ "Time",           &ElementProcTime,           NULL},

@@ -39,7 +39,7 @@ typedef struct
 } INTERPRETE_PARAM, *PINTERPRETE_PARAM;
 
 enum OutputType { OutputTypePosition, OutputTypeObservation, OutputTypeBaseband, OutputTypeIfSignal };
-enum OutputFormat { OutputFormatEcef, OutputFormatLla, OutputFormatNmea, OutputFormatRinex };
+enum OutputFormat { OutputFormatEcef, OutputFormatLla, OutputFormatNmea, OutputFormatKml, OutputFormatRinex };
 
 typedef struct
 {
@@ -75,6 +75,17 @@ extern PATTRIBUTE_TYPE ElevationMaskAttributes[];
 extern PATTRIBUTE_TYPE MaskOutAttributes[];
 extern PATTRIBUTE_TYPE ChannelInitAttributes[];
 
+extern char *StartTimeElements[];
+extern char *StartPosElements[];
+extern char *StartVelElements[];
+extern char *TrajectoryElements[];
+extern char *TrajectoryTypeElements[];
+extern char *TrajectoryArgumentElements[];
+extern char *OutputParamElements[];
+extern char *ConfigParamElements[];
+extern char *BasebandConfigElements[];
+extern char *SatInitElements[];
+
 BOOL AssignStartTime(CXmlElement *Element, UTC_TIME &UtcTime);
 BOOL SetTrajectory(CXmlElement *Element, LLA_POSITION &StartPos, LOCAL_SPEED &StartVel, CTrajectory &Trajectory);
 BOOL SetOutputParam(CXmlElement *Element, OUTPUT_PARAM &OutputParam);
@@ -83,6 +94,7 @@ BOOL SetSatInitParam(CXmlElement *Element, CHANNEL_INIT_PARAM SatInitParam[]);
 
 int FindAttribute(char *key, PATTRIBUTE_TYPE *AttributeList);
 int GetAttributeIndex(char *value, PATTRIBUTE_TYPE Attribute);
+int GetElementIndex(char *tag, char **ElementList);
 int FindTagIndex(char *Tag, ELEMENT_PROCESS *ProcessList, int ProcessListNumber);
 int ProcessElement(CXmlElement *Element, PINTERPRETE_PARAM InterpreteParam);
 
