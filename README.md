@@ -18,3 +18,5 @@ Change list as below:
 	Add support to load GPS/BDS/Galileo UTC parameters in RINEX header
 	Add support to load BDS/Galileo ephemeris in RINEX file
 	Optimize XML file content interpreter
+8/4/2021
+	Add class NavBit and LNavBit to generate GPS LNAV data stream

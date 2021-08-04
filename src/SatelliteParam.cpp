@@ -58,7 +58,7 @@ SATELLITE_PARAM GetSatelliteParam(KINEMATIC_INFO PositionEcef, LLA_POSITION Posi
 	GpsSatPosSpeedEph(system, SatelliteTime, Eph, &SatPosition);
 	Distance = GeometryDistance(&PositionEcef, &SatPosition, LosVector);
 	SatElAz(&PositionLla, LosVector, &Elevation, &Azimuth);
-	SatelliteParam.IonoDelay = 0;//GpsIonoDelay(IonoParam, SatelliteTime, PositionLla.lat, PositionLla.lon, Elevation, Azimuth);
+	SatelliteParam.IonoDelay = GpsIonoDelay(IonoParam, SatelliteTime, PositionLla.lat, PositionLla.lon, Elevation, Azimuth);
 	Distance += TropoDelay(PositionLla.lat, PositionLla.alt, Elevation);
 	TravelTime = Distance / LIGHT_SPEED + Eph->tgd - GpsClockCorrection(Eph, SatelliteTime);
 	TravelTime -= WGS_F_GTR * Eph->ecc * Eph->sqrtA * sin(Eph->Ek);		// relativity correction
@@ -66,6 +66,7 @@ SATELLITE_PARAM GetSatelliteParam(KINEMATIC_INFO PositionEcef, LLA_POSITION Posi
 	SatelliteParam.Elevation = Elevation;
 	SatelliteParam.Azimuth = Azimuth;
 	SatelliteParam.RelativeSpeed = SatRelativeSpeed(&PositionEcef, &SatPosition) - LIGHT_SPEED * Eph->af1;
+	SatelliteParam.CN0 = 4700;	// add CN0 calculation later
 
 	return SatelliteParam;
 }

@@ -23,9 +23,11 @@ static unsigned char GetGalileoUra(double data);
 
 NavDataType LoadNavFileHeader(FILE *fp_nav, void *NavData)
 {
-	char str[256];
+	char str[256], ch;
 	PIONO_PARAM Iono = (PIONO_PARAM)NavData;
+	PUTC_PARAM UtcParam = (PUTC_PARAM)NavData;
 	int TimeMark, Svid;
+	int data1, data2;
 
 	if (!fgets(str, 255, fp_nav))
 		return NavDataEnd;
@@ -60,6 +62,28 @@ NavDataType LoadNavFileHeader(FILE *fp_nav, void *NavData)
 			return NavDataBdsIonoB;
 		}
 		return NavDataUnknown;
+	}
+	else if (strstr(str, "TIME SYSTEM CORR") != 0)
+	{
+		if (strstr(str, "GPUT") == str)
+		{
+			ConvertD2E(str);
+			ch = str[22]; str[22] = 0; // put string terminator on first data
+			sscanf(str + 4, "%lf", &(UtcParam->A0));
+			str[22] = ch;	// restore char after first data
+			sscanf(str + 22, "%lf %d %d", &(UtcParam->A1), &data1, &data2);
+			UtcParam->tot = (unsigned char)(data1 >> 12);
+			UtcParam->WN = (short)data2;
+			UtcParam->WNLSF = UtcParam->WN;
+			UtcParam->DN = 0;
+			return NavDataGpsUtc;
+		}
+	}
+	else if (strstr(str, "LEAP SECONDS") != 0)
+	{
+		sscanf(str + 4, "%d", &data1);
+		UtcParam->TLS = (signed char)data1;
+		return NavDataLeapSecond;
 	}
 	else if (strstr(str, "END OF HEADER") != 0)
 		return NavDataEnd;

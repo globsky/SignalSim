@@ -15,7 +15,7 @@
 enum NavDataType {
 	NavDataEnd = 0, NavDataUnknown,
 	NavDataGpsIono, NavDataBdsIonoA, NavDataBdsIonoB, NavDataGalileoIono,
-	NavDataGpsUtc, NavDataBdsUtc, NavDataGalileoUtc,
+	NavDataGpsUtc, NavDataBdsUtc, NavDataGalileoUtc, NavDataGalileoGps, NavDataLeapSecond,
 	NavDataGpsEph, NavDataBdsEph, NavDataGalileoEph, NavDataGlonassEph
 };
 

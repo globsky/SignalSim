@@ -17,6 +17,7 @@ CNavData::CNavData()
 	BdsEphmerisPool = (PGPS_EPHEMERIS)malloc(sizeof(GPS_EPHEMERIS) * EPH_NUMBER_INC);
 	GalileoEphmerisPool = (PGPS_EPHEMERIS)malloc(sizeof(GPS_EPHEMERIS) * EPH_NUMBER_INC);
 	GpsEphmerisPoolSize = BdsEphmerisPoolSize = GalileoEphmerisPoolSize = EPH_NUMBER_INC;
+	memset(&GpsUtcParam, 0, sizeof(UTC_PARAM));
 }
 
 CNavData::~CNavData()
@@ -30,15 +31,15 @@ bool CNavData::AddNavData(NavDataType Type, void *NavData)
 {
 	PGPS_EPHEMERIS NewGpsEphmerisPool;
 	PIONO_PARAM Iono = (PIONO_PARAM)NavData;
+	PUTC_PARAM UtcParam = (PUTC_PARAM)NavData;
 	int TimeMark;
 
-	if (Type == NavDataGpsIono)
+	switch (Type)
 	{
+	case NavDataGpsIono:
 		memcpy(&GpsIono, NavData, sizeof(IONO_PARAM));
 		return true;
-	}
-	else if (Type == NavDataBdsIonoA)
-	{
+	case NavDataBdsIonoA:
 		TimeMark = Iono->flag & 0x1f;
 		if (TimeMark >= 0 && TimeMark < 24)
 		{
@@ -49,9 +50,7 @@ bool CNavData::AddNavData(NavDataType Type, void *NavData)
 			BdsIono[TimeMark].flag = Iono->flag & 0x3f00;	// assign svid
 		}
 		return true;
-	}
-	else if (Type == NavDataBdsIonoB)
-	{
+	case NavDataBdsIonoB:
 		TimeMark = Iono->flag & 0x1f;
 		if (TimeMark >= 0 && TimeMark < 24 && (BdsIono[TimeMark].flag == (Iono->flag & 0x3f00)))
 		{
@@ -62,9 +61,7 @@ bool CNavData::AddNavData(NavDataType Type, void *NavData)
 			BdsIono[TimeMark].flag |= 1;	// set valid flag
 		}
 		return true;
-	}
-	else if (Type == NavDataGpsEph)
-	{
+	case NavDataGpsEph:
 		if (GpsEphemerisNumber == GpsEphmerisPoolSize)
 		{
 			GpsEphmerisPoolSize += EPH_NUMBER_INC;
@@ -75,6 +72,19 @@ bool CNavData::AddNavData(NavDataType Type, void *NavData)
 		}
 		memcpy(&GpsEphmerisPool[GpsEphemerisNumber], NavData, sizeof(GPS_EPHEMERIS));
 		GpsEphemerisNumber ++;
+		break;
+	case NavDataGpsUtc:
+		UtcParam->TLS = UtcParam->TLSF = GpsUtcParam.TLS;
+		UtcParam->flag = GpsUtcParam.flag | 1;
+		memcpy(&GpsUtcParam, UtcParam, sizeof(UTC_PARAM));
+		break;
+	case NavDataBdsUtc:
+	case NavDataGalileoUtc:
+	case NavDataGalileoGps:
+	case NavDataLeapSecond:
+		GpsUtcParam.TLS = GpsUtcParam.TLSF = UtcParam->TLS;	// set both TLS and TLSF
+		GpsUtcParam.flag |= 2;	// and set valid flag
+		break;
 	}
 	return true;
 }

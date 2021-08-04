@@ -24,6 +24,11 @@ public:
 	bool AddNavData(NavDataType Type, void *NavData);
 	PGPS_EPHEMERIS FindEphemeris(GnssSystem system, GNSS_TIME time, int svid);
 	PIONO_PARAM GetGpsIono() { return &GpsIono; }
+	PIONO_PARAM GetBdsIono() { return &BdsIono[0]; }
+	double *GetGalileoIono() { return GalileoIono; }
+	PUTC_PARAM GetGpsUtcParam() { return &GpsUtcParam; }
+	PUTC_PARAM GetBdsUtcParam() { return &BdsUtcParam; }
+	PUTC_PARAM GetGalileoUtcParam() { return &GalileoUtcParam; }
 	void ReadNavFile(char *filename);
 
 private:

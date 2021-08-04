@@ -15,6 +15,7 @@
 typedef struct
 {
 	int svid;
+	int CN0;	// scale factor 0.01
 	double TravelTime;	// travel time including corrections except ionosphere delay in second
 	double IonoDelay;	// ionosphere delay in meter
 	double Elevation;	// satellite elevation in rad

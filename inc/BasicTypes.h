@@ -81,7 +81,7 @@ typedef struct // GPS ephemeris, also used by BDS and Galileo
 	unsigned char	iode2;
 	unsigned char	iode3;
 
-	unsigned char	ura;
+	unsigned char	ura;	// URA in 4LSB, code on L2 in bit4/5, L2 channel code in bit6, fit interval flag in bit7
 	unsigned char	flag;	// bit0 means ephemeris valid
 	unsigned char	health;
 	unsigned char	svid;	// satellite PRN number starting from 1
@@ -120,6 +120,28 @@ typedef struct // GPS ephemeris, also used by BDS and Galileo
 	double omega_delta;	// Delta Between omega_dot and WGS_OMEGDOTE, equals to omega_dot - WGS_OMEGDOTE
 	double Ek;			// Ek, derived from Mk
 } GPS_EPHEMERIS, *PGPS_EPHEMERIS;
+
+typedef struct        			
+{
+	unsigned char	flag;
+	unsigned char	dummy;	// IOD in Galileo
+	unsigned char	health;	// for Galileo, bit5/4 E5aHS, bit3/2 E5bHS, bit1/0 E1BHS
+	unsigned char	svid;
+
+	int	toa;
+	int	week;
+
+	// variables decoded from stream data
+	double M0;			// Mean Anomaly at Reference Time
+	double ecc;			// Eccentricity
+	double sqrtA;		// Square Root of the Semi-Major Axis
+	double omega0;		// Longitude of Ascending Node of Orbit Plane at Weekly Epoch
+	double i0;			// Inclination Angle at Reference Time
+	double w;			// Argument of Perigee
+	double omega_dot;	// Rate of Right Ascension
+	double af0;			// Satellite Clock Correction
+	double af1;			// Satellite Clock Correction
+} GPS_ALMANAC, *PGPS_ALMANAC;
 
 typedef struct
 {
@@ -169,10 +191,10 @@ typedef  struct _PACKED_
 	short	WN;
 	short	WNLSF;
 	unsigned char	tot; // 2**12 for GPS/BDS and 3600 for Galileo
-	unsigned char	TLS; // leap second
-	unsigned char	TLSF;
+	signed char	TLS; // leap second
+	signed char	TLSF;
 	unsigned char	DN;
-	unsigned long	flag; // 1, availble   
+	unsigned long	flag; // bit0: UTC parameter available, bit1: leap second available
 } UTC_PARAM, *PUTC_PARAM;
 
 #endif //__BASIC_TYPE_H__
