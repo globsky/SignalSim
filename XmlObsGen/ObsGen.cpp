@@ -46,7 +46,7 @@ void main(void)
 	CXmlElementTree XmlTree;
 	CXmlElement *RootElement, *Element;
 
-	XmlTree.parse("test_obs.xml");
+	XmlTree.parse("test_obs2.xml");
 	RootElement = XmlTree.getroot();
 	i = 0;
 	while ((Element = RootElement->GetElement(i ++)) != NULL)
@@ -128,9 +128,9 @@ void main(void)
 	{
 		fprintf(fp, "\t\t\t\t%.9f,%.9f,%.4f\n", RAD2DEG(CurPos.lon), RAD2DEG(CurPos.lat), CurPos.alt);
 	}
-	while (Trajectory.GetNextPosVelECEF(OutputParam.Interval, PosVel))
+	while (Trajectory.GetNextPosVelECEF(OutputParam.Interval / 1000., PosVel))
 	{
-		time.Seconds += OutputParam.Interval;
+		time.MilliSeconds += OutputParam.Interval;
 		UtcTime = GpsTimeToUtc(time, FALSE);
 		CurPos = EcefToLla(PosVel);
 		if (OutputParam.Format == OutputFormatRinex)
@@ -182,7 +182,7 @@ int GetVisibleSatellite(KINEMATIC_INFO Position, GNSS_TIME time, OUTPUT_PARAM Ou
 			continue;
 		if (OutputParam.GpsMaskOut & (1 << (i-1)))
 			continue;
-		if (!GpsSatPosSpeedEph(system, time.Seconds, Eph[i], &SatPosition))
+		if (!GpsSatPosSpeedEph(system, (time.MilliSeconds + time.SubMilliSeconds) / 1000., Eph[i], &SatPosition))
 			continue;
 		SatElAz(&Position, &SatPosition, &Elevation, &Azimuth);
 		if (Elevation < OutputParam.ElevationMask)
@@ -196,13 +196,13 @@ int GetVisibleSatellite(KINEMATIC_INFO Position, GNSS_TIME time, OUTPUT_PARAM Ou
 SATELLITE_INFO GetTravelTime(KINEMATIC_INFO PositionEcef, LLA_POSITION PositionLla, GNSS_TIME time, GnssSystem system, PGPS_EPHEMERIS Eph, PIONO_PARAM IonoParam)
 {
 	KINEMATIC_INFO SatPosition;
-	double Distance, TravelTime, SatelliteTime = time.Seconds;
+	double Distance, TravelTime, SatelliteTime = (time.MilliSeconds + time.SubMilliSeconds) / 1000.;
 	double Elevation, Azimuth;
 	double LosVector[3];
 	SATELLITE_INFO SatelliteInfo;
 
 	// first estimate the travel time, ignore tgd, ionosphere and troposphere delay
-	GpsSatPosSpeedEph(system, time.Seconds, Eph, &SatPosition);
+	GpsSatPosSpeedEph(system, SatelliteTime, Eph, &SatPosition);
 	TravelTime = GeometryDistance(&PositionEcef, &SatPosition, NULL) / LIGHT_SPEED;
 	SatPosition.x -= TravelTime * SatPosition.vx; SatPosition.y -= TravelTime * SatPosition.vy; SatPosition.z -= TravelTime * SatPosition.vz;
 	TravelTime = GeometryDistance(&PositionEcef, &SatPosition, NULL) / LIGHT_SPEED;

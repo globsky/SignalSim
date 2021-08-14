@@ -26,5 +26,6 @@ typedef struct
 
 int GetVisibleSatellite(KINEMATIC_INFO Position, GNSS_TIME time, OUTPUT_PARAM OutputParam, GnssSystem system, PGPS_EPHEMERIS Eph[], int Number, PGPS_EPHEMERIS EphVisible[]);
 SATELLITE_PARAM GetSatelliteParam(KINEMATIC_INFO PositionEcef, LLA_POSITION PositionLla, GNSS_TIME time, GnssSystem system, PGPS_EPHEMERIS Eph, PIONO_PARAM IonoParam);
+GNSS_TIME GetTransmitTime(GNSS_TIME ReceiverTime, double TravelTime);
 
 #endif //!defined(__SATELLITE_PARAM_H__)

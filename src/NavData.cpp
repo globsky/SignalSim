@@ -114,7 +114,7 @@ PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int sv
 
 	for (i = 0; i < EphemerisNumber; i ++)
 	{
-		diff = (time.Week - EphmerisPool[i].week) * 604800 + ((int)(time.Seconds) - EphmerisPool[i].toe);
+		diff = (time.Week - EphmerisPool[i].week) * 604800 + (time.MilliSeconds / 1000 - EphmerisPool[i].toe);
 		if (diff < 0)
 			diff = -diff;
 		if ((svid == EphmerisPool[i].svid) && (diff < 7200) && ((Eph == NULL) || ((Eph != NULL) && (diff < time_diff))))

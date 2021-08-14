@@ -51,7 +51,7 @@ typedef struct
 	unsigned long long BdsMaskOut;
 	unsigned long long GalileoMaskOut;
 	double ElevationMask;
-	double Interval;
+	int Interval;	// in millisecond
 } OUTPUT_PARAM, *POUTPUT_PARAM;
 
 int ElementProcTime(void *Param);

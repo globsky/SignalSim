@@ -20,3 +20,7 @@ Change list as below:
 	Optimize XML file content interpreter
 8/4/2021
 	Add class NavBit and LNavBit to generate GPS LNAV data stream
+8/13/2021
+	Change format of GNSS_TIME to improve accuracy
+	Add GetTransmitTime() method
+	Remove obsolete file

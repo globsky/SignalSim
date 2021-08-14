@@ -25,7 +25,7 @@ int GetVisibleSatellite(KINEMATIC_INFO Position, GNSS_TIME time, OUTPUT_PARAM Ou
 			continue;
 		if (OutputParam.GpsMaskOut & (1 << (i-1)))
 			continue;
-		if (!GpsSatPosSpeedEph(system, time.Seconds, Eph[i], &SatPosition))
+		if (!GpsSatPosSpeedEph(system, time.MilliSeconds / 1000., Eph[i], &SatPosition))
 			continue;
 		SatElAz(&Position, &SatPosition, &Elevation, &Azimuth);
 		if (Elevation < OutputParam.ElevationMask)
@@ -39,7 +39,7 @@ int GetVisibleSatellite(KINEMATIC_INFO Position, GNSS_TIME time, OUTPUT_PARAM Ou
 SATELLITE_PARAM GetSatelliteParam(KINEMATIC_INFO PositionEcef, LLA_POSITION PositionLla, GNSS_TIME time, GnssSystem system, PGPS_EPHEMERIS Eph, PIONO_PARAM IonoParam)
 {
 	KINEMATIC_INFO SatPosition;
-	double Distance, TravelTime, SatelliteTime = time.Seconds;
+	double Distance, TravelTime, SatelliteTime = (time.MilliSeconds + time.SubMilliSeconds) / 1000.0;
 	double Elevation, Azimuth;
 	double LosVector[3];
 	SATELLITE_PARAM SatelliteParam;
@@ -47,7 +47,7 @@ SATELLITE_PARAM GetSatelliteParam(KINEMATIC_INFO PositionEcef, LLA_POSITION Posi
 	SatelliteParam.svid = Eph->svid;
 
 	// first estimate the travel time, ignore tgd, ionosphere and troposphere delay
-	GpsSatPosSpeedEph(system, time.Seconds, Eph, &SatPosition);
+	GpsSatPosSpeedEph(system, SatelliteTime, Eph, &SatPosition);
 	TravelTime = GeometryDistance(&PositionEcef, &SatPosition, SatelliteParam.LosVector) / LIGHT_SPEED;
 	SatPosition.x -= TravelTime * SatPosition.vx; SatPosition.y -= TravelTime * SatPosition.vy; SatPosition.z -= TravelTime * SatPosition.vz;
 	TravelTime = GeometryDistance(&PositionEcef, &SatPosition, SatelliteParam.LosVector) / LIGHT_SPEED;
@@ -69,4 +69,23 @@ SATELLITE_PARAM GetSatelliteParam(KINEMATIC_INFO PositionEcef, LLA_POSITION Posi
 	SatelliteParam.CN0 = 4700;	// add CN0 calculation later
 
 	return SatelliteParam;
+}
+
+GNSS_TIME GetTransmitTime(GNSS_TIME ReceiverTime, double TravelTime)
+{
+	GNSS_TIME TransmitTime = ReceiverTime;
+
+	TravelTime *= 1000.0;	// convert to ms
+	TransmitTime.MilliSeconds -= (int)TravelTime;
+	TravelTime -= (int)TravelTime;
+	TransmitTime.SubMilliSeconds -= TravelTime;
+	if (TransmitTime.SubMilliSeconds < 0)
+	{
+		TransmitTime.SubMilliSeconds += 1.0;
+		TransmitTime.MilliSeconds --;
+	}
+	if (TransmitTime.MilliSeconds < 0)
+		TransmitTime.MilliSeconds += 604800000;
+
+	return TransmitTime;
 }

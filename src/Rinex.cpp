@@ -184,7 +184,7 @@ BOOL DecodeEphGps(NavDataType system, int svid, double *data, UTC_TIME time, PGP
 	GNSS_TIME toc_time = UtcToGpsTime(time, FALSE);
 
 	Eph->svid = svid;
-	Eph->toc = (int)(toc_time.Seconds);
+	Eph->toc = toc_time.MilliSeconds / 1000;
 	Eph->af0 = data[0];
 	Eph->af1 = data[1];
 	Eph->af2 = data[2];
@@ -280,7 +280,7 @@ BOOL DecodeEphGlonass(int svid, double *data, UTC_TIME time, PGLONASS_EPHEMERIS 
 	Eph->M = 1;		// assume GLONASS-M satellite
 	Eph->Ft = 0;	// no data
 	Eph->day = (unsigned short)(eph_time.Day);
-	Eph->tb = ((int)(eph_time.Seconds) + 450000) / 900000 * 900;
+	Eph->tb = ((int)(eph_time.MilliSeconds) + 450000) / 900000 * 900;
 	Eph->Bn = (unsigned char)data[6];
 	Eph->En = (unsigned char)data[14];
 	Eph->tn = -data[0];

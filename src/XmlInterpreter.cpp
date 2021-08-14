@@ -58,14 +58,18 @@ BOOL AssignStartTime(CXmlElement *Element, UTC_TIME &UtcTime)
 	if (Type == 0)
 	{
 		GnssTime.Week = Week;
-		GnssTime.Seconds = UtcTime.Second;
+		GnssTime.SubMilliSeconds = UtcTime.Second * 1000;
+		GnssTime.MilliSeconds = (int)GnssTime.SubMilliSeconds;
+		GnssTime.SubMilliSeconds -= GnssTime.MilliSeconds;
 		UtcTime = GpsTimeToUtc(GnssTime);
 	}
 	else if (Type == 1)
 	{
 		GlonassTime.LeapYear = LeapYear;
 		GlonassTime.Day = UtcTime.Day;
-		GlonassTime.Seconds = UtcTime.Second;
+		GlonassTime.SubMilliSeconds = UtcTime.Second * 1000;
+		GlonassTime.MilliSeconds = (int)GlonassTime.SubMilliSeconds;
+		GlonassTime.SubMilliSeconds -= GlonassTime.MilliSeconds;
 		UtcTime = GlonassTimeToUtc(GlonassTime);
 	}
 
@@ -231,7 +235,7 @@ BOOL SetOutputParam(CXmlElement *Element, OUTPUT_PARAM &OutputParam)
 	OutputParam.GpsMaskOut = OutputParam.GlonassMaskOut = 0;
 	OutputParam.BdsMaskOut = OutputParam.GalileoMaskOut = 0LL;
 	OutputParam.ElevationMask = DEG2RAD(5);
-	OutputParam.Interval = 1.0;
+	OutputParam.Interval = 1000;
 
 	for (i = 0; i < Attributes->DictItemNumber; i ++)
 	{
@@ -246,7 +250,7 @@ BOOL SetOutputParam(CXmlElement *Element, OUTPUT_PARAM &OutputParam)
 	{
 		switch (GetElementIndex(SubElement->GetTag(), OutputParamElements))
 		{
-		case 0: OutputParam.Interval = atof(SubElement->GetText()); break;
+		case 0: OutputParam.Interval = (int)(atof(SubElement->GetText()) * 1000 + 0.5); break;
 		case 1: strcpy(OutputParam.filename, SubElement->GetText()); break;
 		case 2: ProcessConfigParam(SubElement, OutputParam); break;
 		}

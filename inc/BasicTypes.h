@@ -65,14 +65,16 @@ typedef struct
 typedef struct
 {
 	int Week;
-	double Seconds;
+	int MilliSeconds;
+	double SubMilliSeconds;
 } GNSS_TIME, *PGNSS_TIME;
 
 typedef struct
 {
 	int LeapYear;
 	int Day;
-	double Seconds;
+	int MilliSeconds;
+	double SubMilliSeconds;
 } GLONASS_TIME, *PGLONASS_TIME;
 
 typedef struct // GPS ephemeris, also used by BDS and Galileo
