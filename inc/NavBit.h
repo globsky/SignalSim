@@ -25,7 +25,7 @@ public:
 	NavBit();
 	~NavBit();
 
-	virtual int GetFrameData(int StartTimeMs, int svid, int *NavBits) = 0;
+	virtual int GetFrameData(GNSS_TIME StartTime, int svid, int *NavBits) = 0;
 	int roundi(double data);
 	int roundu(double data);
 	double UnscaleDouble(double value, int scale);

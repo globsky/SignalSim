@@ -24,3 +24,7 @@ Change list as below:
 	Change format of GNSS_TIME to improve accuracy
 	Add GetTransmitTime() method
 	Remove obsolete file
+8/30/2021
+	Fix bug of TOW add extra 1 when put into LNAV data stream
+	Fix bug of not put in week number in LNAV data stream
+	Use complete GNSS time to get LNAV data stream

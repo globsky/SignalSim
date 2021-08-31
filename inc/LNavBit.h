@@ -17,7 +17,7 @@ public:
 	LNavBit();
 	~LNavBit();
 
-	int GetFrameData(int StartTimeMs, int svid, int *NavBits);
+	int GetFrameData(GNSS_TIME StartTime, int svid, int *NavBits);
 	int SetEphemeris(int svid, PGPS_EPHEMERIS Eph);
 	int SetAlmanac(int svid, PGPS_ALMANAC Alm);
 	int SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam);

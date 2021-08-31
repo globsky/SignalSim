@@ -30,14 +30,15 @@ LNavBit::~LNavBit()
 {
 }
 
-int LNavBit::GetFrameData(int StartTimeMs, int svid, int *NavBits)
+int LNavBit::GetFrameData(GNSS_TIME StartTime, int svid, int *NavBits)
 {
 	int i, TOW, subframe, page;
 	unsigned int TlmWord, HowWord, CurWord, *Stream;
 
 	// first determine the current TOW and subframe number
-	StartTimeMs %= 604800000;
-	TOW = StartTimeMs / 6000;
+	StartTime.Week += StartTime.MilliSeconds / 604800000;
+	StartTime.MilliSeconds %= 604800000;
+	TOW = StartTime.MilliSeconds / 6000;
 	subframe = (TOW % 5) + 1;
 	if (subframe > 3)	// subframe 4/5, further determine page number
 	{
@@ -53,7 +54,7 @@ int LNavBit::GetFrameData(int StartTimeMs, int svid, int *NavBits)
 	TOW ++;		// TOW is the count of NEXT subframe
 	if (TOW >= 100800)
 		TOW = 0;
-	HowWord = ((TOW + 1) << 13) + (subframe << 8);	// set HOW word
+	HowWord = (TOW << 13) + (subframe << 8);	// set HOW word
 
 	// generate bit stream of TLM, this is WORD 1
 	CurWord = TlmWord | GpsGetParity(TlmWord);	// D29* and D30* are 00 for TLM
@@ -73,6 +74,8 @@ int LNavBit::GetFrameData(int StartTimeMs, int svid, int *NavBits)
 	{
 		CurWord <<= 30;		// put D29* and D30* into bit31 and bit30
 		CurWord |= ((Stream[i] & 0xffffff) << 6);	// fill in d1 to d24 into bit29 to bit6
+		if (subframe == 1 && i == 0)	// WORD3 of subframe 1, put in week number from bit 29~20
+			CurWord |= ((StartTime.Week & 0x3ff) << 20);
 		if (CurWord & 0x40000000)	// convert d1 to d24 into D1 to D24
 			CurWord ^= 0x3fffffc0;
 		CurWord |= GpsGetParity(CurWord);	// add parity check
