@@ -48,6 +48,7 @@ PATTRIBUTE_TYPE SpeedUnitAttributes[] = { &SpeedUnitAttr, NULL };
 PATTRIBUTE_TYPE CourseUnitAttributes[] = { &CourseUnitAttr, NULL };
 PATTRIBUTE_TYPE EphAttributes[] = { &EphSrcAttr, &EphTypeAttr, NULL };
 PATTRIBUTE_TYPE OutputAttributes[] = { &OutputTypeAttr, &OutputFormatAttr, NULL };
+PATTRIBUTE_TYPE SatelliteAttributes[] = { &SystemAttr, &SvidAttr, NULL };
 PATTRIBUTE_TYPE BasebandConfigAttributes[] = { &TimeTypeAttr, NULL };
 PATTRIBUTE_TYPE ElevationMaskAttributes[] = { &ElevationMaskAttr, NULL };
 PATTRIBUTE_TYPE MaskOutAttributes[] = { &SystemAttr, NULL };
@@ -61,6 +62,9 @@ char *TrajectoryTypeElements[] = { "Const", "ConstAcc", "VerticalAcc", "Jerk", "
 char *TrajectoryArgumentElements[] = { "TimeSpan", "Acceleration", "Speed", "AccRate", "TurnAngle", "AngularRate", "Radius", NULL };
 char *OutputParamElements[] = { "Interval", "Name", "ConfigParam", NULL };
 char *ConfigParamElements[] = { "ElevationMask", "MaskOut", NULL };
+char *PowerControlElements[] = { "PowerParam", "SignalPower", NULL };
+char *PowerParamElements[] = { "NoiseFloor", "InitPower", "ElevationAdjust", NULL };
+char *SignalPowerElements[] = { "Time", "Power", NULL };
 char *BasebandConfigElements[] = { "ChannelNumber", "CorrelatorNumber", "NoiseFloor", NULL };
 char *SatInitElements[] = { "CorrelatorInterval", "PeakCorrelator", "InitFreqError", "InitPhaseError", "InitCodeError", "SNR", NULL };
 

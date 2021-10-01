@@ -28,3 +28,6 @@ Change list as below:
 	Fix bug of TOW add extra 1 when put into LNAV data stream
 	Fix bug of not put in week number in LNAV data stream
 	Use complete GNSS time to get LNAV data stream
+9/30/2021
+	Add satellite signal power control support in XML
+	Add RINEX output functions

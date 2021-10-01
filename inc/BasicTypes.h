@@ -199,4 +199,14 @@ typedef  struct _PACKED_
 	unsigned long	flag; // bit0: UTC parameter available, bit1: leap second available
 } UTC_PARAM, *PUTC_PARAM;
 
+typedef struct
+{
+	int system;
+	int svid;
+	double PseudoRange;
+	double CarrierPhase;
+	double Doppler;
+	double CN0;
+} SAT_OBSERVATION, *PSAT_OBSERVATION;
+
 #endif //__BASIC_TYPE_H__

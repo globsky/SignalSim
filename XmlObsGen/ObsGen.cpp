@@ -11,20 +11,11 @@
 #include "XmlInterpreter.h"
 #include "NavData.h"
 #include "Coordinate.h"
+#include "SatelliteParam.h"
+#include "Rinex.h"
 
 #define WAVELENGTH_GPSL1 0.19029367279836488047631742646405
 
-typedef struct
-{
-	double TravelTime;
-	double IonoDelay;
-	double RelativeSpeed;
-	double Elevation;
-	double Azimuth;
-} SATELLITE_INFO, *PSATELLITE_INFO;
-
-static int GetVisibleSatellite(KINEMATIC_INFO Position, GNSS_TIME time, OUTPUT_PARAM OutputParam, GnssSystem system, PGPS_EPHEMERIS Eph[], int Number, PGPS_EPHEMERIS EphVisible[]);
-static SATELLITE_INFO GetTravelTime(KINEMATIC_INFO PositionEcef, LLA_POSITION PositionLla, GNSS_TIME time, GnssSystem system, PGPS_EPHEMERIS Eph, PIONO_PARAM IonoParam);
 extern INTERPRETE_PARAM RootInterpretParam;
 
 void main(void)
@@ -34,6 +25,7 @@ void main(void)
 	UTC_TIME UtcTime;
 	CTrajectory Trajectory;
 	CNavData NavData;
+	CPowerControl PowerControl;
 	LLA_POSITION StartPos, CurPos;
 	LOCAL_SPEED StartVel;
 	KINEMATIC_INFO PosVel;
@@ -41,7 +33,12 @@ void main(void)
 	int GpsSatNumber;
 	PGPS_EPHEMERIS Eph[32], EphVisible[32];
 	OUTPUT_PARAM OutputParam;
-	SATELLITE_INFO SatelliteInfo;
+	SATELLITE_PARAM SatelliteParam;
+	SAT_OBSERVATION GpsObservation[32];
+	int GpsCN0[32];
+	RINEX_HEADER RinexHeader;
+	int ListCount;
+	PSIGNAL_POWER PowerList;
 
 	CXmlElementTree XmlTree;
 	CXmlElement *RootElement, *Element;
@@ -59,6 +56,8 @@ void main(void)
 			NavData.ReadNavFile(Element->GetText());
 		else if (strcmp(Element->GetTag(), "Output") == 0)
 			SetOutputParam(Element, OutputParam);
+		else if (strcmp(Element->GetTag(), "PowerControl") == 0)
+			SetPowerControl(Element, PowerControl);
 	}
 //	ProcessElement(RootElement, &RootInterpretParam);
 
@@ -68,6 +67,9 @@ void main(void)
 	SpeedLocalToEcef(StartPos, StartVel, PosVel);
 	time = UtcToGpsTime(UtcTime);
 	UtcTime = GpsTimeToUtc(time, FALSE);
+	PowerControl.ResetTime();
+	for (i = 0; i < 32; i ++)
+		GpsCN0[i] = (int)(PowerControl.InitCN0 * 100 + 0.5);
 
 	for (i = 1; i <= 32; i ++)
 		Eph[i-1] = NavData.FindEphemeris(CNavData::SystemGps, time, i);
@@ -81,9 +83,17 @@ void main(void)
 #if 1
 	if (OutputParam.Format == OutputFormatRinex)
 	{
-		fprintf(fp, "     3.03           OBSERVATION DATA    M (MIXED)           RINEX VERSION / TYPE\n");
-		fprintf(fp, "G    4 C1C L1C D1C S1C                                      SYS / # / OBS TYPES \n");
-		fprintf(fp, "                                                            END OF HEADER       \n");
+		RinexHeader.HeaderFlag = 0;
+		RinexHeader.MajorVersion = 3;
+		RinexHeader.MinorVersion= 3;
+		RinexHeader.HeaderFlag |= RINEX_HEADER_PGM;
+		strncpy(RinexHeader.Program, "OBSGEN", 20);
+		RinexHeader.SysObsTypeGps = 0xf;
+		RinexHeader.SysObsTypeGlonass = 0x0;
+		RinexHeader.SysObsTypeBds = 0x0;
+		RinexHeader.SysObsTypeGalileo = 0x0;
+		RinexHeader.Interval = 1.0;
+		OutputHeader(fp, &RinexHeader);
 	}
 	else if (OutputParam.Format == OutputFormatEcef)
 		fprintf(fp, "%%  GPST                      x-ecef(m)      y-ecef(m)      z-ecef(m)   Q  ns\n");
@@ -103,16 +113,19 @@ void main(void)
 	}
 	if (OutputParam.Format == OutputFormatRinex)
 	{
-		fprintf(fp, "> %4d %02d %02d %02d %02d %10.7f  0 %2d      -0.000000000000\n",
-			UtcTime.Year, UtcTime.Month, UtcTime.Day, UtcTime.Hour, UtcTime.Minute, UtcTime.Second, GpsSatNumber);
+		ListCount = PowerControl.GetPowerControlList(0, PowerList);
 		for (i = 0; i < GpsSatNumber; i ++)
 		{
-			SatelliteInfo = GetTravelTime(PosVel, CurPos, time, GpsSystem, EphVisible[i], NavData.GetGpsIono());
-			fprintf(fp, "G%02d %13.3f 8 %13.3f 8 %13.3f          48.000\n", EphVisible[i]->svid,
-				SatelliteInfo.TravelTime * LIGHT_SPEED + SatelliteInfo.IonoDelay,
-				SatelliteInfo.TravelTime * 1575.42e6 - SatelliteInfo.IonoDelay / WAVELENGTH_GPSL1,
-				(-SatelliteInfo.RelativeSpeed + LIGHT_SPEED * EphVisible[i]->af1) / WAVELENGTH_GPSL1);
+			SatelliteParam = GetSatelliteParam(PosVel, CurPos, time, GpsSystem, EphVisible[i], NavData.GetGpsIono());
+			GpsCN0[SatelliteParam.svid-1] = GetSatelliteCN0(GpsCN0[SatelliteParam.svid-1], ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, SatelliteParam.svid, SatelliteParam.Elevation);
+			GpsObservation[i].system = 0;
+			GpsObservation[i].svid = SatelliteParam.svid;
+			GpsObservation[i].PseudoRange = SatelliteParam.TravelTime * LIGHT_SPEED + SatelliteParam.IonoDelay;
+			GpsObservation[i].CarrierPhase = SatelliteParam.TravelTime * 1575.42e6 - SatelliteParam.IonoDelay / WAVELENGTH_GPSL1;
+			GpsObservation[i].Doppler = -SatelliteParam.RelativeSpeed / WAVELENGTH_GPSL1;
+			GpsObservation[i].CN0 = GpsCN0[SatelliteParam.svid-1] / 100.;
 		}
+		OutputObservation(fp, UtcTime, GpsSatNumber, GpsObservation);
 	}
 	else if (OutputParam.Format == OutputFormatEcef)
 	{
@@ -135,16 +148,19 @@ void main(void)
 		CurPos = EcefToLla(PosVel);
 		if (OutputParam.Format == OutputFormatRinex)
 		{
-			fprintf(fp, "> %4d %02d %02d %02d %02d %10.7f  0 %2d      -0.000000000000\n",
-				UtcTime.Year, UtcTime.Month, UtcTime.Day, UtcTime.Hour, UtcTime.Minute, UtcTime.Second, GpsSatNumber);
+			ListCount = PowerControl.GetPowerControlList(OutputParam.Interval, PowerList);
 			for (i = 0; i < GpsSatNumber; i ++)
 			{
-				SatelliteInfo = GetTravelTime(PosVel, CurPos, time, GpsSystem, EphVisible[i], NavData.GetGpsIono());
-				fprintf(fp, "G%02d %13.3f 8 %13.3f 8 %13.3f          48.000\n", EphVisible[i]->svid,
-					SatelliteInfo.TravelTime * LIGHT_SPEED + SatelliteInfo.IonoDelay,
-					SatelliteInfo.TravelTime * 1575.42e6 - SatelliteInfo.IonoDelay / WAVELENGTH_GPSL1,
-					(-SatelliteInfo.RelativeSpeed + LIGHT_SPEED * EphVisible[i]->af1) / WAVELENGTH_GPSL1);
+				SatelliteParam = GetSatelliteParam(PosVel, CurPos, time, GpsSystem, EphVisible[i], NavData.GetGpsIono());
+				GpsCN0[SatelliteParam.svid-1] = GetSatelliteCN0(GpsCN0[SatelliteParam.svid-1], ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, SatelliteParam.svid, SatelliteParam.Elevation);
+				GpsObservation[i].system = 0;
+				GpsObservation[i].svid = SatelliteParam.svid;
+				GpsObservation[i].PseudoRange = SatelliteParam.TravelTime * LIGHT_SPEED + SatelliteParam.IonoDelay;
+				GpsObservation[i].CarrierPhase = SatelliteParam.TravelTime * 1575.42e6 - SatelliteParam.IonoDelay / WAVELENGTH_GPSL1;
+				GpsObservation[i].Doppler = -SatelliteParam.RelativeSpeed / WAVELENGTH_GPSL1;
+				GpsObservation[i].CN0 = GpsCN0[SatelliteParam.svid-1] / 100.;
 			}
+			OutputObservation(fp, UtcTime, GpsSatNumber, GpsObservation);
 		}
 		else if (OutputParam.Format == OutputFormatEcef)
 		{
@@ -167,61 +183,4 @@ void main(void)
 		fprintf(fp, "\t\t\t</coordinates>\n\t\t</LineString>\n\t</Placemark>\n</Document> </kml>\n");
 	}
 	fclose(fp);
-}
-
-int GetVisibleSatellite(KINEMATIC_INFO Position, GNSS_TIME time, OUTPUT_PARAM OutputParam, GnssSystem system, PGPS_EPHEMERIS Eph[], int Number, PGPS_EPHEMERIS EphVisible[])
-{
-	int i;
-	int SatNumber = 0;
-	KINEMATIC_INFO SatPosition;
-	double Elevation, Azimuth;
-
-	for (i = 0; i < Number; i ++)
-	{
-		if (Eph[i] == NULL || Eph[i]->flag == 0 || Eph[i]->health != 0)
-			continue;
-		if (OutputParam.GpsMaskOut & (1 << (i-1)))
-			continue;
-		if (!GpsSatPosSpeedEph(system, (time.MilliSeconds + time.SubMilliSeconds) / 1000., Eph[i], &SatPosition))
-			continue;
-		SatElAz(&Position, &SatPosition, &Elevation, &Azimuth);
-		if (Elevation < OutputParam.ElevationMask)
-			continue;
-		EphVisible[SatNumber ++] = Eph[i];
-	}
-
-	return SatNumber;
-}
-
-SATELLITE_INFO GetTravelTime(KINEMATIC_INFO PositionEcef, LLA_POSITION PositionLla, GNSS_TIME time, GnssSystem system, PGPS_EPHEMERIS Eph, PIONO_PARAM IonoParam)
-{
-	KINEMATIC_INFO SatPosition;
-	double Distance, TravelTime, SatelliteTime = (time.MilliSeconds + time.SubMilliSeconds) / 1000.;
-	double Elevation, Azimuth;
-	double LosVector[3];
-	SATELLITE_INFO SatelliteInfo;
-
-	// first estimate the travel time, ignore tgd, ionosphere and troposphere delay
-	GpsSatPosSpeedEph(system, SatelliteTime, Eph, &SatPosition);
-	TravelTime = GeometryDistance(&PositionEcef, &SatPosition, NULL) / LIGHT_SPEED;
-	SatPosition.x -= TravelTime * SatPosition.vx; SatPosition.y -= TravelTime * SatPosition.vy; SatPosition.z -= TravelTime * SatPosition.vz;
-	TravelTime = GeometryDistance(&PositionEcef, &SatPosition, NULL) / LIGHT_SPEED;
-	SatelliteTime -= TravelTime;
-
-	// calculate accurate transmit time
-	// tt = rt - (d + diono + dtrop)/c + tgd + dts
-	GpsSatPosSpeedEph(system, SatelliteTime, Eph, &SatPosition);
-	Distance = GeometryDistance(&PositionEcef, &SatPosition, LosVector);
-	SatElAz(&PositionLla, LosVector, &Elevation, &Azimuth);
-//	Distance += GpsIonoDelay(IonoParam, SatelliteTime, PositionLla.lat, PositionLla.lon, Elevation, Azimuth);
-	SatelliteInfo.IonoDelay = GpsIonoDelay(IonoParam, SatelliteTime, PositionLla.lat, PositionLla.lon, Elevation, Azimuth);
-	Distance += TropoDelay(PositionLla.lat, PositionLla.alt, Elevation);
-	TravelTime = Distance / LIGHT_SPEED + Eph->tgd - GpsClockCorrection(Eph, SatelliteTime);
-	TravelTime -= WGS_F_GTR * Eph->ecc * Eph->sqrtA * sin(Eph->Ek);		// relativity correction
-	SatelliteInfo.TravelTime = TravelTime;
-	SatelliteInfo.Elevation = Elevation;
-	SatelliteInfo.Azimuth = Azimuth;
-	SatelliteInfo.RelativeSpeed = SatRelativeSpeed(&PositionEcef, &SatPosition);
-
-	return SatelliteInfo;
 }

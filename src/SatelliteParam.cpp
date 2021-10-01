@@ -66,9 +66,38 @@ SATELLITE_PARAM GetSatelliteParam(KINEMATIC_INFO PositionEcef, LLA_POSITION Posi
 	SatelliteParam.Elevation = Elevation;
 	SatelliteParam.Azimuth = Azimuth;
 	SatelliteParam.RelativeSpeed = SatRelativeSpeed(&PositionEcef, &SatPosition) - LIGHT_SPEED * Eph->af1;
-	SatelliteParam.CN0 = 4700;	// add CN0 calculation later
 
 	return SatelliteParam;
+}
+
+int GetSatelliteCN0(int PrevCN0, int PowerListCount, SIGNAL_POWER PowerList[], double DefaultCN0, enum ElevationAdjust Adjust, int svid, double Elevation)
+{
+	int i;
+	double CN0;
+
+	// adjust signal power
+	for (i = 0; i < PowerListCount; i ++)
+	{
+		if (PowerList[i].svid == svid || PowerList[i].svid == 0)
+		{
+			if (PowerList[i].CN0 < 0)
+			{
+				CN0 = DefaultCN0;
+				switch (Adjust)
+				{
+				case ElevationAdjustNone:
+					break;
+				case ElevationAdjustSinSqrtFade:
+					CN0 -= (1 - sqrt(Elevation)) * 25;
+				}
+			}
+			else
+				CN0 = PowerList[i].CN0;
+			PrevCN0 = (int)(CN0 * 100 + 0.5);
+		}
+	}
+
+	return PrevCN0;
 }
 
 GNSS_TIME GetTransmitTime(GNSS_TIME ReceiverTime, double TravelTime)

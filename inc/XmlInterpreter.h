@@ -9,8 +9,10 @@
 #ifndef __XML_INTERPRETER_H__
 #define __XML_INTERPRETER_H__
 
+#include <stdlib.h>
 #include "XmlElement.h"
 #include "Trajectory.h"
+#include "PowerControl.h"
 #include "Tracking.h"
 
 typedef int (*TagProcessFunction)(void *);
@@ -70,6 +72,7 @@ extern PATTRIBUTE_TYPE SpeedUnitAttributes[];
 extern PATTRIBUTE_TYPE CourseUnitAttributes[];
 extern PATTRIBUTE_TYPE EphAttributes[];
 extern PATTRIBUTE_TYPE OutputAttributes[];
+extern PATTRIBUTE_TYPE SatelliteAttributes[];
 extern PATTRIBUTE_TYPE BasebandConfigAttributes[];
 extern PATTRIBUTE_TYPE ElevationMaskAttributes[];
 extern PATTRIBUTE_TYPE MaskOutAttributes[];
@@ -82,6 +85,9 @@ extern char *TrajectoryElements[];
 extern char *TrajectoryTypeElements[];
 extern char *TrajectoryArgumentElements[];
 extern char *OutputParamElements[];
+extern char *PowerControlElements[];
+extern char *PowerParamElements[];
+extern char *SignalPowerElements[];
 extern char *ConfigParamElements[];
 extern char *BasebandConfigElements[];
 extern char *SatInitElements[];
@@ -89,6 +95,7 @@ extern char *SatInitElements[];
 BOOL AssignStartTime(CXmlElement *Element, UTC_TIME &UtcTime);
 BOOL SetTrajectory(CXmlElement *Element, LLA_POSITION &StartPos, LOCAL_SPEED &StartVel, CTrajectory &Trajectory);
 BOOL SetOutputParam(CXmlElement *Element, OUTPUT_PARAM &OutputParam);
+BOOL SetPowerControl(CXmlElement *Element, CPowerControl &PowerControl);
 BOOL SetBasebandConfig(CXmlElement *Element, BASEBAND_CONFIG &BasebandConfig);
 BOOL SetSatInitParam(CXmlElement *Element, CHANNEL_INIT_PARAM SatInitParam[]);
 

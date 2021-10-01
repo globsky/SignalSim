@@ -22,6 +22,8 @@ static BOOL AssignTrajectoryList(CXmlElement *Element, CTrajectory &Trajectory);
 static TrajectoryType GetTrajectorySegment(CXmlElement *Element, TrajectoryDataType &DataType1, double &Data1, TrajectoryDataType &DataType2, double &Data2);
 static BOOL GetTrajectorySegmentData(CXmlElement *Element, TrajectoryDataType &DataType, double &Data);
 static BOOL ProcessConfigParam(CXmlElement *Element, OUTPUT_PARAM &OutputParam);
+static BOOL ProcessPowerParam(CXmlElement *Element, CPowerControl &CPowerControl);
+static BOOL ProcessSignalPower(CXmlElement *Element, CPowerControl &CPowerControl);
 
 BOOL AssignStartTime(CXmlElement *Element, UTC_TIME &UtcTime)
 {
@@ -310,6 +312,149 @@ BOOL ProcessConfigParam(CXmlElement *Element, OUTPUT_PARAM &OutputParam)
 					OutputParam.GalileoMaskOut |= (1LL << (svid-1));
 				break;
 			}
+			break;
+		}
+	}
+
+	return TRUE;
+}
+
+BOOL SetPowerControl(CXmlElement *Element, CPowerControl &PowerControl)
+{
+	CXmlElement *SubElement = 0;
+	CSimpleDict *Attributes = Element->GetAttributes();
+
+	while ((SubElement = Element->EnumSubElement(SubElement)) != NULL)
+	{
+		switch (GetElementIndex(SubElement->GetTag(), PowerControlElements))
+		{
+		case 0: ProcessPowerParam(SubElement, PowerControl); break;
+		case 1: ProcessSignalPower(SubElement, PowerControl); break;
+		}
+	}
+
+	PowerControl.Sort();
+	return TRUE;
+}
+
+BOOL ProcessPowerParam(CXmlElement *Element, CPowerControl &CPowerControl)
+{
+	int index;
+	CXmlElement *SubElement = 0;
+	CSimpleDict *Attributes;
+	int unit = 0;
+
+	while ((SubElement = Element->EnumSubElement(SubElement)) != NULL)
+	{
+		switch (GetElementIndex(SubElement->GetTag(), PowerParamElements))
+		{
+		case 0:
+			CPowerControl.NoiseFloor = atof(SubElement->GetText());
+			break;
+		case 1:
+			Attributes = SubElement->GetAttributes();
+			index = Attributes->Find("unit");
+			if (index >= 0)
+			{
+				if (strcmp(Attributes->Dictionary[index].value, "dBm") == 0)
+					unit = 1;
+				else if (strcmp(Attributes->Dictionary[index].value, "dBW") == 0)
+					unit = 2;
+			}
+			switch (unit)
+			{
+			case 0:
+				CPowerControl.InitCN0 = atof(SubElement->GetText());
+				break;
+			case 1:
+				CPowerControl.InitCN0 = atof(SubElement->GetText()) - CPowerControl.NoiseFloor;
+				break;
+			case 2:
+				CPowerControl.InitCN0 = atof(SubElement->GetText()) - CPowerControl.NoiseFloor + 30;
+				break;
+			}
+			break;
+		case 2:
+			if (strcmp(SubElement->GetText(), "false") == 0)
+				CPowerControl.Adjust = ElevationAdjustNone;
+			else if (strcmp(SubElement->GetText(), "sin2") == 0)
+				CPowerControl.Adjust = ElevationAdjustSinSqrtFade;
+			break;
+		}
+	}
+
+	return TRUE;
+}
+
+BOOL ProcessSignalPower(CXmlElement *Element, CPowerControl &CPowerControl)
+{
+	int i, index;
+	CXmlElement *SubElement = 0;
+	CSimpleDict *Attributes = Element->GetAttributes();
+	int unit;
+	double time;
+	SIGNAL_POWER SignalPower;
+
+	SignalPower.system = -1;
+	SignalPower.svid = 0;
+	SignalPower.time = 0;
+	SignalPower.CN0 = CPowerControl.InitCN0;
+	for (i = 0; i < Attributes->DictItemNumber; i ++)
+	{
+		switch (FindAttribute(Attributes->Dictionary[i].key, SatelliteAttributes))
+		{
+		case 0: SignalPower.system = GetAttributeIndex(Attributes->Dictionary[i].value, ChannelInitAttributes[0]); break;
+		case 1: SignalPower.svid = atoi(Attributes->Dictionary[i].value); break;
+		}
+	}
+
+	while ((SubElement = Element->EnumSubElement(SubElement)) != NULL)
+	{
+		switch (GetElementIndex(SubElement->GetTag(), SignalPowerElements))
+		{
+		case 0:
+			unit = 0;
+			Attributes = SubElement->GetAttributes();
+			index = Attributes->Find("unit");
+			if (index >= 0)
+			{
+				if (strcmp(Attributes->Dictionary[index].value, "ms") == 0)
+					unit = 1;
+			}
+			time = atof(SubElement->GetText());
+			if (!unit)
+				time *= 1000;
+			break;
+		case 1:
+			unit = 0;
+			Attributes = SubElement->GetAttributes();
+			index = Attributes->Find("unit");
+			if (index >= 0)
+			{
+				if (strcmp(Attributes->Dictionary[index].value, "dBm") == 0)
+					unit = 1;
+				else if (strcmp(Attributes->Dictionary[index].value, "dBW") == 0)
+					unit = 2;
+			}
+			if (strcmp(SubElement->GetText(), "default") == 0)
+				SignalPower.CN0 = -1.0;
+			else
+			{
+				switch (unit)
+				{
+				case 0:
+					SignalPower.CN0 = atof(SubElement->GetText());
+					break;
+				case 1:
+					SignalPower.CN0 = atof(SubElement->GetText()) - CPowerControl.NoiseFloor;
+					break;
+				case 2:
+					SignalPower.CN0 = atof(SubElement->GetText()) - CPowerControl.NoiseFloor + 30;
+					break;
+				}
+			}
+			SignalPower.time = (int)time;
+			CPowerControl.AddControlElement(&SignalPower);
 			break;
 		}
 	}

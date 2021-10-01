@@ -14,12 +14,19 @@
 #include "GnssTime.h"
 #include "Rinex.h"
 
+#define SET_FIELD_EMPTY(str) memset(str, 32, 60)
+
 static void ConvertD2E(char *str);
 static NavDataType ReadEphmeris(FILE *fp_nav, void *NavData);
 static BOOL DecodeEphGps(NavDataType system, int svid, double *data, UTC_TIME time, PGPS_EPHEMERIS Eph);
 static BOOL DecodeEphGlonass(int svid, double *data, UTC_TIME time, PGLONASS_EPHEMERIS Eph);
 static unsigned char GetUraIndex(double data);
 static unsigned char GetGalileoUra(double data);
+static void SetField(char *dest, char *src, int length);
+static void PrintTextField(FILE *fp, int enable, char *text, char *description);
+static void PrintObsType(FILE *fp, char type, unsigned int mask);
+static void SetObsField(char *s, int band, unsigned int mask, char attribute);
+void PrintObservation(FILE *fp, SAT_OBSERVATION obs);
 
 NavDataType LoadNavFileHeader(FILE *fp_nav, void *NavData)
 {
@@ -165,6 +172,61 @@ NavDataType LoadNavFileEphemeris(FILE *fp_nav, void *NavData)
 		DataType = NavDataUnknown;
 
 	return DataType;
+}
+
+void OutputHeader(FILE *fp, PRINEX_HEADER Header)
+{
+	char str[100];
+
+	// RINEX VERSION / TYPE
+	fprintf(fp, "    %2d.%02d           OBSERVATION DATA    M (MIXED)           RINEX VERSION / TYPE\n", Header->MajorVersion, Header->MinorVersion);
+	// PGM / RUN BY / DATE
+	SET_FIELD_EMPTY(str);
+	if (Header->HeaderFlag & RINEX_HEADER_PGM)
+		SetField(str, Header->Program, 20);
+	if (Header->HeaderFlag & RINEX_HEADER_AGENCY)
+		SetField(str + 20, Header->Agency, 20);
+	if (Header->HeaderFlag & RINEX_HEADER_DATE)
+		sprintf(str + 40, "%4d%02d%02d %02d%02d%02d UTC ", Header->DateTime.Year,Header->DateTime.Month, Header->DateTime.Day, Header->DateTime.Hour, Header->DateTime.Minute, Header->DateTime.Second);
+	strcpy(str + 60, "PGM / RUN BY / DATE \n");
+	fputs(str, fp);
+	// COMMENT
+	PrintTextField(fp, Header->HeaderFlag & RINEX_HEADER_COMMENT, Header->Comment, "COMMENT             \n");
+	// MARKER NAME
+	PrintTextField(fp, Header->HeaderFlag & RINEX_HEADER_MK_NAME, Header->MakerName, "MARKER NAME         \n");
+	// MARKER NUMBER
+	PrintTextField(fp, Header->HeaderFlag & RINEX_HEADER_MK_NUMBER, Header->MakerNumber, "MARKER NUMBER       \n");
+	// MARKER TYPE
+	PrintTextField(fp, Header->HeaderFlag & RINEX_HEADER_MK_TYPE, Header->MakerType, "MARKER TYPE         \n");
+	// OBSERVER / AGENCY
+	PrintTextField(fp, Header->HeaderFlag & RINEX_HEADER_OBSERVER, Header->Observer, "OBSERVER / AGENCY   \n");
+	// REC # / TYPE / VERS
+	PrintTextField(fp, Header->HeaderFlag & RINEX_HEADER_OBSERVER, Header->ReceiverType, "REC # / TYPE / VERS \n");
+	// ANT # / TYPE
+	PrintTextField(fp, Header->HeaderFlag & RINEX_HEADER_OBSERVER, Header->AntennaType, "ANT # / TYPE        \n");
+	// APPROX POSITION XYZ
+	if (Header->HeaderFlag & RINEX_HEADER_APPROX_POS)
+		fprintf(fp, "%14.4f%14.4f%14.4f                  APPROX POSITION XYZ \n", Header->ApproxPos[0], Header->ApproxPos[1], Header->ApproxPos[2]);
+	// ANTENNA: DELTA H/E/N
+	if (Header->HeaderFlag & RINEX_HEADER_ANT_DELTA)
+		fprintf(fp, "%14.4f%14.4f%14.4f                  ANTENNA: DELTA H/E/N\n", Header->AntennaDelta[0], Header->AntennaDelta[1], Header->AntennaDelta[2]);
+	// SYS / # / OBS TYPES
+	PrintObsType(fp, 'G', Header->SysObsTypeGps);
+	PrintObsType(fp, 'R', Header->SysObsTypeGlonass);
+	PrintObsType(fp, 'C', Header->SysObsTypeBds);
+	PrintObsType(fp, 'E', Header->SysObsTypeGalileo);
+	
+	fprintf(fp, "     %5.3f                                                  INTERVAL            \n", Header->Interval);
+	fprintf(fp, "                                                            END OF HEADER       \n");
+}
+
+void OutputObservation(FILE *fp, UTC_TIME time, int TotalObsNumber, SAT_OBSERVATION Observations[])
+{
+	int i;
+
+	fprintf(fp, "> %4d %02d %02d %02d %02d %10.7f  0 %2d                     \n", time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second, TotalObsNumber);
+	for (i = 0; i < TotalObsNumber; i ++)
+		PrintObservation(fp, Observations[i]);
 }
 
 // convert all D in string to E
@@ -344,4 +406,93 @@ unsigned char GetGalileoUra(double data)
 		return (unsigned char)((value - 100) / 4 + 75);
 	else
 		return (unsigned char)((value - 200) / 16 + 100);
+}
+
+void SetField(char *dest, char *src, int length)
+{
+	int fill_length = 0;
+
+	while (fill_length < length && src[fill_length])
+	{
+		dest[fill_length] = src[fill_length];
+		fill_length ++;
+	}
+	while (fill_length < length)
+		dest[fill_length++] = ' ';
+}
+
+void PrintTextField(FILE *fp, int enable, char *text, char *description)
+{
+	char str[100];
+
+	SET_FIELD_EMPTY(str);
+	if (enable)
+	{
+		SetField(str, text, 60);
+		strcpy(str + 60, description);
+		fputs(str, fp);
+	}
+}
+
+void PrintObsType(FILE *fp, char type, unsigned int mask)
+{
+	char str[100];
+	int i, band, obs_number = 0;
+	char *s = str + 6;
+	unsigned int band_mask;
+	char attribute = (type == 'C') ? 'P' : 'C';	// BDS set attribute to 'P'
+
+	SET_FIELD_EMPTY(str);
+	str[0] = type;
+	for (i = 0; i < 12; i ++)
+		if (mask & (1 << i)) obs_number ++;
+	sprintf(str + 1, "%5d", obs_number);
+	for (band = 1; band <= 2; band ++)
+	{
+		band_mask = (mask >> ((band-1) * 4)) & 0xf;
+		if (band_mask)
+		{
+			SetObsField(s, band, band_mask, attribute);
+			s += 16;
+		}
+	}
+	if (mask)
+	{
+		strcpy(str + 60, "SYS / # / OBS TYPES \n");
+		fputs(str, fp);
+	}
+}
+
+void SetObsField(char *s, int band, unsigned int mask, char attribute)
+{
+	if (band >= 3)
+		band ++;
+	if (mask & 1)
+	{
+		s[0] = ' '; s[1] = 'C'; s[2] = '0' + band; s[3] = attribute;
+	}
+	s += 4;
+	if (mask & 2)
+	{
+		s[0] = ' '; s[1] = 'L'; s[2] = '0' + band; s[3] = attribute;
+	}
+	s += 4;
+	if (mask & 4)
+	{
+		s[0] = ' '; s[1] = 'D'; s[2] = '0' + band; s[3] = attribute;
+	}
+	s += 4;
+	if (mask & 8)
+	{
+		s[0] = ' '; s[1] = 'S'; s[2] = '0' + band; s[3] = attribute;
+	}
+}
+
+void PrintObservation(FILE *fp, SAT_OBSERVATION obs)
+{
+	char str[128];
+	char SystemId[4] = { 'G', 'C', 'E' };
+
+	sprintf(str, "%c%02d  %12.3f   %13.3f  %14.3f          %6.3f\n", SystemId[obs.system], obs.svid, obs.PseudoRange, obs.CarrierPhase, obs.Doppler, obs.CN0);
+	fputs(str, fp);
 }

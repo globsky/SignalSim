@@ -113,4 +113,37 @@
             <ElevationMask>3</ElevationMask>
         </ConfigParam>
     </Output>
+    <PowerControl>
+        <PowerParam>
+            <NoiseFloor>-172</NoiseFloor>
+            <InitPower unit="dBHz">47</InitPower>
+            <ElevationAdjust>false</ElevationAdjust>
+        </PowerParam>
+        <SignalPower system="GPS">
+            <Time>0</Time>
+            <Power unit="dBm">-125</Power>
+        </SignalPower>
+        <SignalPower system="GPS" svid="4">
+            <Time unit="ms">10000</Time>
+            <Power unit="dBHz">45</Power>
+            <Time>20</Time>
+            <Power unit="dBHz">40</Power>
+            <Time>30</Time>
+            <Power unit="dBHz">35</Power>
+            <Time>40</Time>
+            <Power unit="dBHz">30</Power>
+            <Time>50</Time>
+            <Power unit="dBHz">28</Power>
+            <Time>60</Time>
+            <Power unit="dBHz">26</Power>
+            <Time>70</Time>
+            <Power unit="dBHz">24</Power>
+            <Time>80</Time>
+            <Power unit="dBHz">22</Power>
+            <Time>90</Time>
+            <Power unit="dBHz">20</Power>
+            <Time>100</Time>
+            <Power unit="dBHz">default</Power>
+        </SignalPower>
+    </PowerControl>
 </SignalSrc>
