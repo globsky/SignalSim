@@ -33,9 +33,9 @@ void main(void)
 	int GpsSatNumber;
 	PGPS_EPHEMERIS Eph[32], EphVisible[32];
 	OUTPUT_PARAM OutputParam;
-	SATELLITE_PARAM SatelliteParam;
+	SATELLITE_PARAM SatelliteParam[32];
 	SAT_OBSERVATION GpsObservation[32];
-	int GpsCN0[32];
+	int GpsCN0;
 	RINEX_HEADER RinexHeader;
 	int ListCount;
 	PSIGNAL_POWER PowerList;
@@ -69,7 +69,7 @@ void main(void)
 	UtcTime = GpsTimeToUtc(time, FALSE);
 	PowerControl.ResetTime();
 	for (i = 0; i < 32; i ++)
-		GpsCN0[i] = (int)(PowerControl.InitCN0 * 100 + 0.5);
+		SatelliteParam[i].CN0 = (int)(PowerControl.InitCN0 * 100 + 0.5);
 
 	for (i = 1; i <= 32; i ++)
 		Eph[i-1] = NavData.FindEphemeris(CNavData::SystemGps, time, i);
@@ -116,14 +116,15 @@ void main(void)
 		ListCount = PowerControl.GetPowerControlList(0, PowerList);
 		for (i = 0; i < GpsSatNumber; i ++)
 		{
-			SatelliteParam = GetSatelliteParam(PosVel, CurPos, time, GpsSystem, EphVisible[i], NavData.GetGpsIono());
-			GpsCN0[SatelliteParam.svid-1] = GetSatelliteCN0(GpsCN0[SatelliteParam.svid-1], ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, SatelliteParam.svid, SatelliteParam.Elevation);
+			GpsCN0 = (int)(PowerControl.InitCN0 * 100 + 0.5);
+			SatelliteParam[i] = GetSatelliteParam(PosVel, CurPos, time, GpsSystem, EphVisible[i], NavData.GetGpsIono());
+			SatelliteParam[i].CN0 = GetSatelliteCN0(GpsCN0, ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, SatelliteParam[i].svid, SatelliteParam[i].Elevation);
 			GpsObservation[i].system = 0;
-			GpsObservation[i].svid = SatelliteParam.svid;
-			GpsObservation[i].PseudoRange = SatelliteParam.TravelTime * LIGHT_SPEED + SatelliteParam.IonoDelay;
-			GpsObservation[i].CarrierPhase = SatelliteParam.TravelTime * 1575.42e6 - SatelliteParam.IonoDelay / WAVELENGTH_GPSL1;
-			GpsObservation[i].Doppler = -SatelliteParam.RelativeSpeed / WAVELENGTH_GPSL1;
-			GpsObservation[i].CN0 = GpsCN0[SatelliteParam.svid-1] / 100.;
+			GpsObservation[i].svid = SatelliteParam[i].svid;
+			GpsObservation[i].PseudoRange = SatelliteParam[i].TravelTime * LIGHT_SPEED + SatelliteParam[i].IonoDelay;
+			GpsObservation[i].CarrierPhase = SatelliteParam[i].TravelTime * 1575.42e6 - SatelliteParam[i].IonoDelay / WAVELENGTH_GPSL1;
+			GpsObservation[i].Doppler = -SatelliteParam[i].RelativeSpeed / WAVELENGTH_GPSL1;
+			GpsObservation[i].CN0 = SatelliteParam[i].CN0 / 100.;
 		}
 		OutputObservation(fp, UtcTime, GpsSatNumber, GpsObservation);
 	}
@@ -151,14 +152,15 @@ void main(void)
 			ListCount = PowerControl.GetPowerControlList(OutputParam.Interval, PowerList);
 			for (i = 0; i < GpsSatNumber; i ++)
 			{
-				SatelliteParam = GetSatelliteParam(PosVel, CurPos, time, GpsSystem, EphVisible[i], NavData.GetGpsIono());
-				GpsCN0[SatelliteParam.svid-1] = GetSatelliteCN0(GpsCN0[SatelliteParam.svid-1], ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, SatelliteParam.svid, SatelliteParam.Elevation);
+				GpsCN0 = SatelliteParam[i].CN0;
+				SatelliteParam[i] = GetSatelliteParam(PosVel, CurPos, time, GpsSystem, EphVisible[i], NavData.GetGpsIono());
+				SatelliteParam[i].CN0 = GetSatelliteCN0(GpsCN0, ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, SatelliteParam[i].svid, SatelliteParam[i].Elevation);
 				GpsObservation[i].system = 0;
-				GpsObservation[i].svid = SatelliteParam.svid;
-				GpsObservation[i].PseudoRange = SatelliteParam.TravelTime * LIGHT_SPEED + SatelliteParam.IonoDelay;
-				GpsObservation[i].CarrierPhase = SatelliteParam.TravelTime * 1575.42e6 - SatelliteParam.IonoDelay / WAVELENGTH_GPSL1;
-				GpsObservation[i].Doppler = -SatelliteParam.RelativeSpeed / WAVELENGTH_GPSL1;
-				GpsObservation[i].CN0 = GpsCN0[SatelliteParam.svid-1] / 100.;
+				GpsObservation[i].svid = SatelliteParam[i].svid;
+				GpsObservation[i].PseudoRange = SatelliteParam[i].TravelTime * LIGHT_SPEED + SatelliteParam[i].IonoDelay;
+				GpsObservation[i].CarrierPhase = SatelliteParam[i].TravelTime * 1575.42e6 - SatelliteParam[i].IonoDelay / WAVELENGTH_GPSL1;
+				GpsObservation[i].Doppler = -SatelliteParam[i].RelativeSpeed / WAVELENGTH_GPSL1;
+				GpsObservation[i].CN0 = SatelliteParam[i].CN0 / 100.;
 			}
 			OutputObservation(fp, UtcTime, GpsSatNumber, GpsObservation);
 		}

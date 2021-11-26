@@ -31,3 +31,5 @@ Change list as below:
 9/30/2021
 	Add satellite signal power control support in XML
 	Add RINEX output functions
+11/25/2021
+	Restore CN0 field in SATELLITE_PARAM structure as stored CN0
