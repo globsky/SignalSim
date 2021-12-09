@@ -16,7 +16,11 @@
 
 #define WAVELENGTH_GPSL1 0.19029367279836488047631742646405
 
-extern INTERPRETE_PARAM RootInterpretParam;
+#define TOTAL_GPS_SAT 32
+#define TOTAL_BDS_SAT 63
+#define TOTAL_GAL_SAT 50
+
+void CalcObservation(PSAT_OBSERVATION Obs, int system, PSATELLITE_PARAM SatParam);
 
 void main(void)
 {
@@ -30,12 +34,15 @@ void main(void)
 	LOCAL_SPEED StartVel;
 	KINEMATIC_INFO PosVel;
 	FILE *fp;
-	int GpsSatNumber;
-	PGPS_EPHEMERIS Eph[32], EphVisible[32];
+	int GpsSatNumber, BdsSatNumber, GalSatNumber;
+	PGPS_EPHEMERIS GpsEph[TOTAL_GPS_SAT], GpsEphVisible[TOTAL_GPS_SAT];
+	PGPS_EPHEMERIS BdsEph[TOTAL_BDS_SAT], BdsEphVisible[TOTAL_BDS_SAT];
+	PGPS_EPHEMERIS GalEph[TOTAL_GAL_SAT], GalEphVisible[TOTAL_GAL_SAT];
 	OUTPUT_PARAM OutputParam;
-	SATELLITE_PARAM SatelliteParam[32];
-	SAT_OBSERVATION GpsObservation[32];
-	int GpsCN0;
+	SATELLITE_PARAM GpsSatelliteParam[TOTAL_GPS_SAT], BdsSatelliteParam[TOTAL_BDS_SAT], GalSatelliteParam[TOTAL_GAL_SAT];
+	int ObservationNumber;
+	SAT_OBSERVATION Observations[TOTAL_GPS_SAT+TOTAL_BDS_SAT+TOTAL_GAL_SAT], *Obs;
+	int PrevCN0;
 	RINEX_HEADER RinexHeader;
 	int ListCount;
 	PSIGNAL_POWER PowerList;
@@ -59,7 +66,6 @@ void main(void)
 		else if (strcmp(Element->GetTag(), "PowerControl") == 0)
 			SetPowerControl(Element, PowerControl);
 	}
-//	ProcessElement(RootElement, &RootInterpretParam);
 
 	Trajectory.ResetTrajectoryTime();
 	PosVel = LlaToEcef(StartPos);
@@ -68,18 +74,28 @@ void main(void)
 	time = UtcToGpsTime(UtcTime);
 	UtcTime = GpsTimeToUtc(time, FALSE);
 	PowerControl.ResetTime();
-	for (i = 0; i < 32; i ++)
-		SatelliteParam[i].CN0 = (int)(PowerControl.InitCN0 * 100 + 0.5);
+	for (i = 0; i < TOTAL_GPS_SAT; i ++)
+		GpsSatelliteParam[i].CN0 = (int)(PowerControl.InitCN0 * 100 + 0.5);
+	for (i = 0; i < TOTAL_BDS_SAT; i ++)
+		BdsSatelliteParam[i].CN0 = (int)(PowerControl.InitCN0 * 100 + 0.5);
+	for (i = 0; i < TOTAL_GAL_SAT; i ++)
+		GalSatelliteParam[i].CN0 = (int)(PowerControl.InitCN0 * 100 + 0.5);
 
-	for (i = 1; i <= 32; i ++)
-		Eph[i-1] = NavData.FindEphemeris(CNavData::SystemGps, time, i);
+	for (i = 1; i <= TOTAL_GPS_SAT; i ++)
+		GpsEph[i-1] = NavData.FindEphemeris(GpsSystem, time, i);
+	for (i = 1; i <= TOTAL_BDS_SAT; i ++)
+		BdsEph[i-1] = NavData.FindEphemeris(BdsSystem, time, i);
+	for (i = 1; i <= TOTAL_GAL_SAT; i ++)
+		GalEph[i-1] = NavData.FindEphemeris(GalileoSystem, time, i);
 
 
 	fp = fopen(OutputParam.filename, "w");
 	if (fp == NULL)
 		return;
 
-	GpsSatNumber = GetVisibleSatellite(PosVel, time, OutputParam, GpsSystem, Eph, 32, EphVisible);
+	GpsSatNumber = GetVisibleSatellite(PosVel, time, OutputParam, GpsSystem, GpsEph, TOTAL_GPS_SAT, GpsEphVisible);
+	BdsSatNumber = GetVisibleSatellite(PosVel, time, OutputParam, BdsSystem, BdsEph, TOTAL_BDS_SAT, BdsEphVisible);
+	GalSatNumber = GetVisibleSatellite(PosVel, time, OutputParam, GalileoSystem, GalEph, TOTAL_GAL_SAT, GalEphVisible);
 #if 1
 	if (OutputParam.Format == OutputFormatRinex)
 	{
@@ -90,8 +106,8 @@ void main(void)
 		strncpy(RinexHeader.Program, "OBSGEN", 20);
 		RinexHeader.SysObsTypeGps = 0xf;
 		RinexHeader.SysObsTypeGlonass = 0x0;
-		RinexHeader.SysObsTypeBds = 0x0;
-		RinexHeader.SysObsTypeGalileo = 0x0;
+		RinexHeader.SysObsTypeBds = 0xf;
+		RinexHeader.SysObsTypeGalileo = 0xf;
 		RinexHeader.Interval = 1.0;
 		OutputHeader(fp, &RinexHeader);
 	}
@@ -113,20 +129,37 @@ void main(void)
 	}
 	if (OutputParam.Format == OutputFormatRinex)
 	{
+		ObservationNumber = 0;
+		Obs = Observations;
 		ListCount = PowerControl.GetPowerControlList(0, PowerList);
 		for (i = 0; i < GpsSatNumber; i ++)
 		{
-			GpsCN0 = (int)(PowerControl.InitCN0 * 100 + 0.5);
-			SatelliteParam[i] = GetSatelliteParam(PosVel, CurPos, time, GpsSystem, EphVisible[i], NavData.GetGpsIono());
-			SatelliteParam[i].CN0 = GetSatelliteCN0(GpsCN0, ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, SatelliteParam[i].svid, SatelliteParam[i].Elevation);
-			GpsObservation[i].system = 0;
-			GpsObservation[i].svid = SatelliteParam[i].svid;
-			GpsObservation[i].PseudoRange = SatelliteParam[i].TravelTime * LIGHT_SPEED + SatelliteParam[i].IonoDelay;
-			GpsObservation[i].CarrierPhase = SatelliteParam[i].TravelTime * 1575.42e6 - SatelliteParam[i].IonoDelay / WAVELENGTH_GPSL1;
-			GpsObservation[i].Doppler = -SatelliteParam[i].RelativeSpeed / WAVELENGTH_GPSL1;
-			GpsObservation[i].CN0 = SatelliteParam[i].CN0 / 100.;
+			PrevCN0 = (int)(PowerControl.InitCN0 * 100 + 0.5);
+			GpsSatelliteParam[i] = GetSatelliteParam(PosVel, CurPos, time, GpsSystem, GpsEphVisible[i], NavData.GetGpsIono());
+			GpsSatelliteParam[i].CN0 = GetSatelliteCN0(PrevCN0, ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, GpsSatelliteParam[i].svid, GpsSatelliteParam[i].Elevation);
+			CalcObservation(Obs, GpsSystem, &GpsSatelliteParam[i]);
+			Obs ++;
+			ObservationNumber ++;
 		}
-		OutputObservation(fp, UtcTime, GpsSatNumber, GpsObservation);
+		for (i = 0; i < BdsSatNumber; i ++)
+		{
+			PrevCN0 = (int)(PowerControl.InitCN0 * 100 + 0.5);
+			BdsSatelliteParam[i] = GetSatelliteParam(PosVel, CurPos, time, BdsSystem, BdsEphVisible[i], NavData.GetGpsIono());
+			BdsSatelliteParam[i].CN0 = GetSatelliteCN0(PrevCN0, ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, BdsSatelliteParam[i].svid, BdsSatelliteParam[i].Elevation);
+			CalcObservation(Obs, BdsSystem, &BdsSatelliteParam[i]);
+			Obs ++;
+			ObservationNumber ++;
+		}
+		for (i = 0; i < GalSatNumber; i ++)
+		{
+			PrevCN0 = (int)(PowerControl.InitCN0 * 100 + 0.5);
+			GalSatelliteParam[i] = GetSatelliteParam(PosVel, CurPos, time, GalileoSystem, GalEphVisible[i], NavData.GetGpsIono());
+			GalSatelliteParam[i].CN0 = GetSatelliteCN0(PrevCN0, ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, GalSatelliteParam[i].svid, GalSatelliteParam[i].Elevation);
+			CalcObservation(Obs, GalileoSystem, &GalSatelliteParam[i]);
+			Obs ++;
+			ObservationNumber ++;
+		}
+		OutputObservation(fp, UtcTime, ObservationNumber, Observations);
 	}
 	else if (OutputParam.Format == OutputFormatEcef)
 	{
@@ -147,22 +180,45 @@ void main(void)
 		time.MilliSeconds += OutputParam.Interval;
 		UtcTime = GpsTimeToUtc(time, FALSE);
 		CurPos = EcefToLla(PosVel);
+		if ((time.MilliSeconds % 60000) == 0)	// recalculate visible satellite at minute boundary
+		{
+			GpsSatNumber = GetVisibleSatellite(PosVel, time, OutputParam, GpsSystem, GpsEph, TOTAL_GPS_SAT, GpsEphVisible);
+			BdsSatNumber = GetVisibleSatellite(PosVel, time, OutputParam, BdsSystem, BdsEph, TOTAL_BDS_SAT, BdsEphVisible);
+			GalSatNumber = GetVisibleSatellite(PosVel, time, OutputParam, GalileoSystem, GalEph, TOTAL_GAL_SAT, GalEphVisible);
+		}
 		if (OutputParam.Format == OutputFormatRinex)
 		{
+			ObservationNumber = 0;
+			Obs = Observations;
 			ListCount = PowerControl.GetPowerControlList(OutputParam.Interval, PowerList);
 			for (i = 0; i < GpsSatNumber; i ++)
 			{
-				GpsCN0 = SatelliteParam[i].CN0;
-				SatelliteParam[i] = GetSatelliteParam(PosVel, CurPos, time, GpsSystem, EphVisible[i], NavData.GetGpsIono());
-				SatelliteParam[i].CN0 = GetSatelliteCN0(GpsCN0, ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, SatelliteParam[i].svid, SatelliteParam[i].Elevation);
-				GpsObservation[i].system = 0;
-				GpsObservation[i].svid = SatelliteParam[i].svid;
-				GpsObservation[i].PseudoRange = SatelliteParam[i].TravelTime * LIGHT_SPEED + SatelliteParam[i].IonoDelay;
-				GpsObservation[i].CarrierPhase = SatelliteParam[i].TravelTime * 1575.42e6 - SatelliteParam[i].IonoDelay / WAVELENGTH_GPSL1;
-				GpsObservation[i].Doppler = -SatelliteParam[i].RelativeSpeed / WAVELENGTH_GPSL1;
-				GpsObservation[i].CN0 = SatelliteParam[i].CN0 / 100.;
+				PrevCN0 = GpsSatelliteParam[i].CN0;
+				GpsSatelliteParam[i] = GetSatelliteParam(PosVel, CurPos, time, GpsSystem, GpsEphVisible[i], NavData.GetGpsIono());
+				GpsSatelliteParam[i].CN0 = GetSatelliteCN0(PrevCN0, ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, GpsSatelliteParam[i].svid, GpsSatelliteParam[i].Elevation);
+				CalcObservation(Obs, 0, &GpsSatelliteParam[i]);
+				Obs ++;
+				ObservationNumber ++;
 			}
-			OutputObservation(fp, UtcTime, GpsSatNumber, GpsObservation);
+			for (i = 0; i < BdsSatNumber; i ++)
+			{
+				PrevCN0 = (int)(PowerControl.InitCN0 * 100 + 0.5);
+				BdsSatelliteParam[i] = GetSatelliteParam(PosVel, CurPos, time, BdsSystem, BdsEphVisible[i], NavData.GetGpsIono());
+				BdsSatelliteParam[i].CN0 = GetSatelliteCN0(PrevCN0, ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, BdsSatelliteParam[i].svid, BdsSatelliteParam[i].Elevation);
+				CalcObservation(Obs, BdsSystem, &BdsSatelliteParam[i]);
+				Obs ++;
+				ObservationNumber ++;
+			}
+			for (i = 0; i < GalSatNumber; i ++)
+			{
+				PrevCN0 = (int)(PowerControl.InitCN0 * 100 + 0.5);
+				GalSatelliteParam[i] = GetSatelliteParam(PosVel, CurPos, time, GalileoSystem, GalEphVisible[i], NavData.GetGpsIono());
+				GalSatelliteParam[i].CN0 = GetSatelliteCN0(PrevCN0, ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, GalSatelliteParam[i].svid, GalSatelliteParam[i].Elevation);
+				CalcObservation(Obs, GalileoSystem, &GalSatelliteParam[i]);
+				Obs ++;
+				ObservationNumber ++;
+			}
+			OutputObservation(fp, UtcTime, ObservationNumber, Observations);
 		}
 		else if (OutputParam.Format == OutputFormatEcef)
 		{
@@ -185,4 +241,14 @@ void main(void)
 		fprintf(fp, "\t\t\t</coordinates>\n\t\t</LineString>\n\t</Placemark>\n</Document> </kml>\n");
 	}
 	fclose(fp);
+}
+
+void CalcObservation(PSAT_OBSERVATION Obs, int system, PSATELLITE_PARAM SatParam)
+{
+	Obs->system = system;
+	Obs->svid = SatParam->svid;
+	Obs->PseudoRange = SatParam->TravelTime * LIGHT_SPEED + SatParam->IonoDelay;
+	Obs->CarrierPhase = SatParam->TravelTime * 1575.42e6 - SatParam->IonoDelay / WAVELENGTH_GPSL1;
+	Obs->Doppler = -SatParam->RelativeSpeed / WAVELENGTH_GPSL1;
+	Obs->CN0 = SatParam->CN0 / 100.;
 }

@@ -9,7 +9,7 @@
 #include "XmlInterpreter.h"
 
 char *FlexibleName[] = { "" };
-char *SystemType[] = { "GPS", "GLONASS", "BDS", "Galileo", "UTC" };
+char *SystemType[] = { "GPS", "BDS", "Galileo", "GLONASS", "UTC" };
 char *InitPosType[] = { "LLA", "ECEF" };
 char *LatLonType[] = { "d", "dm", "dms" };
 char *InitVelType[] = { "SCU", "ENU", "ECEF" };

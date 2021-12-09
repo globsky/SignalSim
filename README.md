@@ -33,3 +33,5 @@ Change list as below:
 	Add RINEX output functions
 11/25/2021
 	Restore CN0 field in SATELLITE_PARAM structure as stored CN0
+12/8/2021
+	Add support for B1C and E1C

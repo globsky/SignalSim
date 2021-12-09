@@ -45,6 +45,8 @@ SATELLITE_PARAM GetSatelliteParam(KINEMATIC_INFO PositionEcef, LLA_POSITION Posi
 	SATELLITE_PARAM SatelliteParam;
 
 	SatelliteParam.svid = Eph->svid;
+	if (system == BdsSystem)	// subtract leap second difference
+		SatelliteTime -= 14.0;
 
 	// first estimate the travel time, ignore tgd, ionosphere and troposphere delay
 	GpsSatPosSpeedEph(system, SatelliteTime, Eph, &SatPosition);

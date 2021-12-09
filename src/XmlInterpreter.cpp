@@ -266,7 +266,7 @@ BOOL ProcessConfigParam(CXmlElement *Element, OUTPUT_PARAM &OutputParam)
 	int index;
 	CXmlElement *SubElement = 0;
 	CSimpleDict *Attributes;
-	int system = 0, svid;
+	int system = GpsSystem, svid;
 
 	while ((SubElement = Element->EnumSubElement(SubElement)) != NULL)
 	{
@@ -285,31 +285,33 @@ BOOL ProcessConfigParam(CXmlElement *Element, OUTPUT_PARAM &OutputParam)
 			index = Attributes->Find("system");
 			if (index >= 0)
 			{
-				if (strcmp(Attributes->Dictionary[index].value, "GLONASS") == 0)
-					system = 1;
-				else if (strcmp(Attributes->Dictionary[index].value, "BDS") == 0)
-					system = 2;
+				if (strcmp(Attributes->Dictionary[index].value, "BDS") == 0)
+					system = BdsSystem;
 				else if (strcmp(Attributes->Dictionary[index].value, "Galileo") == 0)
-					system = 3;
+					system = GalileoSystem;
+				else if (strcmp(Attributes->Dictionary[index].value, "GLONASS") == 0)
+					system = GlonassSystem;
 			}
 			svid = atoi(SubElement->GetText());
 			switch (system)
 			{
-			case 0:
+			case GpsSystem:
 				if (svid >= 1 && svid <= 32)
 					OutputParam.GpsMaskOut |= (1 << (svid-1));
 				break;
-			case 1:
+			case BdsSystem:
+				if (svid >= 1 && svid <= 63)
+					OutputParam.BdsMaskOut |= (1LL << (svid-1));
+				break;
+			case GalileoSystem:
+				if (svid >= 1 && svid <= 50)
+					OutputParam.GalileoMaskOut |= (1LL << (svid-1));
+				break;
+			case GlonassSystem:
 				if (svid >= 1 && svid <= 24)
 					OutputParam.GlonassMaskOut |= (1 << (svid-1));
 				break;
-			case 2:
-				if (svid >= 1 && svid <= 64)
-					OutputParam.BdsMaskOut |= (1LL << (svid-1));
-				break;
-			case 3:
-				if (svid >= 1 && svid <= 64)
-					OutputParam.GalileoMaskOut |= (1LL << (svid-1));
+			default:
 				break;
 			}
 			break;

@@ -491,7 +491,7 @@ void SetObsField(char *s, int band, unsigned int mask, char attribute)
 void PrintObservation(FILE *fp, SAT_OBSERVATION obs)
 {
 	char str[128];
-	char SystemId[4] = { 'G', 'C', 'E' };
+	char SystemId[4] = { 'G', 'C', 'E', 'R' };
 
 	sprintf(str, "%c%02d  %12.3f   %13.3f  %14.3f          %6.3f\n", SystemId[obs.system], obs.svid, obs.PseudoRange, obs.CarrierPhase, obs.Doppler, obs.CN0);
 	fputs(str, fp);

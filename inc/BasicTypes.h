@@ -17,7 +17,7 @@ typedef int BOOL;
 #define NULL (0)
 #endif
 
-enum GnssSystem { GpsSystem, GlonassSystem, BdsSystem, GalileoSystem };
+enum GnssSystem { GpsSystem, BdsSystem, GalileoSystem, GlonassSystem };
 
 typedef struct
 {

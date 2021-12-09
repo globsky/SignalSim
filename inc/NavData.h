@@ -17,7 +17,6 @@
 class CNavData
 {
 public:
-	enum GnssSystem { SystemGps, SystemBds, SystemGalileo, SystemGlonass };
 	CNavData();
 	~CNavData();
 
