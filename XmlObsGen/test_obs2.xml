@@ -112,6 +112,9 @@
         <ConfigParam>
             <ElevationMask>3</ElevationMask>
         </ConfigParam>
+        <SystemSelect system="GPS">true</SystemSelect>
+        <SystemSelect system="BDS">true</SystemSelect>
+        <SystemSelect system="Galileo">true</SystemSelect>
     </Output>
     <PowerControl>
         <PowerParam>

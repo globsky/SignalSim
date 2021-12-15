@@ -97,6 +97,7 @@ typedef struct // GPS ephemeris, also used by BDS and Galileo
 	double delta_n;		// Mean Motion Difference from Computed Value
 	double ecc;			// Eccentricity
 	double sqrtA;		// Square Root of the Semi-Major Axis
+	double axis_dot;	// Change rate of axis, valid for L1C/B1C
 	double omega0;		// Longitude of Ascending Node of Orbit Plane at Weekly Epoch
 	double i0;			// Inclination Angle at Reference Time
 	double w;			// Argument of Perigee

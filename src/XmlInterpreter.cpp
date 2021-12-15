@@ -238,6 +238,7 @@ BOOL SetOutputParam(CXmlElement *Element, OUTPUT_PARAM &OutputParam)
 	OutputParam.BdsMaskOut = OutputParam.GalileoMaskOut = 0LL;
 	OutputParam.ElevationMask = DEG2RAD(5);
 	OutputParam.Interval = 1000;
+	OutputParam.SystemSelect = 0x7;
 
 	for (i = 0; i < Attributes->DictItemNumber; i ++)
 	{
@@ -255,6 +256,16 @@ BOOL SetOutputParam(CXmlElement *Element, OUTPUT_PARAM &OutputParam)
 		case 0: OutputParam.Interval = (int)(atof(SubElement->GetText()) * 1000 + 0.5); break;
 		case 1: strcpy(OutputParam.filename, SubElement->GetText()); break;
 		case 2: ProcessConfigParam(SubElement, OutputParam); break;
+		case 3:
+			if (FindAttribute(SubElement->GetAttributes()->Dictionary[0].key, SatelliteAttributes) == 0)
+				if ((i = GetAttributeIndex(SubElement->GetAttributes()->Dictionary[0].value, SatelliteAttributes[0])) < 4)
+				{
+					if (strcmp(SubElement->GetText(), "true") == 0)
+						OutputParam.SystemSelect |= 1 << i;
+					else if (strcmp(SubElement->GetText(), "false") == 0)
+						OutputParam.SystemSelect &= ~(1 << i);
+				}
+				break;
 		}
 	}
 

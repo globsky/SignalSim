@@ -35,3 +35,6 @@ Change list as below:
 	Restore CN0 field in SATELLITE_PARAM structure as stored CN0
 12/8/2021
 	Add support for B1C and E1C
+12/14/2021
+	Fix bug of CN0 assign incorrect value during satellite add/remove
+	Add support for system select
