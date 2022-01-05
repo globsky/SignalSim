@@ -38,3 +38,5 @@ Change list as below:
 12/14/2021
 	Fix bug of CN0 assign incorrect value during satellite add/remove
 	Add support for system select
+1/5/2022
+	Add support for B-CNAV2 data stream generation

@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------
-// NavBit.h:
+// LNavBit.h:
 //   Implementation of navigation bit synthesis class for LNAV
 //
 //          Copyright (C) 2020-2029 by Jun Mo, All rights reserved.
@@ -30,7 +30,7 @@ LNavBit::~LNavBit()
 {
 }
 
-int LNavBit::GetFrameData(GNSS_TIME StartTime, int svid, int *NavBits)
+int LNavBit::GetFrameData(GNSS_TIME StartTime, int svid, int channel, int *NavBits)
 {
 	int i, TOW, subframe, page;
 	unsigned int TlmWord, HowWord, CurWord, *Stream;

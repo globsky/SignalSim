@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------
-// NavBit.h:
+// LNavBit.h:
 //   Declaration of navigation bit synthesis class for LNAV
 //
 //          Copyright (C) 2020-2029 by Jun Mo, All rights reserved.
@@ -17,7 +17,7 @@ public:
 	LNavBit();
 	~LNavBit();
 
-	int GetFrameData(GNSS_TIME StartTime, int svid, int *NavBits);
+	int GetFrameData(GNSS_TIME StartTime, int svid, int channel, int *NavBits);
 	int SetEphemeris(int svid, PGPS_EPHEMERIS Eph);
 	int SetAlmanac(int svid, PGPS_ALMANAC Alm);
 	int SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam);
