@@ -122,6 +122,7 @@ typedef struct // GPS ephemeris, also used by BDS and Galileo
 	double omega_t;		// Longitude of Ascending Node of Orbit Plane at toe, equals to omega0 - WGS_OMEGDOTE * toe
 	double omega_delta;	// Delta Between omega_dot and WGS_OMEGDOTE, equals to omega_dot - WGS_OMEGDOTE
 	double Ek;			// Ek, derived from Mk
+	double Ek_dot;		// change rate of Ek
 } GPS_EPHEMERIS, *PGPS_EPHEMERIS;
 
 typedef struct        			

@@ -869,7 +869,7 @@ int BCNavBit::GetFrameData(GNSS_TIME StartTime, int svid, int channel, int *NavB
 	data = BdsSubframe2[svid-1];
 	// insert WN and HOW for Subframe2
 	data[0] &= 0x7;
-	data[0] |= COMPOSE_BITS(StartTime.Week, 11, 13);
+	data[0] |= COMPOSE_BITS(StartTime.Week - 1356, 11, 13);
 	data[0] |= COMPOSE_BITS(how, 3, 8);
 	// generate CRC for subframe2
 	AppendCRC(data, 25);
@@ -967,7 +967,7 @@ void BCNavBit::ComposeSubframe2(PGPS_EPHEMERIS Eph, unsigned int Subframe2[25])
 	IntValue = roundi(Value);
 	Subframe2[3] |= COMPOSE_BITS(IntValue >> 7, 0, 18);
 	Subframe2[4] = COMPOSE_BITS(IntValue, 17, 7);
-	Value = UnscaleDouble(Eph->delta_n, -44);	// delta_n
+	Value = UnscaleDouble(Eph->delta_n / PI, -44);	// delta_n
 	IntValue = roundi(Value);
 	Subframe2[4] |= COMPOSE_BITS(IntValue, 0, 17);
 	Value = 0;//UnscaleDouble(Eph->???, -57);	// delta n dot
@@ -992,7 +992,7 @@ void BCNavBit::ComposeSubframe2(PGPS_EPHEMERIS Eph, unsigned int Subframe2[25])
 	Value = UnscaleDouble(Value, -32);
 	UintValue = roundu(Value);
 	Subframe2[8] |= COMPOSE_BITS(IntValue, 6, 1);
-	Subframe2[8] |= COMPOSE_BITS(UintValue >> 8, 0, 6);
+	Subframe2[8] |= COMPOSE_BITS(UintValue >> 26, 0, 6);
 	Subframe2[9] = COMPOSE_BITS(UintValue >> 2, 0, 24);
 	Subframe2[10] = COMPOSE_BITS(UintValue, 22, 2);
 
@@ -1063,11 +1063,11 @@ void BCNavBit::ComposeSubframe2(PGPS_EPHEMERIS Eph, unsigned int Subframe2[25])
 	Value = UnscaleDouble(Eph->tgd2, -34);	// TGD B2a
 	IntValue = roundi(Value);
 	Subframe2[22] |= COMPOSE_BITS(IntValue, 7, 12);
-	Value = UnscaleDouble(Eph->tgd, -34);	// TGD B1C
+	Value = 0;//UnscaleDouble(Eph->???, -34);	// ISC B1C
 	IntValue = roundi(Value);
 	Subframe2[22] |= COMPOSE_BITS(IntValue >> 5, 0, 7);
 	Subframe2[23] = COMPOSE_BITS(IntValue, 19, 5);
-	Value = 0;//UnscaleDouble(Eph->???, -34);	// ISC B1C
+	Value = UnscaleDouble(Eph->tgd, -34);	// TGD B1C
 	IntValue = roundi(Value);
 	Subframe2[23] |= COMPOSE_BITS(IntValue, 7, 12);
 }

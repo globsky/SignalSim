@@ -40,3 +40,6 @@ Change list as below:
 	Add support for system select
 1/5/2022
 	Add support for B-CNAV2 data stream generation
+2/12/2022
+	Bug fix on B-CNAV1 stream generation
+	Option to use Vel/Acc to calculated satellite position

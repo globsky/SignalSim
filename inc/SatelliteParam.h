@@ -18,12 +18,16 @@ typedef struct
 	int system;
 	int svid;
 	int CN0;	// scale factor 0.01
+	int PosTimeTag;
+	KINEMATIC_INFO PosVel;
+	double Acc[3];
 	double TravelTime;	// travel time including corrections except ionosphere delay in second
 	double IonoDelay;	// ionosphere delay in meter
 	double Elevation;	// satellite elevation in rad
 	double Azimuth;		// satellite azimuth in rad
 	double RelativeSpeed;	// satellite to receiver relative speed in m/s
 	double LosVector[3];	// LOS vecter
+
 } SATELLITE_PARAM, *PSATELLITE_PARAM;
 
 int GetVisibleSatellite(KINEMATIC_INFO Position, GNSS_TIME time, OUTPUT_PARAM OutputParam, GnssSystem system, PGPS_EPHEMERIS Eph[], int Number, PGPS_EPHEMERIS EphVisible[]);

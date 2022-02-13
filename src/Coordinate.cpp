@@ -31,17 +31,23 @@ double GpsClockCorrection(PGPS_EPHEMERIS Eph, double TransmitTime)
 	return ClockAdj;
 }
 
-bool GpsSatPosSpeedEph(GnssSystem system, double TransmitTime, PGPS_EPHEMERIS pEph, PKINEMATIC_INFO pPosVel)
+bool GpsSatPosSpeedEph(GnssSystem system, double TransmitTime, PGPS_EPHEMERIS pEph, PKINEMATIC_INFO pPosVel, double Acc[3])
 {
 	int i;
 	double delta_t;
-	double Mk, Ek, Ek1, Ek_dot;
+	double Mk, Ek, Ek1;
 	double phi, phi_dot;
 	double uk, rk, ik;
+	double duk, drk, dik;
 	double uk_dot, rk_dot, ik_dot;
+	double duk_dot, drk_dot, dik_dot;
 	double xp, yp, omega;
 	double xp_dot, yp_dot;
+	double xp_dot2, yp_dot2;
 	double sin_temp, cos_temp;
+	double Ek_dot2, phi_dot2;
+	double uk_dot2, rk_dot2, ik_dot2;
+	double alpha, beta;
 
 	// calculate time difference
 	delta_t = TransmitTime - pEph->toe;
@@ -75,17 +81,35 @@ bool GpsSatPosSpeedEph(GnssSystem system, double TransmitTime, PGPS_EPHEMERIS pE
 	rk = pEph->axis * Ek1;
 	ik = pEph->i0 + (pEph->idot * delta_t);
 	// apply 2nd order correction to u(k), r(k) and i(k)
-	uk += (pEph->cuc * cos_temp) + (pEph->cus * sin_temp);
-	rk += (pEph->crc * cos_temp) + (pEph->crs * sin_temp);
-	ik += (pEph->cic * cos_temp) + (pEph->cis * sin_temp);
+	duk = (pEph->cuc * cos_temp) + (pEph->cus * sin_temp);
+	drk = (pEph->crc * cos_temp) + (pEph->crs * sin_temp);
+	dik = (pEph->cic * cos_temp) + (pEph->cis * sin_temp);
+	uk += duk;
+	rk += drk;
+	ik += dik;
 	// calculate derivatives of r(k) and u(k)
-	Ek_dot = pEph->n / Ek1;
-	uk_dot = phi_dot = Ek_dot * pEph->root_ecc / Ek1;
+	pEph->Ek_dot = pEph->n / Ek1;
+	uk_dot = phi_dot = pEph->Ek_dot * pEph->root_ecc / Ek1;
 	phi_dot = phi_dot * 2.0;
-	rk_dot = pEph->axis * pEph->ecc * sin(Ek) * Ek_dot;
-	rk_dot += ((pEph->crs * cos_temp) - (pEph->crc * sin_temp)) * phi_dot;
-	uk_dot += ((pEph->cus * cos_temp) - (pEph->cuc * sin_temp)) * phi_dot;
-	ik_dot = pEph->idot + ((pEph->cis * cos_temp) - (pEph->cic * sin_temp)) * phi_dot;
+	rk_dot = pEph->axis * pEph->ecc * sin(Ek) * pEph->Ek_dot;
+	drk_dot = ((pEph->crs * cos_temp) - (pEph->crc * sin_temp)) * phi_dot;
+	duk_dot = ((pEph->cus * cos_temp) - (pEph->cuc * sin_temp)) * phi_dot;
+	dik_dot = ((pEph->cis * cos_temp) - (pEph->cic * sin_temp)) * phi_dot;
+	rk_dot += drk_dot;
+	uk_dot += duk_dot;
+	ik_dot = pEph->idot + dik_dot;
+	// calculate intermediate variables for acceleration
+	if (Acc)
+	{
+		Ek_dot2 = -pEph->Ek_dot * pEph->Ek_dot * pEph->ecc * sin(Ek) / Ek1;
+		phi_dot2 = 2 * Ek_dot2 * pEph->root_ecc / Ek1;
+		alpha = 2 * phi_dot2 / phi_dot;	// phi_dot2/phi_dot
+		beta = phi_dot * phi_dot;	// 4*phi_dot^2
+		rk_dot2 = pEph->axis * pEph->ecc * (sin(Ek) * Ek_dot2 + cos(Ek) * pEph->Ek_dot * pEph->Ek_dot);
+		rk_dot2 += alpha * drk_dot - beta * drk;
+		uk_dot2 = phi_dot2 + alpha * duk_dot - beta * duk;
+		ik_dot2 = alpha * dik_dot - beta * dik;
+	}
 
 	// calculate Xp and Yp and corresponding derivatives
 	sin_temp = sin(uk);
@@ -94,6 +118,12 @@ bool GpsSatPosSpeedEph(GnssSystem system, double TransmitTime, PGPS_EPHEMERIS pE
 	yp = rk * sin_temp;
 	xp_dot = rk_dot * cos_temp - yp * uk_dot;
 	yp_dot = rk_dot * sin_temp + xp * uk_dot;
+	// calculate intermediate variables for acceleration
+	if (Acc)
+	{
+		xp_dot2 = rk_dot2 * cos(uk) - 2 * uk_dot * rk_dot * sin(uk) - uk_dot * uk_dot * xp - uk_dot2 * yp;
+		yp_dot2 = rk_dot2 * sin(uk) + 2 * uk_dot * rk_dot * cos(uk) - uk_dot * uk_dot * yp + uk_dot2 * xp;
+	}
 
 	// get final position and speed in ECEF coordinate
 	omega = pEph->omega_t + pEph->omega_delta * delta_t;
@@ -113,6 +143,18 @@ bool GpsSatPosSpeedEph(GnssSystem system, double TransmitTime, PGPS_EPHEMERIS pE
 	pPosVel->vx -= pPosVel->y * pEph->omega_delta;
 	pPosVel->vy += pPosVel->x * pEph->omega_delta;
 	pPosVel->vz += yp * ik_dot * phi;
+
+	// calculate acceleration if given valid array pointer
+	if (Acc)
+	{
+		alpha = pPosVel->vz * ik_dot + pPosVel->z * ik_dot2 - xp_dot * pEph->omega_delta;
+		alpha += yp_dot * ik_dot * sin(ik) - yp_dot2 * cos(ik);
+		beta = xp_dot2 + pPosVel->z * ik_dot * pEph->omega_delta - yp_dot * pEph->omega_delta * cos(ik);
+		Acc[0] = -pPosVel->vy * pEph->omega_delta + alpha * sin_temp + beta * cos_temp;
+		Acc[1] =  pPosVel->vx * pEph->omega_delta - alpha * cos_temp + beta * sin_temp;
+		Acc[2] = (yp_dot2 - yp * ik_dot * ik_dot) * sin(ik);
+		Acc[2] += (yp * ik_dot2 + 2 * yp_dot * ik_dot) * cos(ik);
+	}
 
 	if (system == BdsSystem && pEph->svid <= 5)
 	{

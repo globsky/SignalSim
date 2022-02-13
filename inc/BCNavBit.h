@@ -26,8 +26,8 @@ public:
 //	int SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam);
 
 private:
-	unsigned int BdsSubframe2[63][25];	// 32 SVs, 600bits in subframe 2, 24bits (4 symbols) in bit23~0 of each DWORD MSB first, lowest address first
-	unsigned int BdsSubframe3[63][11];	// 32 SVs, 264bits in subframe 3, 24bits (4 symbols) in bit23~0 of each DWORD MSB first, lowest address first
+	unsigned int BdsSubframe2[63][25];	// 63 SVs, 600bits in subframe 2, 24bits (4 symbols) in bit23~0 of each DWORD MSB first, lowest address first
+	unsigned int BdsSubframe3[63][11];	// 63 SVs, 264bits in subframe 3, 24bits (4 symbols) in bit23~0 of each DWORD MSB first, lowest address first
 
 	static const unsigned int B1CSecondCode[63][57];	// 63x1800bit secondary code
 	static const unsigned int BCH_prn_table[64];		// BCH encode table for SVID
