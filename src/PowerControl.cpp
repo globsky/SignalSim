@@ -64,7 +64,7 @@ void CPowerControl::Sort()
 
 void CPowerControl::ResetTime()
 {
-	CurrentTime = 0;
+	TimeElapsMs = 0;
 	NextIndex = 0;
 }
 
@@ -73,11 +73,11 @@ int CPowerControl::GetPowerControlList(int TimeStepMs, PSIGNAL_POWER &PowerList)
 	int InitIndex = NextIndex;
 
 	PowerList = PowerControlArray + NextIndex;
-	CurrentTime += TimeStepMs;
+	TimeElapsMs += TimeStepMs;
 
 	while (NextIndex < ArraySize)
 	{
-		if (PowerControlArray[NextIndex].time > CurrentTime)
+		if (PowerControlArray[NextIndex].time > TimeElapsMs)
 			break;
 		NextIndex ++;
 	}

@@ -30,8 +30,9 @@ public:
 	double NoiseFloor;
 	double InitCN0;
 	int ArraySize;
+	int NextIndex;
 	PSIGNAL_POWER PowerControlArray;
-	int CurrentTime, NextIndex;
+	int TimeElapsMs;
 
 	void AddControlElement(PSIGNAL_POWER pControlElement);
 	void Sort();

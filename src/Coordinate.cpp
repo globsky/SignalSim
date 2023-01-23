@@ -174,6 +174,17 @@ bool GpsSatPosSpeedEph(GnssSystem system, double TransmitTime, PGPS_EPHEMERIS pE
 		// earth rotate compensation on velocity
 		pPosVel->vx += pPosVel->y * CGCS2000_OMEGDOTE;
 		pPosVel->vy -= pPosVel->x * CGCS2000_OMEGDOTE;
+		if (Acc)
+		{
+			// first rotate -5 degree
+			yp = Acc[1] * COS_5 - Acc[2] * SIN_5; // rotated ay
+			Acc[2] = Acc[2] * COS_5 + Acc[1] * SIN_5; // rotated az
+			Acc[1] = yp * cos_temp - Acc[0] * sin_temp;
+			Acc[0] = Acc[0] * cos_temp + yp * sin_temp;
+			// earth rotate compensation on acceleration
+			Acc[0] += pPosVel->vy * CGCS2000_OMEGDOTE;
+			Acc[1] -= pPosVel->vx * CGCS2000_OMEGDOTE;
+		}
 	}
 
 	// if ephemeris expire, return 0

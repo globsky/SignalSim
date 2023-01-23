@@ -14,8 +14,6 @@
 #include "SatelliteParam.h"
 #include "Rinex.h"
 
-#define WAVELENGTH_GPSL1 0.19029367279836488047631742646405
-
 #define TOTAL_GPS_SAT 32
 #define TOTAL_BDS_SAT 63
 #define TOTAL_GAL_SAT 50
@@ -73,12 +71,25 @@ void main(void)
 	time = UtcToGpsTime(UtcTime);
 	UtcTime = GpsTimeToUtc(time, FALSE);
 	PowerControl.ResetTime();
+
+	memset(GpsSatelliteParam, 0, sizeof(GpsSatelliteParam));
+	memset(BdsSatelliteParam, 0, sizeof(BdsSatelliteParam));
+	memset(GalSatelliteParam, 0, sizeof(GalSatelliteParam));
 	for (i = 0; i < TOTAL_GPS_SAT; i ++)
+	{
 		GpsSatelliteParam[i].CN0 = (int)(PowerControl.InitCN0 * 100 + 0.5);
+		GpsSatelliteParam[i].PosTimeTag = -1;
+	}
 	for (i = 0; i < TOTAL_BDS_SAT; i ++)
+	{
 		BdsSatelliteParam[i].CN0 = (int)(PowerControl.InitCN0 * 100 + 0.5);
+		BdsSatelliteParam[i].PosTimeTag = -1;
+	}
 	for (i = 0; i < TOTAL_GAL_SAT; i ++)
+	{
 		GalSatelliteParam[i].CN0 = (int)(PowerControl.InitCN0 * 100 + 0.5);
+		GalSatelliteParam[i].PosTimeTag = -1;
+	}
 
 	for (i = 1; i <= TOTAL_GPS_SAT; i ++)
 		GpsEph[i-1] = NavData.FindEphemeris(GpsSystem, time, i);
@@ -110,7 +121,7 @@ void main(void)
 		RinexHeader.SysObsTypeGlonass = 0x0;
 		RinexHeader.SysObsTypeBds = 0xf;
 		RinexHeader.SysObsTypeGalileo = 0xf;
-		RinexHeader.Interval = 1.0;
+		RinexHeader.Interval = OutputParam.Interval / 1000.;
 		OutputHeader(fp, &RinexHeader);
 	}
 	else if (OutputParam.Format == OutputFormatEcef)
@@ -181,6 +192,8 @@ void main(void)
 	{
 		time.MilliSeconds += OutputParam.Interval;
 		UtcTime = GpsTimeToUtc(time, FALSE);
+		if (UtcTime.Minute == 5 && UtcTime.Second == 55.3)
+			UtcTime.Minute = UtcTime.Minute;
 		CurPos = EcefToLla(PosVel);
 		if ((time.MilliSeconds % 60000) == 0)	// recalculate visible satellite at minute boundary
 		{
@@ -249,8 +262,10 @@ void CalcObservation(PSAT_OBSERVATION Obs, PSATELLITE_PARAM SatParam)
 {
 	Obs->system = SatParam->system;
 	Obs->svid = SatParam->svid;
-	Obs->PseudoRange = SatParam->TravelTime * LIGHT_SPEED + SatParam->IonoDelay;
-	Obs->CarrierPhase = SatParam->TravelTime * 1575.42e6 - SatParam->IonoDelay / WAVELENGTH_GPSL1;
-	Obs->Doppler = -SatParam->RelativeSpeed / WAVELENGTH_GPSL1;
+	Obs->PseudoRange = GetTravelTime(SatParam, 0) * LIGHT_SPEED;
+	Obs->CarrierPhase = GetCarrierPhase(SatParam, 0);
+//	Obs->PseudoRange = (SatParam->TravelTime + SatParam->GroupDelay[0]) * LIGHT_SPEED + SatParam->IonoDelay;
+//	Obs->CarrierPhase = (SatParam->TravelTime + SatParam->GroupDelay[0]) * 1575.42e6 - SatParam->IonoDelay / WAVELENGTH_GPSL1;
+	Obs->Doppler = GetDoppler(SatParam, 0);
 	Obs->CN0 = SatParam->CN0 / 100.;
 }
