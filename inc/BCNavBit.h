@@ -22,8 +22,8 @@ public:
 
 	int GetFrameData(GNSS_TIME StartTime, int svid, int channel, int *NavBits);
 	int SetEphemeris(int svid, PGPS_EPHEMERIS Eph);
-//	int SetAlmanac(int svid, PGPS_ALMANAC Alm);
-//	int SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam);
+	int SetAlmanac(int svid, PGPS_ALMANAC Alm) { return 0; };
+	int SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam) { return 0; };
 
 private:
 	unsigned int BdsSubframe2[63][25];	// 63 SVs, 600bits in subframe 2, 24bits (4 symbols) in bit23~0 of each DWORD MSB first, lowest address first

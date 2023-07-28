@@ -34,7 +34,7 @@ public:
 	CSimpleDict& operator=(const CSimpleDict& dict);
 	bool Add(char *key, char *value);
 	bool Delete(char *key);
-	int Find(char *key);
+	int Find(const char *key);
 
 	int DictItemNumber;
 	DictItem *Dictionary;

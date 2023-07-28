@@ -23,17 +23,17 @@ static BOOL DecodeEphGlonass(int svid, double *data, UTC_TIME time, PGLONASS_EPH
 static unsigned char GetUraIndex(double data);
 static unsigned char GetGalileoUra(double data);
 static void SetField(char *dest, char *src, int length);
-static void PrintTextField(FILE *fp, int enable, char *text, char *description);
+static void PrintTextField(FILE *fp, int enable, char *text, const char *description);
 static void PrintObsType(FILE *fp, char type, unsigned int mask);
 static void SetObsField(char *s, int band, unsigned int mask, char attribute);
 void PrintObservation(FILE *fp, SAT_OBSERVATION obs);
 
 NavDataType LoadNavFileHeader(FILE *fp_nav, void *NavData)
 {
-	char str[256], ch;
+	char str[256], ch, TimeMark;
 	PIONO_PARAM Iono = (PIONO_PARAM)NavData;
 	PUTC_PARAM UtcParam = (PUTC_PARAM)NavData;
-	int TimeMark, Svid;
+	int Svid;
 	int data1, data2;
 
 	if (!fgets(str, 255, fp_nav))
@@ -187,7 +187,7 @@ void OutputHeader(FILE *fp, PRINEX_HEADER Header)
 	if (Header->HeaderFlag & RINEX_HEADER_AGENCY)
 		SetField(str + 20, Header->Agency, 20);
 	if (Header->HeaderFlag & RINEX_HEADER_DATE)
-		sprintf(str + 40, "%4d%02d%02d %02d%02d%02d UTC ", Header->DateTime.Year,Header->DateTime.Month, Header->DateTime.Day, Header->DateTime.Hour, Header->DateTime.Minute, Header->DateTime.Second);
+		sprintf(str + 40, "%4d%02d%02d %02d%02d%02d UTC ", Header->DateTime.Year,Header->DateTime.Month, Header->DateTime.Day, Header->DateTime.Hour, Header->DateTime.Minute, (int)Header->DateTime.Second);
 	strcpy(str + 60, "PGM / RUN BY / DATE \n");
 	fputs(str, fp);
 	// COMMENT
@@ -421,7 +421,7 @@ void SetField(char *dest, char *src, int length)
 		dest[fill_length++] = ' ';
 }
 
-void PrintTextField(FILE *fp, int enable, char *text, char *description)
+void PrintTextField(FILE *fp, int enable, char *text, const char *description)
 {
 	char str[100];
 

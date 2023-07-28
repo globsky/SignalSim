@@ -572,7 +572,7 @@ int GetAttributeIndex(char *value, PATTRIBUTE_TYPE Attribute)
 	return (i == Attribute->value_size) ? Attribute->default_value : i;
 }
 
-int GetElementIndex(char *tag, char **ElementList)
+int GetElementIndex(const char *tag, const char **ElementList)
 {
 	int i = 0;
 

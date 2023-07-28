@@ -82,7 +82,7 @@ bool CSimpleDict::Delete(char *key)
 }
 
 // find item with given key, return item index or -1 if not found
-int CSimpleDict::Find(char *key)
+int CSimpleDict::Find(const char *key)
 {
 	int i;
 

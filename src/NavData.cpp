@@ -137,6 +137,9 @@ PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int sv
 		EphmerisPool = GalileoEphmerisPool;
 		EphemerisNumber = GalileoEphemerisNumber;
 	}
+	else
+		return (PGPS_EPHEMERIS)0;
+
 
 	for (i = 0; i < EphemerisNumber; i ++)
 	{

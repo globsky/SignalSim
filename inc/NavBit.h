@@ -26,6 +26,9 @@ public:
 	~NavBit();
 
 	virtual int GetFrameData(GNSS_TIME StartTime, int svid, int channel, int *NavBits) = 0;	// channel: 0 for pilot, 1 for data
+	virtual int SetEphemeris(int svid, PGPS_EPHEMERIS Eph) = 0;
+	virtual int SetAlmanac(int svid, PGPS_ALMANAC Alm) = 0;
+	virtual int SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam) = 0;
 	int roundi(double data);
 	int roundu(double data);
 	double UnscaleDouble(double value, int scale);

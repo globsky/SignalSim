@@ -19,15 +19,15 @@ typedef int (*TagProcessFunction)(void *);
 
 typedef struct
 {
-	char *key;
-	char **values;
+	const char *key;
+	const char **values;
 	int value_size;
 	int default_value;
 } ATTRIBUTE_TYPE, *PATTRIBUTE_TYPE;
 
 typedef struct
 {
-	char *TagName;
+	const char *TagName;
 	TagProcessFunction ProcessFunction;
 	void *Parameter;
 } ELEMENT_PROCESS, *PELEMENT_PROCESS;
@@ -79,19 +79,19 @@ extern PATTRIBUTE_TYPE ElevationMaskAttributes[];
 extern PATTRIBUTE_TYPE MaskOutAttributes[];
 extern PATTRIBUTE_TYPE ChannelInitAttributes[];
 
-extern char *StartTimeElements[];
-extern char *StartPosElements[];
-extern char *StartVelElements[];
-extern char *TrajectoryElements[];
-extern char *TrajectoryTypeElements[];
-extern char *TrajectoryArgumentElements[];
-extern char *OutputParamElements[];
-extern char *PowerControlElements[];
-extern char *PowerParamElements[];
-extern char *SignalPowerElements[];
-extern char *ConfigParamElements[];
-extern char *BasebandConfigElements[];
-extern char *SatInitElements[];
+extern const char *StartTimeElements[];
+extern const char *StartPosElements[];
+extern const char *StartVelElements[];
+extern const char *TrajectoryElements[];
+extern const char *TrajectoryTypeElements[];
+extern const char *TrajectoryArgumentElements[];
+extern const char *OutputParamElements[];
+extern const char *PowerControlElements[];
+extern const char *PowerParamElements[];
+extern const char *SignalPowerElements[];
+extern const char *ConfigParamElements[];
+extern const char *BasebandConfigElements[];
+extern const char *SatInitElements[];
 
 BOOL AssignStartTime(CXmlElement *Element, UTC_TIME &UtcTime);
 BOOL SetTrajectory(CXmlElement *Element, LLA_POSITION &StartPos, LOCAL_SPEED &StartVel, CTrajectory &Trajectory);
@@ -102,7 +102,7 @@ BOOL SetSatInitParam(CXmlElement *Element, CHANNEL_INIT_PARAM SatInitParam[]);
 
 int FindAttribute(char *key, PATTRIBUTE_TYPE *AttributeList);
 int GetAttributeIndex(char *value, PATTRIBUTE_TYPE Attribute);
-int GetElementIndex(char *tag, char **ElementList);
+int GetElementIndex(const char *tag, const char **ElementList);
 int FindTagIndex(char *Tag, ELEMENT_PROCESS *ProcessList, int ProcessListNumber);
 int ProcessElement(CXmlElement *Element, PINTERPRETE_PARAM InterpreteParam);
 

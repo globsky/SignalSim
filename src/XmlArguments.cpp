@@ -8,19 +8,19 @@
 
 #include "XmlInterpreter.h"
 
-char *FlexibleName[] = { "" };
-char *SystemType[] = { "GPS", "BDS", "Galileo", "GLONASS", "UTC" };
-char *InitPosType[] = { "LLA", "ECEF" };
-char *LatLonType[] = { "d", "dm", "dms" };
-char *InitVelType[] = { "SCU", "ENU", "ECEF" };
-char *SpeedUnit[] = { "mps", "kph", "knot", "mph" };
-char *AngleUnit[] = { "degree", "rad" };
-char *EphSrc[] = { "file" };
-char *EphType[] = { "RINEX" };
-char *OutputType[] = { "position", "observation" };
-char *OutputFormat[] = { "ECEF", "LLA", "NMEA", "KML", "RINEX" };
-char *TimeUnit[] = { "s", "ms" };
-char *ChannelEnable[] = { "auto", "true" };
+const char *FlexibleName[] = { "" };
+const char *SystemType[] = { "GPS", "BDS", "Galileo", "GLONASS", "UTC" };
+const char *InitPosType[] = { "LLA", "ECEF" };
+const char *LatLonType[] = { "d", "dm", "dms" };
+const char *InitVelType[] = { "SCU", "ENU", "ECEF" };
+const char *SpeedUnit[] = { "mps", "kph", "knot", "mph" };
+const char *AngleUnit[] = { "degree", "rad" };
+const char *EphSrc[] = { "file" };
+const char *EphType[] = { "RINEX" };
+const char *OutputType[] = { "position", "observation" };
+const char *OutputFormat[] = { "ECEF", "LLA", "NMEA", "KML", "RINEX" };
+const char *TimeUnit[] = { "s", "ms" };
+const char *ChannelEnable[] = { "auto", "true" };
 
 ATTRIBUTE_TYPE TimeTypeAttr = { "type", SystemType, sizeof(SystemType) / sizeof(char *), 0 };
 ATTRIBUTE_TYPE TrajectoryNameAttr = { "name", FlexibleName, sizeof(FlexibleName) / sizeof(char *), -1 };
@@ -54,19 +54,19 @@ PATTRIBUTE_TYPE ElevationMaskAttributes[] = { &ElevationMaskAttr, NULL };
 PATTRIBUTE_TYPE MaskOutAttributes[] = { &SystemAttr, NULL };
 PATTRIBUTE_TYPE ChannelInitAttributes[] = { &SystemAttr, &SvidAttr, &ChannelEnableAttr, NULL };
 
-char *StartTimeElements[] = { "Week", "LeapYear", "Day", "Second", "Year", "Month", "Hour", "Minute", NULL };
-char *StartPosElements[] = { "Longitude", "Latitude", "Altitude", "x", "y", "z", NULL };
-char *StartVelElements[] = { "Speed", "Course", "East", "North", "Up", NULL };
-char *TrajectoryElements[] = { "InitPosition", "InitVelocity", "TrajectoryList", NULL };
-char *TrajectoryTypeElements[] = { "Const", "ConstAcc", "VerticalAcc", "Jerk", "HorizontalTurn", NULL };
-char *TrajectoryArgumentElements[] = { "TimeSpan", "Acceleration", "Speed", "AccRate", "TurnAngle", "AngularRate", "Radius", NULL };
-char *OutputParamElements[] = { "Interval", "Name", "ConfigParam", "SystemSelect", NULL };
-char *ConfigParamElements[] = { "ElevationMask", "MaskOut", NULL };
-char *PowerControlElements[] = { "PowerParam", "SignalPower", NULL };
-char *PowerParamElements[] = { "NoiseFloor", "InitPower", "ElevationAdjust", NULL };
-char *SignalPowerElements[] = { "Time", "Power", NULL };
-char *BasebandConfigElements[] = { "ChannelNumber", "CorrelatorNumber", "NoiseFloor", NULL };
-char *SatInitElements[] = { "CorrelatorInterval", "PeakCorrelator", "InitFreqError", "InitPhaseError", "InitCodeError", "SNR", NULL };
+const char *StartTimeElements[] = { "Week", "LeapYear", "Day", "Second", "Year", "Month", "Hour", "Minute", NULL };
+const char *StartPosElements[] = { "Longitude", "Latitude", "Altitude", "x", "y", "z", NULL };
+const char *StartVelElements[] = { "Speed", "Course", "East", "North", "Up", NULL };
+const char *TrajectoryElements[] = { "InitPosition", "InitVelocity", "TrajectoryList", NULL };
+const char *TrajectoryTypeElements[] = { "Const", "ConstAcc", "VerticalAcc", "Jerk", "HorizontalTurn", NULL };
+const char *TrajectoryArgumentElements[] = { "TimeSpan", "Acceleration", "Speed", "AccRate", "TurnAngle", "AngularRate", "Radius", NULL };
+const char *OutputParamElements[] = { "Interval", "Name", "ConfigParam", "SystemSelect", NULL };
+const char *ConfigParamElements[] = { "ElevationMask", "MaskOut", NULL };
+const char *PowerControlElements[] = { "PowerParam", "SignalPower", NULL };
+const char *PowerParamElements[] = { "NoiseFloor", "InitPower", "ElevationAdjust", NULL };
+const char *SignalPowerElements[] = { "Time", "Power", NULL };
+const char *BasebandConfigElements[] = { "ChannelNumber", "CorrelatorNumber", "NoiseFloor", NULL };
+const char *SatInitElements[] = { "CorrelatorInterval", "PeakCorrelator", "InitFreqError", "InitPhaseError", "InitCodeError", "SNR", NULL };
 
 ELEMENT_PROCESS RootProcess[] = {
 	{ "Time",           &ElementProcTime,           NULL},
