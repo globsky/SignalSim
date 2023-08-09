@@ -43,3 +43,13 @@ Change list as below:
 2/12/2022
 	Bug fix on B-CNAV1 stream generation
 	Option to use Vel/Acc to calculated satellite position
+1/23/2023
+	Add some variables and functions for future multi-frequency support
+	Minor bug fix on satellite acc calculation for GEO satellite
+7/28/2023
+	Modifications to comply with stricter syntax checking
+	Add SignalSim.h to include all necessary header files for package users
+8/9/2023
+	Add a new class CSatelliteSignal to get data/pilot modulation
+	Add a new NavBit derived class D1D2NavBit to generate BDS2 data stream
+	Call to GetFrameData() in NavBit class will be obsolete in the future

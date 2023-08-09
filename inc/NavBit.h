@@ -32,6 +32,7 @@ public:
 	int roundi(double data);
 	int roundu(double data);
 	double UnscaleDouble(double value, int scale);
+	int AssignBits(unsigned int Data, int BitNumber, int BitStream[]);
 };
 
 #endif // __NAV_BIT_H__

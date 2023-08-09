@@ -14,19 +14,21 @@
 #include "PowerControl.h"
 
 // signal index in GroupDelay array
-#define GPS_L1 0
-#define GPS_L2 1
-#define GPS_L5 2
-#define BDS_B1C 0
-#define BDS_B1I 1
-#define BDS_B2I 2
-#define BDS_B3I 3
-#define BDS_B2a 4	// for pilot channel
-#define BDS_B2b 5	// for pilot channel
-#define GAL_E1 0
-#define GAL_E5a 1	// for pilot channel
-#define GAL_E5b 2	// for pilot channel
-#define GAL_E6 3
+#define FREQ_INDEX_GPS_L1 0
+#define FREQ_INDEX_GPS_L2 1
+#define FREQ_INDEX_GPS_L5 2
+#define FREQ_INDEX_BDS_B1C 0
+#define FREQ_INDEX_BDS_B1I 1
+#define FREQ_INDEX_BDS_B2I 2
+#define FREQ_INDEX_BDS_B3I 3
+#define FREQ_INDEX_BDS_B2a 4	// for pilot channel
+#define FREQ_INDEX_BDS_B2b 5	// for pilot channel
+#define FREQ_INDEX_GAL_E1 0
+#define FREQ_INDEX_GAL_E5a 1	// for pilot channel
+#define FREQ_INDEX_GAL_E5b 2	// for pilot channel
+#define FREQ_INDEX_GAL_E6 3
+#define FREQ_INDEX_GLO_G1 0
+#define FREQ_INDEX_GLO_G2 1
 
 // signal frequency
 #define FREQ_GPS_L1 1575.42e6

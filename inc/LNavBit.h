@@ -31,7 +31,6 @@ private:
 	int ComposeGpsStream123(PGPS_EPHEMERIS Ephemeris, unsigned int Stream[3*8]);
 	int FillGpsAlmanacPage(PGPS_ALMANAC Almanac, unsigned int Stream[8]);
 	unsigned int GpsGetParity(unsigned int word);
-	int AssignBits(unsigned int Data, int BitNumber, int BitStream[]);
 };
 
 #endif // __LNAV_BIT_H__

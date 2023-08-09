@@ -319,18 +319,3 @@ unsigned int LNavBit::GpsGetParity(unsigned int word)
 
 	return parity;
 }
-
-// put bit in Data from MSB ot LSB into BitStream, bit order from bit(BitNumber-1) to bit(0) of Data
-int LNavBit::AssignBits(unsigned int Data, int BitNumber, int BitStream[])
-{
-	int i;
-
-	Data <<= (32 - BitNumber);
-	for (i = 0; i < BitNumber; i ++)
-	{
-		BitStream[i] = (Data & 0x80000000) ? 1 : 0;
-		Data <<= 1;
-	}
-
-	return BitNumber;
-}

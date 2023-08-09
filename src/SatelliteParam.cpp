@@ -127,29 +127,29 @@ double GetIonoDelay(double IonoDelayL1, int system, int FreqIndex)
 	case GpsSystem:
 		switch (FreqIndex)
 		{
-		case GPS_L1: return IonoDelayL1;
-		case GPS_L2: return IonoDelayL1 * 1.6469444444444444444444444444444; // (154/120)^2
-		case GPS_L5: return IonoDelayL1 * 1.7932703213610586011342155009452; // (154/115)^2
+		case FREQ_INDEX_GPS_L1: return IonoDelayL1;
+		case FREQ_INDEX_GPS_L2: return IonoDelayL1 * 1.6469444444444444444444444444444; // (154/120)^2
+		case FREQ_INDEX_GPS_L5: return IonoDelayL1 * 1.7932703213610586011342155009452; // (154/115)^2
 		default: return IonoDelayL1;
 		}
 	case BdsSystem:
 		switch (FreqIndex)
 		{
-		case BDS_B1C: return IonoDelayL1;
-		case BDS_B1I: return IonoDelayL1 * 1.0184327918525376651796986785624; // (1540/1526)^2
-		case BDS_B2I:
-		case BDS_B2b: return IonoDelayL1 * 1.7032461936225222637173226084458; // (154/118)^2
-		case BDS_B3I: return IonoDelayL1 * 1.5424037460978147762747138397503; // (154/124)^2
-		case BDS_B2a: return IonoDelayL1 * 1.7932703213610586011342155009452; // (154/115)^2
+		case FREQ_INDEX_BDS_B1C: return IonoDelayL1;
+		case FREQ_INDEX_BDS_B1I: return IonoDelayL1 * 1.0184327918525376651796986785624; // (1540/1526)^2
+		case FREQ_INDEX_BDS_B2I:
+		case FREQ_INDEX_BDS_B2b: return IonoDelayL1 * 1.7032461936225222637173226084458; // (154/118)^2
+		case FREQ_INDEX_BDS_B3I: return IonoDelayL1 * 1.5424037460978147762747138397503; // (154/124)^2
+		case FREQ_INDEX_BDS_B2a: return IonoDelayL1 * 1.7932703213610586011342155009452; // (154/115)^2
 		default: return IonoDelayL1;
 		}
 	case GalileoSystem:
 		switch (FreqIndex)
 		{
-		case GAL_E1:  return IonoDelayL1;
-		case GAL_E5a: return IonoDelayL1 * 1.7932703213610586011342155009452; // (154/115)^2
-		case GAL_E5b: return IonoDelayL1 * 1.7032461936225222637173226084458; // (154/118)^2
-		case GAL_E6:  return IonoDelayL1 * 1.517824; // (154/125)^2
+		case FREQ_INDEX_GAL_E1:  return IonoDelayL1;
+		case FREQ_INDEX_GAL_E5a: return IonoDelayL1 * 1.7932703213610586011342155009452; // (154/115)^2
+		case FREQ_INDEX_GAL_E5b: return IonoDelayL1 * 1.7032461936225222637173226084458; // (154/118)^2
+		case FREQ_INDEX_GAL_E6:  return IonoDelayL1 * 1.517824; // (154/125)^2
 		default: return IonoDelayL1;
 		}
 	default: return IonoDelayL1;
@@ -163,29 +163,29 @@ double GetWaveLength(int system, int FreqIndex)
 	case GpsSystem:
 		switch (FreqIndex)
 		{
-		case GPS_L1: return LIGHT_SPEED / FREQ_GPS_L1;
-		case GPS_L2: return LIGHT_SPEED / FREQ_GPS_L2;
-		case GPS_L5: return LIGHT_SPEED / FREQ_GPS_L5;
+		case FREQ_INDEX_GPS_L1: return LIGHT_SPEED / FREQ_GPS_L1;
+		case FREQ_INDEX_GPS_L2: return LIGHT_SPEED / FREQ_GPS_L2;
+		case FREQ_INDEX_GPS_L5: return LIGHT_SPEED / FREQ_GPS_L5;
 		default: return LIGHT_SPEED / FREQ_GPS_L1;
 		}
 	case BdsSystem:
 		switch (FreqIndex)
 		{
-		case BDS_B1C: return LIGHT_SPEED / FREQ_BDS_B1C;
-		case BDS_B1I: return LIGHT_SPEED / FREQ_BDS_B1I;
-		case BDS_B2I:
-		case BDS_B2b: return LIGHT_SPEED / FREQ_BDS_B2b;
-		case BDS_B3I: return LIGHT_SPEED / FREQ_BDS_B3I;
-		case BDS_B2a: return LIGHT_SPEED / FREQ_BDS_B2a;
+		case FREQ_INDEX_BDS_B1C: return LIGHT_SPEED / FREQ_BDS_B1C;
+		case FREQ_INDEX_BDS_B1I: return LIGHT_SPEED / FREQ_BDS_B1I;
+		case FREQ_INDEX_BDS_B2I:
+		case FREQ_INDEX_BDS_B2b: return LIGHT_SPEED / FREQ_BDS_B2b;
+		case FREQ_INDEX_BDS_B3I: return LIGHT_SPEED / FREQ_BDS_B3I;
+		case FREQ_INDEX_BDS_B2a: return LIGHT_SPEED / FREQ_BDS_B2a;
 		default: return LIGHT_SPEED / FREQ_BDS_B1C;
 		}
 	case GalileoSystem:
 		switch (FreqIndex)
 		{
-		case GAL_E1:  return LIGHT_SPEED / FREQ_GAL_E1;
-		case GAL_E5a: return LIGHT_SPEED / FREQ_GAL_E5a;
-		case GAL_E5b: return LIGHT_SPEED / FREQ_GAL_E5b;
-		case GAL_E6:  return LIGHT_SPEED / FREQ_GAL_E6;
+		case FREQ_INDEX_GAL_E1:  return LIGHT_SPEED / FREQ_GAL_E1;
+		case FREQ_INDEX_GAL_E5a: return LIGHT_SPEED / FREQ_GAL_E5a;
+		case FREQ_INDEX_GAL_E5b: return LIGHT_SPEED / FREQ_GAL_E5b;
+		case FREQ_INDEX_GAL_E6:  return LIGHT_SPEED / FREQ_GAL_E6;
 		default: return LIGHT_SPEED / FREQ_GAL_E1;
 		}
 	default: return LIGHT_SPEED / FREQ_GPS_L1;

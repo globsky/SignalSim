@@ -13,11 +13,13 @@
 #include "BasicTypes.h"
 #include "Trajectory.h"
 #include "GnssTime.h"
-#include "NavData.h"
-#include "LNavBit.h"
-#include "BCNavBit.h"
 #include "XmlInterpreter.h"
 #include "SatelliteParam.h"
 #include "Coordinate.h"
+#include "NavData.h"
+#include "LNavBit.h"
+#include "D1D2NavBit.h"
+#include "BCNavBit.h"
+#include "SatelliteSignal.h"
 
 #endif // __SIGNAL_SIM_H__
