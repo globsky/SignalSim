@@ -53,3 +53,7 @@ Change list as below:
 	Add a new class CSatelliteSignal to get data/pilot modulation
 	Add a new NavBit derived class D1D2NavBit to generate BDS2 data stream
 	Call to GetFrameData() in NavBit class will be obsolete in the future
+8/15/2023
+	Add pilot bit generation function
+	Remove pilot bit generation in NavBit and CSatelliteSignal class
+	GetFrameData() method in NavBit (and derived classes) no longer support pilot bit generation

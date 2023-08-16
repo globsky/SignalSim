@@ -20,9 +20,9 @@ struct SignalAttribute
 	int NHLength;	// length of one data bit in unit of PRN period
 	int NHCode;		// NH for data modulation
 	int FrameLength;	// length of frame/subframe in unit of millisecond
-	int SecondaryLength;	// length of secondary code
-	int SecondarySize;	// size of secondary code array for one SV in DWORD (0 if all SV uses the same secondary code)
-	const unsigned int *SecondaryCode;	// array of secondary code
+//	int SecondaryLength;	// length of secondary code
+//	int SecondarySize;	// size of secondary code array for one SV in DWORD (0 if all SV uses the same secondary code)
+//	const unsigned int *SecondaryCode;	// array of secondary code
 };
 
 class CSatelliteSignal
@@ -46,11 +46,8 @@ public:
 	int CurrentBitIndex;	// bit index used for current ms correlation result
 	int DataBits[1800];		// maximum 1800 encoded data bit for one subframe/page
 
-	// constant arrays for signal attributes and NH/Secondary code
+	// constant arrays for signal attributes and NH code
 	static const SignalAttribute SignalAttributes[32];
-	static const unsigned int SecondaryCodeL5[1];
-	static const unsigned int SecondaryCodeE1[1];
-	static const unsigned int SecondaryCodeB1C[63*57];
 };
 
 #endif //!defined(__SATELLITE_SIGNAL_H__)

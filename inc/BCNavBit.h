@@ -20,7 +20,7 @@ public:
 	BCNavBit();
 	~BCNavBit();
 
-	int GetFrameData(GNSS_TIME StartTime, int svid, int channel, int *NavBits);
+	int GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits);
 	int SetEphemeris(int svid, PGPS_EPHEMERIS Eph);
 	int SetAlmanac(int svid, PGPS_ALMANAC Alm) { return 0; };
 	int SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam) { return 0; };
@@ -29,7 +29,6 @@ private:
 	unsigned int BdsSubframe2[63][25];	// 63 SVs, 600bits in subframe 2, 24bits (4 symbols) in bit23~0 of each DWORD MSB first, lowest address first
 	unsigned int BdsSubframe3[63][11];	// 63 SVs, 264bits in subframe 3, 24bits (4 symbols) in bit23~0 of each DWORD MSB first, lowest address first
 
-	static const unsigned int B1CSecondCode[63][57];	// 63x1800bit secondary code
 	static const unsigned int BCH_prn_table[64];		// BCH encode table for SVID
 	static const unsigned long long BCH_soh_table[256];	// BCH encode table for SOH
 	static const unsigned int crc24q[256];				// CRC24Q table

@@ -30,7 +30,7 @@ LNavBit::~LNavBit()
 {
 }
 
-int LNavBit::GetFrameData(GNSS_TIME StartTime, int svid, int channel, int *NavBits)
+int LNavBit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits)
 {
 	int i, TOW, subframe, page;
 	unsigned int TlmWord, HowWord, CurWord, *Stream;

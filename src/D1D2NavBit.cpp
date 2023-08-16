@@ -29,7 +29,7 @@ D1D2NavBit::~D1D2NavBit()
 {
 }
 
-int D1D2NavBit::GetFrameData(GNSS_TIME StartTime, int svid, int channel, int *NavBits)
+int D1D2NavBit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits)
 {
 	int i, SOW, subframe, page, D1Data;
 	unsigned int CurWord, Stream[10];

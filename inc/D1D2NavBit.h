@@ -17,7 +17,7 @@ public:
 	D1D2NavBit();
 	~D1D2NavBit();
 
-	int GetFrameData(GNSS_TIME StartTime, int svid, int channel, int *NavBits);
+	int GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits);
 	int SetEphemeris(int svid, PGPS_EPHEMERIS Eph);
 	int SetAlmanac(int svid, PGPS_ALMANAC Alm);
 	int SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam);
