@@ -17,6 +17,7 @@
 #define SET_FIELD_EMPTY(str) memset(str, 32, 60)
 
 static void ConvertD2E(char *str);
+static void ReadUtcParam(char *str, PUTC_PARAM UtcParam);
 static NavDataType ReadEphmeris(FILE *fp_nav, void *NavData);
 static BOOL DecodeEphGps(NavDataType system, int svid, double *data, UTC_TIME time, PGPS_EPHEMERIS Eph);
 static BOOL DecodeEphGlonass(int svid, double *data, UTC_TIME time, PGLONASS_EPHEMERIS Eph);
@@ -24,17 +25,17 @@ static unsigned char GetUraIndex(double data);
 static unsigned char GetGalileoUra(double data);
 static void SetField(char *dest, char *src, int length);
 static void PrintTextField(FILE *fp, int enable, char *text, const char *description);
-static void PrintObsType(FILE *fp, char type, unsigned int mask);
-static void SetObsField(char *s, int band, unsigned int mask, char attribute);
+static void PrintObsType(FILE *fp, char system, unsigned int mask[3]);
+static void SetObsField(char *s, char system, int freq, int channel, int type);
 void PrintObservation(FILE *fp, SAT_OBSERVATION obs);
 
 NavDataType LoadNavFileHeader(FILE *fp_nav, void *NavData)
 {
-	char str[256], ch, TimeMark;
+	char str[256], TimeMark;
 	PIONO_PARAM Iono = (PIONO_PARAM)NavData;
 	PUTC_PARAM UtcParam = (PUTC_PARAM)NavData;
 	int Svid;
-	int data1, data2;
+	int data;
 
 	if (!fgets(str, 255, fp_nav))
 		return NavDataEnd;
@@ -53,6 +54,12 @@ NavDataType LoadNavFileHeader(FILE *fp_nav, void *NavData)
 			}
 			else
 				return NavDataUnknown;
+		}
+		if (strstr(str, "GAL") == str)
+		{
+			ConvertD2E(str);
+			sscanf(str + 4, "%lf %lf %lf", &(Iono->a0), &(Iono->a1), &(Iono->a2));
+			return NavDataGalileoIono;
 		}
 		else if (strstr(str, "BDSA") == str)
 		{
@@ -74,22 +81,24 @@ NavDataType LoadNavFileHeader(FILE *fp_nav, void *NavData)
 	{
 		if (strstr(str, "GPUT") == str)
 		{
-			ConvertD2E(str);
-			ch = str[22]; str[22] = 0; // put string terminator on first data
-			sscanf(str + 4, "%lf", &(UtcParam->A0));
-			str[22] = ch;	// restore char after first data
-			sscanf(str + 22, "%lf %d %d", &(UtcParam->A1), &data1, &data2);
-			UtcParam->tot = (unsigned char)(data1 >> 12);
-			UtcParam->WN = (short)data2;
-			UtcParam->WNLSF = UtcParam->WN;
-			UtcParam->DN = 0;
+			ReadUtcParam(str, UtcParam);
 			return NavDataGpsUtc;
+		}
+		else if (strstr(str, "GAUT") == str)
+		{
+			ReadUtcParam(str, UtcParam);
+			return NavDataGalileoUtc;
+		}
+		else if (strstr(str, "BDUT") == str)
+		{
+			ReadUtcParam(str, UtcParam);
+			return NavDataBdsUtc;
 		}
 	}
 	else if (strstr(str, "LEAP SECONDS") != 0)
 	{
-		sscanf(str + 4, "%d", &data1);
-		UtcParam->TLS = (signed char)data1;
+		sscanf(str + 4, "%d", &data);
+		UtcParam->TLS = (signed char)data;
 		return NavDataLeapSecond;
 	}
 	else if (strstr(str, "END OF HEADER") != 0)
@@ -238,6 +247,22 @@ static void ConvertD2E(char *str)
 			*str = 'E';
 		str ++;
 	}
+}
+
+void ReadUtcParam(char *str, PUTC_PARAM UtcParam)
+{
+	char ch;
+	int data1, data2;
+
+	ConvertD2E(str);
+	ch = str[22]; str[22] = 0; // put string terminator on first data
+	sscanf(str + 4, "%lf", &(UtcParam->A0));
+	str[22] = ch;	// restore char after first data
+	sscanf(str + 22, "%lf %d %d", &(UtcParam->A1), &data1, &data2);
+	UtcParam->tot = (unsigned char)(data1 >> 12);
+	UtcParam->WN = (short)data2;
+	UtcParam->WNLSF = UtcParam->WN;
+	UtcParam->DN = 0;
 }
 
 BOOL DecodeEphGps(NavDataType system, int svid, double *data, UTC_TIME time, PGPS_EPHEMERIS Eph)
@@ -434,57 +459,67 @@ void PrintTextField(FILE *fp, int enable, char *text, const char *description)
 	}
 }
 
-void PrintObsType(FILE *fp, char type, unsigned int mask)
+void PrintObsType(FILE *fp, char system, unsigned int mask[3])
 {
 	char str[100];
-	int i, band, obs_number = 0;
-	char *s = str + 6;
-	unsigned int band_mask;
-	char attribute = (type == 'C') ? 'P' : 'C';	// BDS set attribute to 'P'
+	int i, j, freq, channel, obs_number = 0;
 
 	SET_FIELD_EMPTY(str);
-	str[0] = type;
-	for (i = 0; i < 12; i ++)
-		if (mask & (1 << i)) obs_number ++;
-	sprintf(str + 1, "%5d", obs_number);
-	for (band = 1; band <= 2; band ++)
+	str[0] = system;
+	for (i = 0; i < 3; i ++)
 	{
-		band_mask = (mask >> ((band-1) * 4)) & 0xf;
-		if (band_mask)
-		{
-			SetObsField(s, band, band_mask, attribute);
-			s += 16;
-		}
+		channel = (mask[i] >> 4) & 0xf;
+		freq = (mask[i] >> 8) & 0xf;
+		for (j = 0; j < 4; j ++)
+			if (mask[i] & (1 << j))
+				SetObsField(str + 7 + (obs_number ++) * 4, system, freq, channel, j);
 	}
-	if (mask)
+	sprintf(str + 1, "%5d", obs_number);
+	str[6] = ' ';
+	if (obs_number > 0)
 	{
 		strcpy(str + 60, "SYS / # / OBS TYPES \n");
 		fputs(str, fp);
 	}
 }
 
-void SetObsField(char *s, int band, unsigned int mask, char attribute)
+static const char GpsFreqCode[] = {'1', '2', '5', };
+static const char BdsFreqCode[] = {'1', '2', '7', '6', '5', '7', };
+static const char GalileoFreqCode[] = {'1', '5', '7', '6', };
+static const char GlonassFreqCode[] = {'1', '2', };
+static const char TypeCode[] = {'C', 'L', 'D', 'S', };
+static const char GpsChannelCode[][16] = {
+	{'C', 'S', 'L', 'X', 'P', 'W', 'Y', 'M', 'N', },
+	{'C', 'D', 'S', 'L', 'X', 'P', 'W', 'Y', 'M', 'N', },
+	{'I', 'Q', 'X', },
+};
+static const char ChannelCodeABC[] = {'A', 'B', 'C', 'X', 'Z', };
+static const char ChannelCodeDPX[] = {'D', 'P', 'X', };
+static const char ChannelCodeIQX[] = {'I', 'Q', 'X', };
+void SetObsField(char *s, char system, int freq, int channel, int type)
 {
-	if (band >= 3)
-		band ++;
-	if (mask & 1)
+	switch (system)
 	{
-		s[0] = ' '; s[1] = 'C'; s[2] = '0' + band; s[3] = attribute;
-	}
-	s += 4;
-	if (mask & 2)
-	{
-		s[0] = ' '; s[1] = 'L'; s[2] = '0' + band; s[3] = attribute;
-	}
-	s += 4;
-	if (mask & 4)
-	{
-		s[0] = ' '; s[1] = 'D'; s[2] = '0' + band; s[3] = attribute;
-	}
-	s += 4;
-	if (mask & 8)
-	{
-		s[0] = ' '; s[1] = 'S'; s[2] = '0' + band; s[3] = attribute;
+	case 'G':
+		s[0] = TypeCode[type];
+		s[1] = GpsFreqCode[freq];
+		s[2] = GpsChannelCode[freq][channel];
+		break;
+	case 'C':
+		s[0] = TypeCode[type];
+		s[1] = BdsFreqCode[freq];
+		s[2] = (freq >= 1) && (freq <= 3) ? ChannelCodeIQX[channel] : ChannelCodeDPX[channel];
+		break;
+	case 'E':
+		s[0] = TypeCode[type];
+		s[1] = GalileoFreqCode[freq];
+		s[2] = ((freq == 0) || (freq == 3)) ? ChannelCodeABC[channel] : ChannelCodeIQX[channel];
+		break;
+	case 'R':
+		s[0] = TypeCode[type];
+		s[1] = GlonassFreqCode[freq];
+		s[2] = (channel == 0) ? 'C' : 'P';
+		break;
 	}
 }
 

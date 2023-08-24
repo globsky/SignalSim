@@ -54,8 +54,14 @@ typedef struct
 	unsigned long long GalileoMaskOut;
 	double ElevationMask;
 	int Interval;	// in millisecond
-	unsigned int SystemSelect;
+	unsigned int FreqSelect[4];	// Frequency select mask, 0~3 for GPS/BDS/Galileo/GLONASS respectively
 } OUTPUT_PARAM, *POUTPUT_PARAM;
+
+typedef struct
+{
+	double SystemDelay[4];	// system time difference to GPS, 0 for GPS (always 0), 1 for BDS, 2 for Galileo, 3 for GLONASS
+	double ReceiverDelay[4][8];	// receiver RF delay difference for each frequency to primary frequency, [][0] always 0
+} DELAY_CONFIG, *PDELAY_CONFIG;
 
 int ElementProcTime(void *Param);
 int ElementProcTrajectory(void *Param);
@@ -76,7 +82,8 @@ extern PATTRIBUTE_TYPE OutputAttributes[];
 extern PATTRIBUTE_TYPE SatelliteAttributes[];
 extern PATTRIBUTE_TYPE BasebandConfigAttributes[];
 extern PATTRIBUTE_TYPE ElevationMaskAttributes[];
-extern PATTRIBUTE_TYPE MaskOutAttributes[];
+extern PATTRIBUTE_TYPE SystemAttributes[];
+extern PATTRIBUTE_TYPE FreqIDAttributes[];
 extern PATTRIBUTE_TYPE ChannelInitAttributes[];
 
 extern const char *StartTimeElements[];
@@ -89,6 +96,7 @@ extern const char *OutputParamElements[];
 extern const char *PowerControlElements[];
 extern const char *PowerParamElements[];
 extern const char *SignalPowerElements[];
+extern const char *DelayConfigElements[];
 extern const char *ConfigParamElements[];
 extern const char *BasebandConfigElements[];
 extern const char *SatInitElements[];
@@ -97,6 +105,7 @@ BOOL AssignStartTime(CXmlElement *Element, UTC_TIME &UtcTime);
 BOOL SetTrajectory(CXmlElement *Element, LLA_POSITION &StartPos, LOCAL_SPEED &StartVel, CTrajectory &Trajectory);
 BOOL SetOutputParam(CXmlElement *Element, OUTPUT_PARAM &OutputParam);
 BOOL SetPowerControl(CXmlElement *Element, CPowerControl &PowerControl);
+BOOL SetDelayConfig(CXmlElement *Element, DELAY_CONFIG &DelayConfig);
 BOOL SetBasebandConfig(CXmlElement *Element, BASEBAND_CONFIG &BasebandConfig);
 BOOL SetSatInitParam(CXmlElement *Element, CHANNEL_INIT_PARAM SatInitParam[]);
 

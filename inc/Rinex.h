@@ -29,10 +29,12 @@ typedef struct
 	char AntennaType[60];
 	double ApproxPos[3];
 	double AntennaDelta[3];
-	unsigned int SysObsTypeGps;
-	unsigned int SysObsTypeGlonass;
-	unsigned int SysObsTypeBds;
-	unsigned int SysObsTypeGalileo;
+	// each system output maximum observation of 3 frequencies
+	// bit0~3 as mask for PSR/ADR/Doppler/CN0 respectively, bit4~7 as channel select (I/Q/D/P etc.), bit8~12 as frequency select
+	unsigned int SysObsTypeGps[3];
+	unsigned int SysObsTypeGlonass[3];
+	unsigned int SysObsTypeBds[3];
+	unsigned int SysObsTypeGalileo[3];
 	UTC_TIME FirstObs;
 	UTC_TIME LastObs;
 	unsigned int GlonassSlotMask;

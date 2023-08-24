@@ -21,6 +21,10 @@ const char *OutputType[] = { "position", "observation" };
 const char *OutputFormat[] = { "ECEF", "LLA", "NMEA", "KML", "RINEX" };
 const char *TimeUnit[] = { "s", "ms" };
 const char *ChannelEnable[] = { "auto", "true" };
+const char *FreqIDs[] = { "L1", "L2", "L5", "", "", "", "", "",
+                    "B1C", "B1I", "B2I", "B3I", "B2a", "B2b", "", "",
+					"E1", "E5a", "E5b", "E6", "", "", "", "",
+					"G1", "G2", "", "", "", "", "", "", };
 
 ATTRIBUTE_TYPE TimeTypeAttr = { "type", SystemType, sizeof(SystemType) / sizeof(char *), 0 };
 ATTRIBUTE_TYPE TrajectoryNameAttr = { "name", FlexibleName, sizeof(FlexibleName) / sizeof(char *), -1 };
@@ -37,6 +41,7 @@ ATTRIBUTE_TYPE IntervalUnitAttr = { "unit", TimeUnit, sizeof(TimeUnit) / sizeof(
 ATTRIBUTE_TYPE ElevationMaskAttr = { "unit", AngleUnit, sizeof(AngleUnit) / sizeof(char *), 0 };
 ATTRIBUTE_TYPE SystemAttr = { "system", SystemType, sizeof(SystemType) / sizeof(char *), 0 };
 ATTRIBUTE_TYPE SvidAttr = { "svid", FlexibleName, sizeof(FlexibleName) / sizeof(char *), -1 };
+ATTRIBUTE_TYPE FreqIDAttr = { "freq", FreqIDs, sizeof(FreqIDs) / sizeof(char *), -1 };
 ATTRIBUTE_TYPE ChannelEnableAttr = { "enable", ChannelEnable, sizeof(ChannelEnable) / sizeof(char *), 0 };
 
 PATTRIBUTE_TYPE InitTimeAttributes[] = { &TimeTypeAttr, NULL };
@@ -51,7 +56,8 @@ PATTRIBUTE_TYPE OutputAttributes[] = { &OutputTypeAttr, &OutputFormatAttr, NULL 
 PATTRIBUTE_TYPE SatelliteAttributes[] = { &SystemAttr, &SvidAttr, NULL };
 PATTRIBUTE_TYPE BasebandConfigAttributes[] = { &TimeTypeAttr, NULL };
 PATTRIBUTE_TYPE ElevationMaskAttributes[] = { &ElevationMaskAttr, NULL };
-PATTRIBUTE_TYPE MaskOutAttributes[] = { &SystemAttr, NULL };
+PATTRIBUTE_TYPE SystemAttributes[] = { &SystemAttr, NULL };
+PATTRIBUTE_TYPE FreqIDAttributes[] = { &SystemAttr, &FreqIDAttr, NULL };
 PATTRIBUTE_TYPE ChannelInitAttributes[] = { &SystemAttr, &SvidAttr, &ChannelEnableAttr, NULL };
 
 const char *StartTimeElements[] = { "Week", "LeapYear", "Day", "Second", "Year", "Month", "Hour", "Minute", NULL };
@@ -65,6 +71,7 @@ const char *ConfigParamElements[] = { "ElevationMask", "MaskOut", NULL };
 const char *PowerControlElements[] = { "PowerParam", "SignalPower", NULL };
 const char *PowerParamElements[] = { "NoiseFloor", "InitPower", "ElevationAdjust", NULL };
 const char *SignalPowerElements[] = { "Time", "Power", NULL };
+const char *DelayConfigElements[] = { "SystemDelay", "ReceiverDelay", NULL };
 const char *BasebandConfigElements[] = { "ChannelNumber", "CorrelatorNumber", "NoiseFloor", NULL };
 const char *SatInitElements[] = { "CorrelatorInterval", "PeakCorrelator", "InitFreqError", "InitPhaseError", "InitCodeError", "SNR", NULL };
 

@@ -24,7 +24,7 @@ public:
 	PGPS_EPHEMERIS FindEphemeris(GnssSystem system, GNSS_TIME time, int svid);
 	PIONO_PARAM GetGpsIono() { return &GpsIono; }
 	PIONO_PARAM GetBdsIono() { return &BdsIono[0]; }
-	double *GetGalileoIono() { return GalileoIono; }
+	PIONO_PARAM GetGalileoIono() { return &GalileoIono; }
 	PUTC_PARAM GetGpsUtcParam() { return &GpsUtcParam; }
 	PUTC_PARAM GetBdsUtcParam() { return &BdsUtcParam; }
 	PUTC_PARAM GetGalileoUtcParam() { return &GalileoUtcParam; }
@@ -42,7 +42,7 @@ private:
 	PGPS_EPHEMERIS GalileoEphmerisPool;
 	IONO_PARAM GpsIono;
 	IONO_PARAM BdsIono[24];
-	double GalileoIono[3];
+	IONO_PARAM GalileoIono;
 	UTC_PARAM GpsUtcParam;
 	UTC_PARAM BdsUtcParam;
 	UTC_PARAM GalileoUtcParam;

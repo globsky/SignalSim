@@ -582,7 +582,7 @@ static const unsigned int SecondaryCodeB1C[63*57] = {
 
 const unsigned int *GetPilotBits(GnssSystem System, int FreqIndex, int svid, int &Length)
 {
-	Length = 0;
+	Length = 1;	// default value set to 1 to prevent modular by 0
 
 	// signal and navigation bit match
 	switch (System)

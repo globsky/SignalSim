@@ -28,6 +28,7 @@ void main(void)
 	CTrajectory Trajectory;
 	CNavData NavData;
 	CPowerControl PowerControl;
+	DELAY_CONFIG DelayConfig;
 	LLA_POSITION StartPos, CurPos;
 	LOCAL_SPEED StartVel;
 	KINEMATIC_INFO PosVel;
@@ -43,6 +44,8 @@ void main(void)
 	RINEX_HEADER RinexHeader;
 	int ListCount;
 	PSIGNAL_POWER PowerList;
+
+	memset(&DelayConfig, 0, sizeof(DelayConfig));
 
 	CXmlElementTree XmlTree;
 	CXmlElement *RootElement, *Element;
@@ -62,6 +65,8 @@ void main(void)
 			SetOutputParam(Element, OutputParam);
 		else if (strcmp(Element->GetTag(), "PowerControl") == 0)
 			SetPowerControl(Element, PowerControl);
+		else if (strcmp(Element->GetTag(), "DelayConfig") == 0)
+			SetDelayConfig(Element, DelayConfig);
 	}
 
 	Trajectory.ResetTrajectoryTime();
@@ -103,9 +108,9 @@ void main(void)
 	if (fp == NULL)
 		return;
 
-	GpsSatNumber = (OutputParam.SystemSelect & (1 << GpsSystem)) ? GetVisibleSatellite(PosVel, time, OutputParam, GpsSystem, GpsEph, TOTAL_GPS_SAT, GpsEphVisible) : 0;
-	BdsSatNumber = (OutputParam.SystemSelect & (1 << BdsSystem)) ? GetVisibleSatellite(PosVel, time, OutputParam, BdsSystem, BdsEph, TOTAL_BDS_SAT, BdsEphVisible) : 0;
-	GalSatNumber = (OutputParam.SystemSelect & (1 << GalileoSystem)) ? GetVisibleSatellite(PosVel, time, OutputParam, GalileoSystem, GalEph, TOTAL_GAL_SAT, GalEphVisible) : 0;
+	GpsSatNumber = (OutputParam.FreqSelect[GpsSystem]) ? GetVisibleSatellite(PosVel, time, OutputParam, GpsSystem, GpsEph, TOTAL_GPS_SAT, GpsEphVisible) : 0;
+	BdsSatNumber = (OutputParam.FreqSelect[BdsSystem]) ? GetVisibleSatellite(PosVel, time, OutputParam, BdsSystem, BdsEph, TOTAL_BDS_SAT, BdsEphVisible) : 0;
+	GalSatNumber = (OutputParam.FreqSelect[GalileoSystem]) ? GetVisibleSatellite(PosVel, time, OutputParam, GalileoSystem, GalEph, TOTAL_GAL_SAT, GalEphVisible) : 0;
 #if 1
 	if (OutputParam.Format == OutputFormatRinex)
 	{
@@ -117,10 +122,10 @@ void main(void)
 		RinexHeader.ApproxPos[0] = PosVel.x;
 		RinexHeader.ApproxPos[1] = PosVel.y;
 		RinexHeader.ApproxPos[2] = PosVel.z;
-		RinexHeader.SysObsTypeGps = 0xf;
-		RinexHeader.SysObsTypeGlonass = 0x0;
-		RinexHeader.SysObsTypeBds = 0xf;
-		RinexHeader.SysObsTypeGalileo = 0xf;
+		RinexHeader.SysObsTypeGps[0] = 0xf; RinexHeader.SysObsTypeGps[1] = RinexHeader.SysObsTypeGps[2] = 0x0;
+		RinexHeader.SysObsTypeGlonass[0] = RinexHeader.SysObsTypeGlonass[1] = RinexHeader.SysObsTypeGlonass[2] = 0x0;
+		RinexHeader.SysObsTypeBds[0] = 0xf | (1 << 4); RinexHeader.SysObsTypeBds[1] = RinexHeader.SysObsTypeBds[2] = 0x0;
+		RinexHeader.SysObsTypeGalileo[0] = 0xf | (2 << 4); RinexHeader.SysObsTypeGalileo[1] = RinexHeader.SysObsTypeGalileo[2] = 0x0;
 		RinexHeader.Interval = OutputParam.Interval / 1000.;
 		OutputHeader(fp, &RinexHeader);
 	}
@@ -197,9 +202,9 @@ void main(void)
 		CurPos = EcefToLla(PosVel);
 		if ((time.MilliSeconds % 60000) == 0)	// recalculate visible satellite at minute boundary
 		{
-			GpsSatNumber = (OutputParam.SystemSelect & (1 << GpsSystem)) ? GetVisibleSatellite(PosVel, time, OutputParam, GpsSystem, GpsEph, TOTAL_GPS_SAT, GpsEphVisible) : 0;
-			BdsSatNumber = (OutputParam.SystemSelect & (1 << BdsSystem)) ? GetVisibleSatellite(PosVel, time, OutputParam, BdsSystem, BdsEph, TOTAL_BDS_SAT, BdsEphVisible) : 0;
-			GalSatNumber = (OutputParam.SystemSelect & (1 << GalileoSystem)) ? GetVisibleSatellite(PosVel, time, OutputParam, GalileoSystem, GalEph, TOTAL_GAL_SAT, GalEphVisible) : 0;
+			GpsSatNumber = (OutputParam.FreqSelect[GpsSystem]) ? GetVisibleSatellite(PosVel, time, OutputParam, GpsSystem, GpsEph, TOTAL_GPS_SAT, GpsEphVisible) : 0;
+			BdsSatNumber = (OutputParam.FreqSelect[BdsSystem]) ? GetVisibleSatellite(PosVel, time, OutputParam, BdsSystem, BdsEph, TOTAL_BDS_SAT, BdsEphVisible) : 0;
+			GalSatNumber = (OutputParam.FreqSelect[GalileoSystem]) ? GetVisibleSatellite(PosVel, time, OutputParam, GalileoSystem, GalEph, TOTAL_GAL_SAT, GalEphVisible) : 0;
 		}
 		if (OutputParam.Format == OutputFormatRinex)
 		{

@@ -57,3 +57,6 @@ Change list as below:
 	Add pilot bit generation function
 	Remove pilot bit generation in NavBit and CSatelliteSignal class
 	GetFrameData() method in NavBit (and derived classes) no longer support pilot bit generation
+8/24/2023
+	Add Galileo I/NAV data stream generation class
+	Add inter-signal correction (delay between different frequencies) support in XML format

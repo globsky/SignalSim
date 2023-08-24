@@ -39,6 +39,9 @@ bool CNavData::AddNavData(NavDataType Type, void *NavData)
 	case NavDataGpsIono:
 		memcpy(&GpsIono, NavData, sizeof(IONO_PARAM));
 		return true;
+	case NavDataGalileoIono:
+		memcpy(&GalileoIono, NavData, sizeof(IONO_PARAM));
+		return true;
 	case NavDataBdsIonoA:
 		TimeMark = Iono->flag & 0x1f;
 		if (TimeMark >= 0 && TimeMark < 24)
@@ -98,16 +101,28 @@ bool CNavData::AddNavData(NavDataType Type, void *NavData)
 		GalileoEphemerisNumber ++;
 		break;
 	case NavDataGpsUtc:
-		UtcParam->TLS = UtcParam->TLSF = GpsUtcParam.TLS;
+		UtcParam->TLS = UtcParam->TLSF = GpsUtcParam.TLS;	// set TLS/TLSF field in UtcParam with correct before memcpy()
 		UtcParam->flag = GpsUtcParam.flag | 1;
 		memcpy(&GpsUtcParam, UtcParam, sizeof(UTC_PARAM));
 		break;
 	case NavDataBdsUtc:
+		UtcParam->TLS = UtcParam->TLSF = BdsUtcParam.TLS;	// set TLS/TLSF field in UtcParam with correct before memcpy()
+		UtcParam->flag = BdsUtcParam.flag | 1;
+		memcpy(&BdsUtcParam, UtcParam, sizeof(UTC_PARAM));
+		break;
 	case NavDataGalileoUtc:
+		UtcParam->TLS = UtcParam->TLSF = GalileoUtcParam.TLS;	// set TLS/TLSF field in UtcParam with correct before memcpy()
+		UtcParam->flag = GalileoUtcParam.flag | 1;
+		memcpy(&GalileoUtcParam, UtcParam, sizeof(UTC_PARAM));
+		break;
 	case NavDataGalileoGps:
 	case NavDataLeapSecond:
 		GpsUtcParam.TLS = GpsUtcParam.TLSF = UtcParam->TLS;	// set both TLS and TLSF
 		GpsUtcParam.flag |= 2;	// and set valid flag
+		GalileoUtcParam.TLS = GalileoUtcParam.TLSF = UtcParam->TLS;	// set both TLS and TLSF
+		GalileoUtcParam.flag |= 2;	// and set valid flag
+		BdsUtcParam.TLS = BdsUtcParam.TLSF = UtcParam->TLS - 14;	// set both TLS and TLSF
+		BdsUtcParam.flag |= 2;	// and set valid flag
 		break;
 	}
 	return true;

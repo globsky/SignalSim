@@ -229,6 +229,7 @@ BOOL GetTrajectorySegmentData(CXmlElement *Element, TrajectoryDataType &DataType
 BOOL SetOutputParam(CXmlElement *Element, OUTPUT_PARAM &OutputParam)
 {
 	int i;
+	int system, freq;
 	CXmlElement *SubElement = 0;
 	CSimpleDict *Attributes = Element->GetAttributes();
 
@@ -238,7 +239,9 @@ BOOL SetOutputParam(CXmlElement *Element, OUTPUT_PARAM &OutputParam)
 	OutputParam.BdsMaskOut = OutputParam.GalileoMaskOut = 0LL;
 	OutputParam.ElevationMask = DEG2RAD(5);
 	OutputParam.Interval = 1000;
-	OutputParam.SystemSelect = 0x7;
+	// default output GPS L1 only
+	OutputParam.FreqSelect[0] = 0x1;
+	OutputParam.FreqSelect[1] = OutputParam.FreqSelect[2] = OutputParam.FreqSelect[3] = 0;
 
 	for (i = 0; i < Attributes->DictItemNumber; i ++)
 	{
@@ -257,15 +260,30 @@ BOOL SetOutputParam(CXmlElement *Element, OUTPUT_PARAM &OutputParam)
 		case 1: strcpy(OutputParam.filename, SubElement->GetText()); break;
 		case 2: ProcessConfigParam(SubElement, OutputParam); break;
 		case 3:
-			if (FindAttribute(SubElement->GetAttributes()->Dictionary[0].key, SatelliteAttributes) == 0)
-				if ((i = GetAttributeIndex(SubElement->GetAttributes()->Dictionary[0].value, SatelliteAttributes[0])) < 4)
+			Attributes = SubElement->GetAttributes();
+			system = freq = -1;
+			for (i = 0; i < Attributes->DictItemNumber; i ++)
+			{
+				switch (FindAttribute(Attributes->Dictionary[i].key, FreqIDAttributes))
 				{
-					if (strcmp(SubElement->GetText(), "true") == 0)
-						OutputParam.SystemSelect |= 1 << i;
-					else if (strcmp(SubElement->GetText(), "false") == 0)
-						OutputParam.SystemSelect &= ~(1 << i);
+				case 0: system = GetAttributeIndex(Attributes->Dictionary[i].value, FreqIDAttributes[0]); break;
+				case 1: freq = GetAttributeIndex(Attributes->Dictionary[i].value, FreqIDAttributes[1]); break;
 				}
-				break;
+			}
+			if (freq >= 0 && ((freq / 8) != system))	// freq and system do not match
+				system = -1;
+			if (system >= 0)
+			{
+				if (freq < 0)	// frequency not set, set as primary frequency
+					freq = 0;
+				else
+					freq %= 8;
+				if (strcmp(SubElement->GetText(), "true") == 0)
+					OutputParam.FreqSelect[system] |= (1 << freq);
+				else if (strcmp(SubElement->GetText(), "false") == 0)
+					OutputParam.FreqSelect[system] &= ~(1 << freq);
+			}
+			break;
 		}
 	}
 
@@ -468,6 +486,65 @@ BOOL ProcessSignalPower(CXmlElement *Element, CPowerControl &CPowerControl)
 			}
 			SignalPower.time = (int)time;
 			CPowerControl.AddControlElement(&SignalPower);
+			break;
+		}
+	}
+
+	return TRUE;
+}
+
+BOOL SetDelayConfig(CXmlElement *Element, DELAY_CONFIG &DelayConfig)
+{
+	int i, index, Type = 0;	// 0 for GPS, 1 for BDS, 2 for Galileo, 3 for GLONASS
+	int freq;
+	CSimpleDict *Attributes = Element->GetAttributes();
+	CXmlElement *SubElement = 0;
+	double time;
+
+	for (i = 0; i < Attributes->DictItemNumber; i ++)
+	{
+		switch (FindAttribute(Attributes->Dictionary[i].key, SystemAttributes))
+		{
+		case 0: Type = GetAttributeIndex(Attributes->Dictionary[i].value, SystemAttributes[0]); break;
+		}
+	}
+
+	while ((SubElement = Element->EnumSubElement(SubElement)) != NULL)
+	{
+		switch (GetElementIndex(SubElement->GetTag(), DelayConfigElements))
+		{
+		case 0: 
+			Attributes = SubElement->GetAttributes();
+			index = Attributes->Find("unit");
+			time = atof(SubElement->GetText());
+			if (index >= 0)
+			{
+				if (strcmp(Attributes->Dictionary[index].value, "ns") == 0)
+					time /= 1e-9;
+			}
+			if (Type != 0)
+				DelayConfig.SystemDelay[Type] = time;
+			break;
+		case 1:
+			time = atof(SubElement->GetText());
+			Attributes = SubElement->GetAttributes();
+			index = Attributes->Find("unit");
+			if (index >= 0)
+			{
+				if (strcmp(Attributes->Dictionary[index].value, "ns") == 0)
+					time /= 1e-9;
+			}
+			index = Attributes->Find("freq");
+			if (index >= 0)
+			{
+				freq = GetAttributeIndex(Attributes->Dictionary[index].value, FreqIDAttributes[1]);
+				if (Type == freq / 8)	// FreqID matches selected system
+				{
+					freq %= 8;
+					if (freq != 0)
+						DelayConfig.ReceiverDelay[Type][freq] = time;
+				}
+			}
 			break;
 		}
 	}

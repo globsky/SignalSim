@@ -194,7 +194,7 @@ typedef  struct _PACKED_
 	double	A1;  // second/second, 2**-50
 	short	WN;
 	short	WNLSF;
-	unsigned char	tot; // 2**12 for GPS/BDS and 3600 for Galileo
+	unsigned char	tot; // scale factor 2**12 for GPS/BDS and 3600 for Galileo
 	signed char	TLS; // leap second
 	signed char	TLSF;
 	unsigned char	DN;

@@ -10,6 +10,7 @@
 
 #include "SatelliteSignal.h"
 #include "LNavBit.h"
+#include "INavBit.h"
 #include "D1D2NavBit.h"
 #include "BCNavBit.h"
 #include "PilotBit.h"
@@ -91,10 +92,9 @@ BOOL CSatelliteSignal::SetSignalAttribute(GnssSystem System, int FreqIndex, NavB
 	case GalileoSystem:
 		switch (SatFreq)
 		{
-		case FREQ_INDEX_GAL_E1 : return FALSE;
-//		case FREQ_INDEX_GAL_E1 :
-//			Attribute = &SignalAttributes[9];
-//			return (typeid(*NavData) == typeid(INavBit)) ? TRUE : FALSE;
+		case FREQ_INDEX_GAL_E1 :
+			Attribute = &SignalAttributes[9];
+			return (typeid(*NavData) == typeid(INavBit)) ? TRUE : FALSE;
 //		case FREQ_INDEX_GAL_E5a:
 //			Attribute = &SignalAttributes[10];
 //			return (typeid(*NavData) == typeid(FNavBit) || typeid(*NavData) == typeid(CNav2Bit)) ? TRUE : FALSE;
@@ -138,7 +138,6 @@ BOOL CSatelliteSignal::GetSatelliteSignal(GNSS_TIME TransmitTime, complex_number
 	if (NavData == NULL)	// attribute not yet set
 		return FALSE;
 
-	SecondaryPosition = (Milliseconds / Attribute->CodeLength) % SecondaryLength;	// position in secondary code
 	FrameNumber = Milliseconds / Attribute->FrameLength;	// subframe/page number
 	Milliseconds %= Attribute->FrameLength;
 	BitNumber = Milliseconds / BitLength;	// current bit position within current subframe/page
@@ -153,7 +152,10 @@ BOOL CSatelliteSignal::GetSatelliteSignal(GNSS_TIME TransmitTime, complex_number
 
 	DataBit = (DataBits[BitNumber] ? -1 : 1) * ((Attribute->NHCode & (1 << BitPos)) ? -1 : 1);
 	if (SecondaryCode)
-		PilotBit = (SecondaryCode[SecondaryPosition/32] & (1 << (SecondaryPosition&0x1f))) ? -1 : 1;
+	{
+		SecondaryPosition = (TransmitTime.MilliSeconds / Attribute->CodeLength) % SecondaryLength;	// position in secondary code
+		PilotBit = (SecondaryCode[SecondaryPosition / 32] & (1 << (SecondaryPosition & 0x1f))) ? -1 : 1;
+	}
 
 	// generate DataSignal and PilotSignal
 	// the signal of data and pilot complex value will reflect their relative amplitude and phase

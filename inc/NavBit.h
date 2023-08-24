@@ -11,7 +11,7 @@
 
 #include "BasicTypes.h"
 
-#define COMPOSE_BITS(data, start, width) ((data & ((1 << width) - 1)) << start)
+#define COMPOSE_BITS(data, start, width) (((data) & ((1 << width) - 1)) << start)
 
 typedef union
 {
@@ -33,6 +33,11 @@ public:
 	int roundu(double data);
 	double UnscaleDouble(double value, int scale);
 	int AssignBits(unsigned int Data, int BitNumber, int BitStream[]);
+	unsigned char ConvolutionEncode(unsigned char EncodeBits);
+	unsigned int Crc24qEncode(unsigned int *BitStream, int Length);
+
+	static const unsigned char ConvEncodeTable[256];
+	static const unsigned int Crc24q[256];
 };
 
 #endif // __NAV_BIT_H__
