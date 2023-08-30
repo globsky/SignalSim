@@ -11,6 +11,7 @@
 
 #include "BasicTypes.h"
 
+BOOL GetLeapSecond(unsigned int Seconds, int &LeapSecond);
 UTC_TIME GpsTimeToUtc(GNSS_TIME GnssTime, BOOL UseLeapSecond = TRUE);
 UTC_TIME GlonassTimeToUtc(GLONASS_TIME GlonassTime);
 UTC_TIME BdsTimeToUtc(GNSS_TIME GnssTime);

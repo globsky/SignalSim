@@ -11,8 +11,14 @@
 #include "BasicTypes.h"
 #include "Coordinate.h"
 
+#define COARSE_STEP 30
 #define COS_5 0.99619469809174553
 #define SIN_5 0.087155742747658173559
+
+static void RungeKutta(double h, double State[9]);
+static void CalcAcceleration(double *State, double *Acc);
+static void PredictState(double *State, double *State1, double *VelAcc, double Step);
+static void CisToCts(double *State, double DeltaT, PKINEMATIC_INFO pCtsPos, double *Acc);
 
 double GpsClockCorrection(PGPS_EPHEMERIS Eph, double TransmitTime)
 {
@@ -29,6 +35,18 @@ double GpsClockCorrection(PGPS_EPHEMERIS Eph, double TransmitTime)
 	ClockAdj *= (1 - Eph->af1);	// adjustment to time
 
 	return ClockAdj;
+}
+
+double GlonassClockCorrection(PGLONASS_EPHEMERIS Eph, double TransmitTime)
+{
+	double TimeDiff = TransmitTime - (double)Eph->tb;
+
+	if (TimeDiff > 43200.0)
+		TimeDiff -= 86400.0;
+	else if (TimeDiff < -43200.0)
+		TimeDiff += 86400.0;
+
+	return -Eph->tn + Eph->gamma * TimeDiff;
 }
 
 bool GpsSatPosSpeedEph(GnssSystem system, double TransmitTime, PGPS_EPHEMERIS pEph, PKINEMATIC_INFO pPosVel, double Acc[3])
@@ -194,6 +212,90 @@ bool GpsSatPosSpeedEph(GnssSystem system, double TransmitTime, PGPS_EPHEMERIS pE
 		return false;
 	else
 		return true;
+}
+
+bool GlonassSatPosSpeedEph(double TransmitTime, PGLONASS_EPHEMERIS pEph, PKINEMATIC_INFO pPosVel, double Acc[3])
+{
+	double DeltaT, DeltaT1;
+	double State[9];
+	int i, StepNumber;
+
+	DeltaT = TransmitTime - (double)pEph->tb;
+	if (DeltaT > 43200.0)
+		DeltaT -= 86400.0;
+	else if (DeltaT < -43200.0)
+		DeltaT += 86400.0;
+
+	// delta t correction according to satellite clock error and clock drift
+//	DeltaT += (pEph->tn + pEph->gamma * DeltaT);	
+
+	// if position and velocity at tc not yet calculated
+	if ((pEph->flag & 0x2) == 0)
+	{
+		// satellite position and velocity in CIS coordinate
+		State[0] = pEph->x;
+		State[1] = pEph->y;
+		State[2] = pEph->z;
+		State[3] = pEph->vx - PZ90_OMEGDOTE * pEph->y;
+		State[4] = pEph->vy + PZ90_OMEGDOTE * pEph->x;
+		State[5] = pEph->vz;
+		State[6] = pEph->ax;
+		State[7] = pEph->ay;
+		State[8] = pEph->az;
+
+		StepNumber = (int)DeltaT / COARSE_STEP;
+		if (StepNumber >= 0)
+		{
+			for (i = StepNumber; i > 0; i --)
+			{
+				RungeKutta(COARSE_STEP, State);
+			}
+		}
+		else
+		{
+			for (i = StepNumber; i < 0; i ++)
+			{
+				RungeKutta(-COARSE_STEP, State);
+			}
+		}
+		DeltaT1 = DeltaT - StepNumber * COARSE_STEP;
+	}
+	// prediction from tc
+	else
+	{
+		State[0] = pEph->PosVelT.x;
+		State[1] = pEph->PosVelT.y;
+		State[2] = pEph->PosVelT.z;
+		State[3] = pEph->PosVelT.vx;
+		State[4] = pEph->PosVelT.vy;
+		State[5] = pEph->PosVelT.vz;
+		State[6] = pEph->ax;
+		State[7] = pEph->ay;
+		State[8] = pEph->az;
+		DeltaT1 = TransmitTime - pEph->tc;
+		if (DeltaT1 > 43200.0)
+			DeltaT1 -= 86400.0;
+		else if (DeltaT1 < -43200.0)
+			DeltaT1 += 86400.0;
+
+		// delta t correction according to satellite clock error and clock drift
+//		DeltaT1 += pEph->gamma * DeltaT1;
+	}
+	RungeKutta(DeltaT1, State);
+	
+	pEph->tc = TransmitTime;
+	pEph->flag |= 0x2;	// can predict from pEph->tc instead of pEph->tn
+	pEph->PosVelT.x = State[0];
+	pEph->PosVelT.y = State[1];
+	pEph->PosVelT.z = State[2];
+	pEph->PosVelT.vx = State[3];
+	pEph->PosVelT.vy = State[4];
+	pEph->PosVelT.vz = State[5];
+
+	// CIS to CTS(PZ-90) convertion
+	CisToCts(State, DeltaT, pPosVel, Acc);
+
+	return true;
 }
 
 LLA_POSITION EcefToLla(KINEMATIC_INFO ecef_pos)
@@ -440,4 +542,87 @@ double TropoDelay(double Lat, double Altitude, double Elevation)
     trpw = 0.002277 * (1255.0 / t + 0.05) * e / cos(z);
 
 	return (trph + trpw);
+}
+
+void RungeKutta(double h, double State[9])
+{
+	double State1[9], VelAcc1[6], VelAcc2[6], VelAcc3[6], VelAcc4[6];
+	int i;
+
+	State1[6] = State[6];
+	State1[7] = State[7];
+	State1[8] = State[8];
+	CalcAcceleration(State, VelAcc1);
+	PredictState(State, State1, VelAcc1, 0.5 * h);
+	CalcAcceleration(State1, VelAcc2);
+	PredictState(State, State1, VelAcc2, 0.5 * h);
+	CalcAcceleration(State1, VelAcc3);
+	PredictState(State, State1, VelAcc3, h);
+	CalcAcceleration(State1, VelAcc4);
+	for (i = 0; i < 6; i ++)
+	{
+		VelAcc1[i] = (VelAcc1[i] + VelAcc4[i] + 2.0 * (VelAcc2[i] + VelAcc3[i])) / 6.0;
+	}
+	PredictState(State, State, VelAcc1, h);
+}
+
+void CalcAcceleration(double *State, double *Acc)
+{
+	double r2, r3, Coef20, Scale20;
+
+	Acc[0] = State[3];
+	Acc[1] = State[4];
+	Acc[2] = State[5];
+	r2 = (State[0] * State[0] + State[1] * State[1] + State[2] * State[2]);
+	r3 = r2 * sqrt(r2);
+	Coef20 = PZ90_C20AE2 / r2;
+	Scale20 = PZ90_GM * (1.5 * Coef20 * (5 * State[2] * State[2] / r2 - 1.0) - 1.0) / r3;
+	Acc[3] = Scale20 * State[0] + State[6];		// x acceleration
+	Acc[4] = Scale20 * State[1] + State[7];		// y acceleration
+	Acc[5] = (Scale20 - 3.0 * PZ90_GM * Coef20 / r3) * State[2] + State[8];	// z acceleration
+}
+
+void PredictState(double *State, double *State1, double *VelAcc, double Step)
+{
+	int i;
+
+	for (i = 0; i < 6; i ++)
+	{
+		State1[i] = State[i] + VelAcc[i] * Step;
+	}
+}
+
+static void CisToCts(double *State, double DeltaT, PKINEMATIC_INFO pCtsPos, double *Acc)
+{
+	double Omega, SinValue, CosValue;
+
+	// calculate rotate angle between CIS and CTS
+	Omega = PZ90_OMEGDOTE * DeltaT;
+	CosValue = cos(Omega);
+	SinValue = sin(Omega);
+	// calculate position
+	pCtsPos->x = State[0] * CosValue + State[1] * SinValue;
+	pCtsPos->y = State[1] * CosValue - State[0] * SinValue;
+	pCtsPos->z = State[2];
+	// calculate velocity
+	pCtsPos->vx = State[3] * CosValue + State[4] * SinValue;
+	pCtsPos->vy = State[4] * CosValue - State[3] * SinValue;
+	pCtsPos->vz = State[5];
+	// calculate acceleration
+	if (Acc)
+	{
+		Acc[0] = State[6] * CosValue + State[7] * SinValue;
+		Acc[1] = State[7] * CosValue - State[6] * SinValue;
+		Acc[2] = State[8];
+	}
+	// additional compensation on velocity/acceleration
+	CosValue *= PZ90_OMEGDOTE;
+	SinValue *= PZ90_OMEGDOTE;
+	pCtsPos->vx -= State[0] * SinValue - State[1] * CosValue;
+	pCtsPos->vy -= State[1] * SinValue + State[0] * CosValue;
+	if (Acc)
+	{
+		Acc[0] -= State[3] * SinValue - State[4] * CosValue;
+		Acc[1] -= State[4] * SinValue + State[3] * CosValue;
+	}
 }

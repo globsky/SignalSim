@@ -19,6 +19,7 @@
 #include "INavBit.h"
 #include "D1D2NavBit.h"
 #include "BCNavBit.h"
+#include "GNavBit.h"
 #include "XmlInterpreter.h"
 #include "SatelliteParam.h"
 #include "SatelliteSignal.h"

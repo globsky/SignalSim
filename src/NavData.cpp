@@ -9,15 +9,24 @@
 #include <string.h>
 
 #include "NavData.h"
+#include "GnssTime.h"
 
 CNavData::CNavData()
 {
-	GpsEphemerisNumber = BdsEphemerisNumber = GalileoEphemerisNumber = 0;
+	GpsEphemerisNumber = BdsEphemerisNumber = GalileoEphemerisNumber = GlonassEphemerisNumber = 0;
 	GpsEphmerisPool = (PGPS_EPHEMERIS)malloc(sizeof(GPS_EPHEMERIS) * EPH_NUMBER_INC);
 	BdsEphmerisPool = (PGPS_EPHEMERIS)malloc(sizeof(GPS_EPHEMERIS) * EPH_NUMBER_INC);
 	GalileoEphmerisPool = (PGPS_EPHEMERIS)malloc(sizeof(GPS_EPHEMERIS) * EPH_NUMBER_INC);
-	GpsEphmerisPoolSize = BdsEphmerisPoolSize = GalileoEphmerisPoolSize = EPH_NUMBER_INC;
+	GlonassEphmerisPool = (PGLONASS_EPHEMERIS)malloc(sizeof(GLONASS_EPHEMERIS) * EPH_NUMBER_INC);
+	GpsEphmerisPoolSize = BdsEphmerisPoolSize = GalileoEphmerisPoolSize = GlonassEphmerisPoolSize = EPH_NUMBER_INC;
 	memset(&GpsUtcParam, 0, sizeof(UTC_PARAM));
+	// set default FreqID for each glonass SLOT
+	GlonassSlotFreq[ 0] =  1; GlonassSlotFreq[ 1] = -4; GlonassSlotFreq[ 2] =  5; GlonassSlotFreq[ 3] =  6;
+	GlonassSlotFreq[ 4] =  1; GlonassSlotFreq[ 5] = -4; GlonassSlotFreq[ 6] =  5; GlonassSlotFreq[ 7] =  6;
+	GlonassSlotFreq[ 8] = -2; GlonassSlotFreq[ 9] = -7; GlonassSlotFreq[10] =  0; GlonassSlotFreq[11] = -1;
+	GlonassSlotFreq[12] = -2; GlonassSlotFreq[13] = -7; GlonassSlotFreq[14] =  0; GlonassSlotFreq[15] = -1;
+	GlonassSlotFreq[16] =  4; GlonassSlotFreq[17] = -3; GlonassSlotFreq[18] =  3; GlonassSlotFreq[19] =  2;
+	GlonassSlotFreq[20] =  4; GlonassSlotFreq[21] = -3; GlonassSlotFreq[22] =  3; GlonassSlotFreq[23] =  2;
 }
 
 CNavData::~CNavData()
@@ -100,6 +109,18 @@ bool CNavData::AddNavData(NavDataType Type, void *NavData)
 		memcpy(&GalileoEphmerisPool[GalileoEphemerisNumber], NavData, sizeof(GPS_EPHEMERIS));
 		GalileoEphemerisNumber ++;
 		break;
+	case NavDataGlonassEph:
+		if (GlonassEphemerisNumber == GlonassEphmerisPoolSize)
+		{
+			GlonassEphmerisPoolSize += EPH_NUMBER_INC;
+			NewEphmerisPool = (PGPS_EPHEMERIS)realloc(GlonassEphmerisPool, sizeof(GLONASS_EPHEMERIS) * GlonassEphmerisPoolSize);
+			if (NewEphmerisPool == NULL)
+				return false;
+			GlonassEphmerisPool = (PGLONASS_EPHEMERIS)NewEphmerisPool;
+		}
+		memcpy(&GlonassEphmerisPool[GlonassEphemerisNumber], NavData, sizeof(GLONASS_EPHEMERIS));
+		GlonassEphemerisNumber ++;
+		break;
 	case NavDataGpsUtc:
 		UtcParam->TLS = UtcParam->TLSF = GpsUtcParam.TLS;	// set TLS/TLSF field in UtcParam with correct before memcpy()
 		UtcParam->flag = GpsUtcParam.flag | 1;
@@ -171,11 +192,42 @@ PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int sv
 	return Eph;
 }
 
+PGLONASS_EPHEMERIS CNavData::FindGloEphemeris(GNSS_TIME time, int slot)
+{
+	int i, time_diff, diff;
+	PGLONASS_EPHEMERIS Eph = NULL;
+	UTC_TIME UtcTime = GpsTimeToUtc(time, FALSE);;
+	GLONASS_TIME GloTime = UtcToGlonassTime(UtcTime);
+
+	for (i = 0; i < GlonassEphemerisNumber; i ++)
+	{
+		if (slot != (int)GlonassEphmerisPool[i].n)
+			continue;
+		diff = GloTime.Day - GlonassEphmerisPool[i].day;
+		// day range between -730~730
+		if (diff > 730)
+			diff -= 1461;
+		else if (diff < -730)
+			diff += 1461;
+		diff = diff * 86400 + (GloTime.MilliSeconds / 1000 - GlonassEphmerisPool[i].tb);
+		if (diff < 0)
+			diff = -diff;
+		if ((diff < 1800) && ((Eph == NULL) || ((Eph != NULL) && (diff < time_diff))))
+		{
+			Eph = &GlonassEphmerisPool[i];
+			time_diff = diff;
+		}
+	}
+
+	return Eph;
+}
+
 void CNavData::ReadNavFile(char *filename)
 {
 	FILE *fp;
 	NavDataType DataType;
 	GPS_EPHEMERIS NavData;
+	PGLONASS_EPHEMERIS pEph = (PGLONASS_EPHEMERIS)(&NavData);
 
 	if ((fp = fopen(filename, "r")) == NULL)
 		return;
@@ -187,6 +239,9 @@ void CNavData::ReadNavFile(char *filename)
 	}
 	while ((DataType = LoadNavFileEphemeris(fp, (void *)&NavData)) != NavDataEnd)
 	{
+		if (DataType == NavDataGlonassEph)
+			if (pEph->n > 0 && pEph->n <= 24)
+				GlonassSlotFreq[pEph->n-1] = pEph->freq;
 		if (DataType != NavDataUnknown)
 			AddNavData(DataType, (void *)&NavData);
 	}

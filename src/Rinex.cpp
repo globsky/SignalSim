@@ -27,6 +27,7 @@ static void SetField(char *dest, char *src, int length);
 static void PrintTextField(FILE *fp, int enable, char *text, const char *description);
 static void PrintObsType(FILE *fp, char system, unsigned int mask[3]);
 static void SetObsField(char *s, char system, int freq, int channel, int type);
+static void PrintSlotFreq(FILE *fp, int SlotFreq[], unsigned int SlotMask);
 void PrintObservation(FILE *fp, SAT_OBSERVATION obs);
 
 NavDataType LoadNavFileHeader(FILE *fp_nav, void *NavData)
@@ -224,6 +225,9 @@ void OutputHeader(FILE *fp, PRINEX_HEADER Header)
 	PrintObsType(fp, 'R', Header->SysObsTypeGlonass);
 	PrintObsType(fp, 'C', Header->SysObsTypeBds);
 	PrintObsType(fp, 'E', Header->SysObsTypeGalileo);
+	// GLONASS SLOT / FRQ #
+	if (Header->HeaderFlag & RINEX_HEADER_SLOT_FREQ)
+		PrintSlotFreq(fp, Header->GlonassFreqNumber, Header->GlonassSlotMask);
 	
 	fprintf(fp, "     %5.3f                                                  INTERVAL            \n", Header->Interval);
 	fprintf(fp, "                                                            END OF HEADER       \n");
@@ -356,7 +360,7 @@ BOOL DecodeEphGps(NavDataType system, int svid, double *data, UTC_TIME time, PGP
 BOOL DecodeEphGlonass(int svid, double *data, UTC_TIME time, PGLONASS_EPHEMERIS Eph)
 {
 	int FrameTime;
-	GLONASS_TIME eph_time = UtcToGlonassTime(time);
+	GLONASS_TIME eph_time = UtcToGlonassTime(time);	// in RINEX, time is GPS time, so eph_time has bias of leap second
 
 	Eph->n = svid;
 	Eph->freq = (signed char)data[10];
@@ -367,7 +371,7 @@ BOOL DecodeEphGlonass(int svid, double *data, UTC_TIME time, PGLONASS_EPHEMERIS 
 	Eph->M = 1;		// assume GLONASS-M satellite
 	Eph->Ft = 0;	// no data
 	Eph->day = (unsigned short)(eph_time.Day);
-	Eph->tb = ((int)(eph_time.MilliSeconds) + 450000) / 900000 * 900;
+	Eph->tb = ((int)(eph_time.MilliSeconds) + 450000) / 900000 * 900;	// when align to 900 second, leap second bias eleminated
 	Eph->Bn = (unsigned char)data[6];
 	Eph->En = (unsigned char)data[14];
 	Eph->tn = -data[0];
@@ -520,6 +524,41 @@ void SetObsField(char *s, char system, int freq, int channel, int type)
 		s[1] = GlonassFreqCode[freq];
 		s[2] = (channel == 0) ? 'C' : 'P';
 		break;
+	}
+}
+
+void PrintSlotFreq(FILE *fp, int SlotFreq[], unsigned int SlotMask)
+{
+	int i, Count, Number = 0;
+	char str[100];
+
+	// count the number of SLOT/FRQ pair
+	for (i = 0; i < 24; i ++)
+		Number += (SlotMask & (1 << i)) ? 1 : 0;
+	if (Number == 0)
+		return;
+
+	for (i = 0, Count = 0; i < 24; i ++)
+	{
+		if ((SlotMask & (1 << i)) == 0)
+			continue;
+		if (Count == 0)	// first data
+			sprintf(str, " %2d", Number);
+		else if ((Count % 8) == 0)
+			sprintf(str, "   ");
+		sprintf(str + 3 + 7 * (Count & 7), " R%02d %2d", i + 1, SlotFreq[i]);
+		if (((++Count) % 8) == 0)
+		{
+			strcat(str + 59, " GLONASS SLOT / FRQ #\n");
+			fputs(str, fp);
+		}
+	}
+	if ((Number % 8) != 0)	// less than 8 slots to fill a line
+	{
+		for (i = 3 + 7 * (Number & 7); i < 59; i ++)	// fill rest with space
+			str[i] = ' ';
+		strcat(str + 59, " GLONASS SLOT / FRQ #\n");
+		fputs(str, fp);
 	}
 }
 

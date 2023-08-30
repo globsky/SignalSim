@@ -1,0 +1,242 @@
+//----------------------------------------------------------------------
+// LNavBit.h:
+//   Implementation of navigation bit synthesis class for LNAV
+//
+//          Copyright (C) 2020-2029 by Jun Mo, All rights reserved.
+//
+//----------------------------------------------------------------------
+
+#include <math.h>
+#include <memory.h>
+#include "ConstVal.h"
+#include "GNavBit.h"
+
+const unsigned int GNavBit::CheckSumTable[8][3] = {
+{ 0x000aaaab, 0x55555556, 0xaaad5b01, },
+{ 0x000ccccd, 0x9999999b, 0x33366d02, },
+{ 0x0000f0f1, 0xe1e1e1e3, 0xc3c78e04, },
+{ 0x0000ff01, 0xfe01fe03, 0xfc07f008, },
+{ 0x000f0001, 0xfffe0003, 0xfff80010, },
+{ 0x00000001, 0xfffffffc, 0x00000020, },
+{ 0x000ffffe, 0x00000000, 0x00000040, },
+{ 0x000fffff, 0xffffffff, 0xffffffff, },
+};
+
+GNavBit::GNavBit()
+{
+	memset(StringEph, 0x0, sizeof(StringEph));
+	memset(StringAlm, 0x0, sizeof(StringAlm));
+}
+
+GNavBit::~GNavBit()
+{
+}
+
+int GNavBit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits)
+{
+	int i, string, frame, bit;
+	unsigned int* data, Stream[3];
+
+	if (svid < 1 || svid > 24)
+		return 1;
+
+	string = StartTime.MilliSeconds / 2000;
+	frame = (string / 15) % 5;
+	string %= 15;
+
+	if (string < 4)	// Ephemeris string
+		data = StringEph[svid - 1][string];
+	else
+		data = StringAlm[frame][string - 4];
+
+	// left shift 8bit for check sum space and add word m as string number
+	Stream[0] = (data[0] & 0xffff);
+	Stream[1] = data[1];
+	Stream[2] = data[2] & 0xffffff00;
+
+	// add check sum and put 85 bits to NavBits position 85~169 (leave first 85 places for meander code expansion)
+	Stream[2] |= CheckSum(Stream);
+	AssignBits(Stream[0], 21, NavBits + 85);
+	AssignBits(Stream[1], 32, NavBits + 106);
+	AssignBits(Stream[2], 32, NavBits + 138);
+	// do relative coding
+	bit = 0;	// first bit of the string is always 0
+	for (i = 86; i < 170; i++)
+		bit = NavBits[i] = (bit ^ NavBits[i]);
+	// expand to meander code
+	for (i = 0; i < 85; i++)
+	{
+		NavBits[i * 2] = NavBits[i + 85];
+		NavBits[i * 2 + 1] = 1 - NavBits[i + 85];
+	}
+	// append time mark
+	AssignBits(0x3e375096, 30, NavBits + 170);
+
+	return 0;
+}
+
+int GNavBit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
+{
+	if (svid < 1 || svid > 24 || !Eph || !Eph->flag)
+		return 0;
+	ComposeStringEph((PGLONASS_EPHEMERIS)Eph, StringEph[svid-1]);
+	return svid;
+}
+
+int GNavBit::SetAlmanac(int svid, PGPS_ALMANAC Alm)
+{
+	int frame, string;
+
+	if (svid < 1 || svid > 24)
+		return 0;
+	frame = (svid - 1) / 5;
+	string = (svid - 1) % 5 + 6;
+	ComposeStringAlm((PGLONASS_ALMANAC)Alm, StringAlm[frame][string-5], StringAlm[frame][string-4]);
+	StringAlm[frame][string - 5][0] |= ((string << 16) | (svid << 8));
+	StringAlm[frame][string - 4][0] |= ((string + 1) << 16);
+	return svid;
+}
+
+int GNavBit::SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam)
+{
+	return 0;
+}
+
+int GNavBit::ComposeStringEph(PGLONASS_EPHEMERIS Ephemeris, unsigned int String[][3])
+{
+	double Value;
+	unsigned int UintValue;
+
+	// string 1
+	String[0][0] = (1 << 16) | COMPOSE_BITS(Ephemeris->P, 12, 2);
+	String[0][0] |= COMPOSE_BITS(Ephemeris->tk, 0, 12);
+	Value = UnscaleDouble(fabs(Ephemeris->vx) / 1000, -20);
+	UintValue = roundu(Value); UintValue |= (Ephemeris->vx < 0) ? (1 << 23) : 0;
+	String[0][1] = COMPOSE_BITS(UintValue, 8, 24);
+	Value = UnscaleDouble(fabs(Ephemeris->ax) / 1000, -30);
+	UintValue = roundu(Value); UintValue |= (Ephemeris->ax < 0) ? (1 << 4) : 0;
+	String[0][1] |= COMPOSE_BITS(UintValue, 3, 5);
+	Value = UnscaleDouble(fabs(Ephemeris->x) / 1000, -11);
+	UintValue = roundu(Value); UintValue |= (Ephemeris->x < 0) ? (1 << 26) : 0;
+	String[0][1] |= COMPOSE_BITS(UintValue >> 24, 0, 3);
+	String[0][2] = COMPOSE_BITS(UintValue, 8, 24);
+	// string 2
+	String[1][0] = (2 << 16) | COMPOSE_BITS(Ephemeris->Bn, 13, 3);
+	String[1][0] |= COMPOSE_BITS(Ephemeris->P >> 2, 12, 1);
+	UintValue = Ephemeris->tb / 900;
+	String[1][0] |= COMPOSE_BITS(UintValue, 5, 7);
+	Value = UnscaleDouble(fabs(Ephemeris->vy) / 1000, -20);
+	UintValue = roundu(Value); UintValue |= (Ephemeris->vy < 0) ? (1 << 23) : 0;
+	String[1][1] = COMPOSE_BITS(UintValue, 8, 24);
+	Value = UnscaleDouble(fabs(Ephemeris->ay) / 1000, -30);
+	UintValue = roundu(Value); UintValue |= (Ephemeris->ay < 0) ? (1 << 4) : 0;
+	String[1][1] |= COMPOSE_BITS(UintValue, 3, 5);
+	Value = UnscaleDouble(fabs(Ephemeris->y) / 1000, -11);
+	UintValue = roundu(Value); UintValue |= (Ephemeris->y < 0) ? (1 << 26) : 0;
+	String[1][1] |= COMPOSE_BITS(UintValue >> 24, 0, 3);
+	String[1][2] = COMPOSE_BITS(UintValue, 8, 24);
+	// string 3
+	String[2][0] = (3 << 16) | COMPOSE_BITS(Ephemeris->P >> 3, 15, 1);
+	Value = UnscaleDouble(fabs(Ephemeris->gamma), -40);
+	UintValue = roundu(Value); UintValue |= (Ephemeris->gamma < 0) ? (1 << 10) : 0;
+	String[2][0] |= COMPOSE_BITS(UintValue, 4, 11);
+	String[2][0] |= COMPOSE_BITS(Ephemeris->P >> 5, 0, 3);
+	Value = UnscaleDouble(fabs(Ephemeris->vz) / 1000, -20);
+	UintValue = roundu(Value); UintValue |= (Ephemeris->vz < 0) ? (1 << 23) : 0;
+	String[2][1] = COMPOSE_BITS(UintValue, 8, 24);
+	Value = UnscaleDouble(fabs(Ephemeris->az) / 1000, -30);
+	UintValue = roundu(Value); UintValue |= (Ephemeris->az < 0) ? (1 << 4) : 0;
+	String[2][1] |= COMPOSE_BITS(UintValue, 3, 5);
+	Value = UnscaleDouble(fabs(Ephemeris->z) / 1000, -11);
+	UintValue = roundu(Value); UintValue |= (Ephemeris->z < 0) ? (1 << 26) : 0;
+	String[2][1] |= COMPOSE_BITS(UintValue >> 24, 0, 3);
+	String[2][2] = COMPOSE_BITS(UintValue, 8, 24);
+	// string 4
+	Value = UnscaleDouble(fabs(Ephemeris->tn), -30);
+	UintValue = roundu(Value); UintValue |= (Ephemeris->tn < 0) ? (1 << 21) : 0;
+	String[3][0] = (4 << 16) | COMPOSE_BITS(UintValue >> 6, 0, 16);
+	String[3][1] = COMPOSE_BITS(UintValue, 26, 6);
+	Value = UnscaleDouble(fabs(Ephemeris->dtn), -30);
+	UintValue = roundu(Value); UintValue |= (Ephemeris->dtn < 0) ? (1 << 4) : 0;
+	String[3][1] |= COMPOSE_BITS(UintValue, 21, 5);
+	String[3][1] |= COMPOSE_BITS(Ephemeris->En, 16, 5);
+	String[3][1] |= COMPOSE_BITS(Ephemeris->P >> 4, 1, 1);
+	String[3][1] |= COMPOSE_BITS(Ephemeris->Ft >> 3, 0, 1);
+	String[3][2] = COMPOSE_BITS(Ephemeris->Ft, 29, 3);
+	String[3][2] |= COMPOSE_BITS(Ephemeris->day, 15, 11);
+	String[3][2] |= COMPOSE_BITS(Ephemeris->n, 10, 5);
+	String[3][2] |= COMPOSE_BITS(Ephemeris->M, 8, 2);
+
+	return 0;
+}
+
+int GNavBit::ComposeStringAlm(PGLONASS_ALMANAC Almanac, unsigned int StreamEven[3], unsigned int StreamOdd[3])
+{
+	double Value;
+	unsigned int UintValue;
+
+	if (!Almanac->flag)
+	{
+		StreamEven[2] = StreamEven[1] = StreamEven[0] = StreamOdd[2] = StreamOdd[1] = StreamOdd[0] = 0;
+		return 0;
+	}
+	// first string
+	StreamEven[0] = COMPOSE_BITS(Almanac->flag, 15, 1);
+	StreamEven[0] |= COMPOSE_BITS(1, 13, 2);		// Mn=01 for GLONASS-M
+	Value = UnscaleDouble(fabs(Almanac->lambda), -20);
+	UintValue = roundu(Value); UintValue |= (Almanac->lambda < 0) ? (1 << 20) : 0;
+	StreamEven[1] = COMPOSE_BITS(UintValue, 9, 21);
+	Value = UnscaleDouble(fabs(Almanac->di), -20);
+	UintValue = roundu(Value); UintValue |= (Almanac->di < 0) ? (1 << 17) : 0;
+	StreamEven[1] |= COMPOSE_BITS(UintValue >> 9, 0, 9);
+	StreamEven[2] = COMPOSE_BITS(UintValue, 23, 9);
+	Value = UnscaleDouble(Almanac->ecc, -20);
+	UintValue = roundu(Value);
+	StreamEven[2] |= COMPOSE_BITS(UintValue, 8, 15);
+	// second string
+	Value = UnscaleDouble(fabs(Almanac->w), -15);
+	UintValue = roundu(Value); UintValue |= (Almanac->w < 0) ? (1 << 15) : 0;
+	StreamOdd[0] = COMPOSE_BITS(UintValue >> 8, 0, 16);
+	Value = UnscaleDouble(fabs(Almanac->t), -5);
+	UintValue = roundu(Value);
+	StreamOdd[1] = COMPOSE_BITS(UintValue, 11, 21);
+	Value = UnscaleDouble(fabs(Almanac->dt), -9);
+	UintValue = roundu(Value); UintValue |= (Almanac->dt < 0) ? (1 << 21) : 0;
+	StreamOdd[1] |= COMPOSE_BITS(UintValue >> 11, 0, 11);
+	StreamOdd[2] = COMPOSE_BITS(UintValue, 21, 11);
+	Value = UnscaleDouble(fabs(Almanac->dt_dot), -14);
+	UintValue = roundu(Value); UintValue |= (Almanac->dt < 0) ? (1 << 6) : 0;
+	StreamOdd[2] |= COMPOSE_BITS(UintValue, 14, 7);
+	StreamOdd[2] |= COMPOSE_BITS(Almanac->freq, 9, 5);
+	return 0;
+}
+
+// calculate check sum on data
+// the data bit number from 84 to 1 placed are bit19~0 in data[0]
+// then bit31~0 in data[1] and bit31~0 in data[2]
+// put the hamming code bits in 8 LSB in data[2] will return 0 if check success
+// or put 0 in 8 LSB of data[0] will return humming code bits
+unsigned int GNavBit::CheckSum(unsigned int Data[3])
+{
+	unsigned int CheckSumValue = 0;
+	unsigned int xor_value[3];
+	int i, j;
+
+	// calculate parity value
+	for (i = 7; i >= 0; i--)
+	{
+		for (j = 0; j < 3; j++)
+		{
+			xor_value[j] = Data[j] & CheckSumTable[i][j];
+			// calculate bit 1 number
+			xor_value[j] = (xor_value[j] & 0x55555555) + ((xor_value[j] & 0xaaaaaaaa) >> 1);
+			xor_value[j] = (xor_value[j] & 0x33333333) + ((xor_value[j] & 0xcccccccc) >> 2);
+			xor_value[j] = (xor_value[j] & 0x0f0f0f0f) + ((xor_value[j] & 0xf0f0f0f0) >> 4);
+			xor_value[j] = (xor_value[j] & 0x000f000f) + ((xor_value[j] & 0x0f000f00) >> 8);
+			xor_value[j] = (xor_value[j] & 0x0000000f) + ((xor_value[j] & 0x000f0000) >> 16);
+		}
+		CheckSumValue = (CheckSumValue << 1) | ((xor_value[0] + xor_value[1] + xor_value[2]) & 1);
+	}
+
+	return CheckSumValue;
+}

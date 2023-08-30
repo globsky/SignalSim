@@ -56,6 +56,7 @@ typedef struct
 #define RINEX_HEADER_ANT_TYPE	0x00000200
 #define RINEX_HEADER_APPROX_POS	0x00001000
 #define RINEX_HEADER_ANT_DELTA	0x00002000
+#define RINEX_HEADER_SLOT_FREQ	0x00004000
 #define RINEX_HEADER_FIRST_OBS	0x00010000
 #define RINEX_HEADER_LAST_OBS	0x00020000
 
@@ -63,6 +64,7 @@ enum NavDataType {
 	NavDataEnd = 0, NavDataUnknown,
 	NavDataGpsIono, NavDataBdsIonoA, NavDataBdsIonoB, NavDataGalileoIono,
 	NavDataGpsUtc, NavDataBdsUtc, NavDataGalileoUtc, NavDataGalileoGps, NavDataLeapSecond,
+	NavDataGlonassFreq,
 	NavDataGpsEph, NavDataBdsEph, NavDataGalileoEph, NavDataGlonassEph
 };
 

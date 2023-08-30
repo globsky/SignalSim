@@ -10,6 +10,7 @@
 #include "ConstVal.h"
 #include "SatelliteParam.h"
 #include "Coordinate.h"
+#include "GnssTime.h"
 #include "XmlInterpreter.h"
 
 static void GetSatPosVel(GnssSystem system, double SatelliteTime, PGPS_EPHEMERIS Eph, PSATELLITE_PARAM SatelliteParam, PKINEMATIC_INFO pPosVel);
@@ -25,9 +26,48 @@ int GetVisibleSatellite(KINEMATIC_INFO Position, GNSS_TIME time, OUTPUT_PARAM Ou
 	{
 		if (Eph[i] == NULL || Eph[i]->flag == 0 || Eph[i]->health != 0)
 			continue;
-		if (OutputParam.GpsMaskOut & (1 << (i-1)))
+		if (system == GpsSystem)
+		{
+			if (OutputParam.GpsMaskOut & (1 << (i-1)))
+				continue;
+		}
+		else if (system == BdsSystem)
+		{
+			if (OutputParam.BdsMaskOut & (1LL << (i-1)))
+				continue;
+		}
+		else if (system == GalileoSystem)
+		{
+			if (OutputParam.GalileoMaskOut & (1LL << (i-1)))
+				continue;
+		}
+		else
 			continue;
 		if (!GpsSatPosSpeedEph(system, time.MilliSeconds / 1000., Eph[i], &SatPosition, NULL))
+			continue;
+		SatElAz(&Position, &SatPosition, &Elevation, &Azimuth);
+		if (Elevation < OutputParam.ElevationMask)
+			continue;
+		EphVisible[SatNumber ++] = Eph[i];
+	}
+
+	return SatNumber;
+}
+
+int GetGlonassVisibleSatellite(KINEMATIC_INFO Position, GLONASS_TIME time, OUTPUT_PARAM OutputParam, PGLONASS_EPHEMERIS Eph[], int Number, PGLONASS_EPHEMERIS EphVisible[])
+{
+	int i;
+	int SatNumber = 0;
+	KINEMATIC_INFO SatPosition;
+	double Elevation, Azimuth;
+
+	for (i = 0; i < Number; i ++)
+	{
+		if (Eph[i] == NULL || Eph[i]->flag == 0)
+			continue;
+		if (OutputParam.GlonassMaskOut & (1 << (i-1)))
+			continue;
+		if (!GlonassSatPosSpeedEph(time.MilliSeconds / 1000., Eph[i], &SatPosition, NULL))
 			continue;
 		SatElAz(&Position, &SatPosition, &Elevation, &Azimuth);
 		if (Elevation < OutputParam.ElevationMask)
@@ -47,19 +87,38 @@ void GetSatelliteParam(KINEMATIC_INFO PositionEcef, LLA_POSITION PositionLla, GN
 	double TimeDiff;
 	double Elevation, Azimuth;
 	double LosVector[3];
+	PGLONASS_EPHEMERIS GloEph = (PGLONASS_EPHEMERIS)Eph;
+	int Seconds, LeapSecond;
 
 	SatelliteParam->system= system;
-	SatelliteParam->svid = Eph->svid;
 	if (system == BdsSystem)	// subtract leap second difference
-		SatelliteTime -= 14.0;
+		time.MilliSeconds -= 14000;
+	else if (system == GlonassSystem)	// subtract leap second, add 3 hours
+	{
+		Seconds = (unsigned int)(time.Week * 604800 + time.MilliSeconds / 1000);
+		GetLeapSecond(Seconds, LeapSecond);
+		time.MilliSeconds = (time.MilliSeconds + 10800000 - LeapSecond * 1000) % 86400000;
+	}
+	SatelliteTime = (time.MilliSeconds + time.SubMilliSeconds) / 1000.0;
 
 	// first estimate the travel time, ignore tgd, ionosphere and troposphere delay
+	if (system == GlonassSystem)
+	{
+		SatelliteParam->svid = GloEph->n;
+		SatelliteParam->FreqID = GloEph->freq;
+		GlonassSatPosSpeedEph(SatelliteTime, GloEph, &SatPosition, NULL);
+	}
+	else
+	{
+		SatelliteParam->svid = Eph->svid;
+		SatelliteParam->FreqID = 0;
 #if USE_POSITION_PREDICTION
-	GetSatPosVel(system, SatelliteTime, Eph, SatelliteParam, &SatPosition);
+		GetSatPosVel(system, SatelliteTime, Eph, SatelliteParam, &SatPosition);
 #else
-	GpsSatPosSpeedEph(system, SatelliteTime, Eph, &SatPosition, NULL);
-//	SatelliteParam->PosVel = SatPosition;
+		GpsSatPosSpeedEph(system, SatelliteTime, Eph, &SatPosition, NULL);
+	//	SatelliteParam->PosVel = SatPosition;
 #endif
+	}
 	TravelTime = GeometryDistance(&PositionEcef, &SatPosition, SatelliteParam->LosVector) / LIGHT_SPEED;
 	SatPosition.x -= TravelTime * SatPosition.vx; SatPosition.y -= TravelTime * SatPosition.vy; SatPosition.z -= TravelTime * SatPosition.vz;
 	TravelTime = GeometryDistance(&PositionEcef, &SatPosition, SatelliteParam->LosVector) / LIGHT_SPEED;
@@ -67,26 +126,36 @@ void GetSatelliteParam(KINEMATIC_INFO PositionEcef, LLA_POSITION PositionLla, GN
 
 	// calculate accurate transmit time
 	// travel_time = (d + dtrop)/c + tgd - dts - trel + diono
+	if (system == GlonassSystem)
+		GlonassSatPosSpeedEph(SatelliteTime, GloEph, &SatPosition, NULL);
+	else
+	{
 #if USE_POSITION_PREDICTION
-	TimeDiff = SatelliteTime - SatelliteParam->PosTimeTag;
-	SatPosition.x = SatelliteParam->PosVel.x + (SatelliteParam->PosVel.vx + SatelliteParam->Acc[0] * TimeDiff * 0.5) * TimeDiff;
-	SatPosition.y = SatelliteParam->PosVel.y + (SatelliteParam->PosVel.vy + SatelliteParam->Acc[1] * TimeDiff * 0.5) * TimeDiff;
-	SatPosition.z = SatelliteParam->PosVel.z + (SatelliteParam->PosVel.vz + SatelliteParam->Acc[2] * TimeDiff * 0.5) * TimeDiff;
-	SatPosition.vx = SatelliteParam->PosVel.vx + SatelliteParam->Acc[0] * TimeDiff;
-	SatPosition.vy = SatelliteParam->PosVel.vy + SatelliteParam->Acc[1] * TimeDiff;
-	SatPosition.vz = SatelliteParam->PosVel.vz + SatelliteParam->Acc[2] * TimeDiff;
+		TimeDiff = SatelliteTime - SatelliteParam->PosTimeTag;
+		SatPosition.x = SatelliteParam->PosVel.x + (SatelliteParam->PosVel.vx + SatelliteParam->Acc[0] * TimeDiff * 0.5) * TimeDiff;
+		SatPosition.y = SatelliteParam->PosVel.y + (SatelliteParam->PosVel.vy + SatelliteParam->Acc[1] * TimeDiff * 0.5) * TimeDiff;
+		SatPosition.z = SatelliteParam->PosVel.z + (SatelliteParam->PosVel.vz + SatelliteParam->Acc[2] * TimeDiff * 0.5) * TimeDiff;
+		SatPosition.vx = SatelliteParam->PosVel.vx + SatelliteParam->Acc[0] * TimeDiff;
+		SatPosition.vy = SatelliteParam->PosVel.vy + SatelliteParam->Acc[1] * TimeDiff;
+		SatPosition.vz = SatelliteParam->PosVel.vz + SatelliteParam->Acc[2] * TimeDiff;
 #else
-	TimeDiff = 0;
-	GpsSatPosSpeedEph(system, SatelliteTime, Eph, &SatPosition, NULL);
+		TimeDiff = 0;
+		GpsSatPosSpeedEph(system, SatelliteTime, Eph, &SatPosition, NULL);
 #endif
+	}
 	Distance = GeometryDistance(&PositionEcef, &SatPosition, LosVector);
 	SatElAz(&PositionLla, LosVector, &Elevation, &Azimuth);
 	SatelliteParam->IonoDelay = GpsIonoDelay(IonoParam, SatelliteTime, PositionLla.lat, PositionLla.lon, Elevation, Azimuth);
 	Distance += TropoDelay(PositionLla.lat, PositionLla.alt, Elevation);
-	TravelTime = Distance / LIGHT_SPEED - GpsClockCorrection(Eph, SatelliteTime);
-	TravelTime -= WGS_F_GTR * Eph->ecc * Eph->sqrtA * sin(Eph->Ek + TimeDiff * Eph->Ek_dot);		// relativity correction
+	if (system == GlonassSystem)
+		TravelTime = Distance / LIGHT_SPEED - GlonassClockCorrection(GloEph, SatelliteTime);
+	else
+	{
+		TravelTime = Distance / LIGHT_SPEED - GpsClockCorrection(Eph, SatelliteTime);
+		TravelTime -= WGS_F_GTR * Eph->ecc * Eph->sqrtA * sin(Eph->Ek + TimeDiff * Eph->Ek_dot);		// relativity correction
+		SatelliteParam->GroupDelay[0] = Eph->tgd;
+	}
 	SatelliteParam->TravelTime = TravelTime;
-	SatelliteParam->GroupDelay[0] = Eph->tgd;
 	SatelliteParam->Elevation = Elevation;
 	SatelliteParam->Azimuth = Azimuth;
 	SatelliteParam->RelativeSpeed = SatRelativeSpeed(&PositionEcef, &SatPosition) - LIGHT_SPEED * Eph->af1;
@@ -156,8 +225,10 @@ double GetIonoDelay(double IonoDelayL1, int system, int FreqIndex)
 	}
 }
 
-double GetWaveLength(int system, int FreqIndex)
+double GetWaveLength(int system, int FreqIndex, int FreqID)
 {
+	double Freq;
+
 	switch (system)
 	{
 	case GpsSystem:
@@ -188,6 +259,9 @@ double GetWaveLength(int system, int FreqIndex)
 		case FREQ_INDEX_GAL_E6:  return LIGHT_SPEED / FREQ_GAL_E6;
 		default: return LIGHT_SPEED / FREQ_GAL_E1;
 		}
+	case GlonassSystem:
+		Freq = (FreqIndex == 0) ? (1602e6 + 562500 * FreqID) : (1246e6 + 437500 * FreqID);
+		return LIGHT_SPEED / Freq;
 	default: return LIGHT_SPEED / FREQ_GPS_L1;
 	}
 }
@@ -207,12 +281,12 @@ double GetCarrierPhase(PSATELLITE_PARAM SatelliteParam, int FreqIndex)
 	if (FreqIndex)
 		TravelTime -= SatelliteParam->GroupDelay[FreqIndex];	// ISC adjustment
 	TravelTime = TravelTime * LIGHT_SPEED - GetIonoDelay(SatelliteParam->IonoDelay, SatelliteParam->system, FreqIndex);
-	return TravelTime / GetWaveLength(SatelliteParam->system, FreqIndex);
+	return TravelTime / GetWaveLength(SatelliteParam->system, FreqIndex, SatelliteParam->FreqID);
 }
 
 double GetDoppler(PSATELLITE_PARAM SatelliteParam, int FreqIndex)
 {
-	return -SatelliteParam->RelativeSpeed / GetWaveLength(SatelliteParam->system, FreqIndex);
+	return -SatelliteParam->RelativeSpeed / GetWaveLength(SatelliteParam->system, FreqIndex, SatelliteParam->FreqID);
 }
 
 GNSS_TIME GetTransmitTime(GNSS_TIME ReceiverTime, double TravelTime)

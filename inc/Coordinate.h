@@ -12,7 +12,9 @@
 #include "BasicTypes.h"
 
 double GpsClockCorrection(PGPS_EPHEMERIS Eph, double TransmitTime);
+double GlonassClockCorrection(PGLONASS_EPHEMERIS Eph, double TransmitTime);
 bool GpsSatPosSpeedEph(GnssSystem system, double TransmitTime, PGPS_EPHEMERIS pEph, PKINEMATIC_INFO pPosVel, double Acc[3]);
+bool GlonassSatPosSpeedEph(double TransmitTime, PGLONASS_EPHEMERIS pEph, PKINEMATIC_INFO pPosVel, double Acc[3]);
 LLA_POSITION EcefToLla(KINEMATIC_INFO ecef_pos);
 KINEMATIC_INFO LlaToEcef(LLA_POSITION lla_pos);
 CONVERT_MATRIX CalcConvMatrix(KINEMATIC_INFO Position);

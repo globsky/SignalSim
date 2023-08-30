@@ -153,13 +153,13 @@ typedef struct
 						// bit1 means position and velocity at tc valid (avoid extrapolation from beginning)
 	signed char freq;	// frequency number of satellite
 	unsigned char P;	// place P1, P2, P3, P4, ln, P from LSB at bit
-						//      0/1,  2,  3,  4,  5, 6
+						//      0/1, 2, 3, 4, 5, 6/7
 	unsigned char M;	// satellite type 00 - GLONASS, 01 - GLONASS-M
 	unsigned char Ft;	// indicator of accuracy of measurements
 	unsigned char n;	// slot number that transmit signal
 	unsigned char Bn;	// healthy flag
 	unsigned char En;	// age of the immediate information
-	unsigned int tb;	// index of 15 minutes interval within current day
+	unsigned int tb;	// reference time in seconds within current day
 	unsigned short day;	// day number of the leap year corresponding to tb
 	unsigned short tk;  // hour:b11~b7, minute:b6~b1, second:b0 * 30
 	double gamma;		// relative deviation of predicted carrier frequency
@@ -173,6 +173,20 @@ typedef struct
 	double tc;			// reference time giving the following position and velocity
 	KINEMATIC_INFO PosVelT;	// position and velocity in CIS coordinate at instant tc
 } GLONASS_EPHEMERIS, *PGLONASS_EPHEMERIS;
+
+typedef struct
+{
+	unsigned char flag;	// bit0 means almanac valid
+	signed char freq;	// frequency number of satellite
+	short ReferenceDay;	// reference day of almanac
+	double t;			// reference time of almanac
+	double lambda;		// longitude of ascending node of orbit
+	double di;			// inclination correction
+	double ecc;			// eccentricity, actually stored sqrt((1-e)/(1+e))
+	double w;			// Argument of Perigee
+	double dt;			// correction to the mean value of Draconian period
+	double dt_dot;		// rate of change of orbital period
+} GLONASS_ALMANAC, * PGLONASS_ALMANAC;
 
 typedef struct
 {

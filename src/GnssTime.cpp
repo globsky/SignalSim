@@ -19,7 +19,7 @@ unsigned int InsertTime[] = { 46828800, 78364801, 109900802, 173059203, 25202880
 UTC_TIME GlonassTimeToUtc(GLONASS_TIME GlonassTime);
 GLONASS_TIME UtcToGlonassTime(UTC_TIME UtcTime);
 
-static BOOL GetLeapSecond(unsigned int Seconds, int &LeapSecond)
+BOOL GetLeapSecond(unsigned int Seconds, int &LeapSecond)
 {
 	int len = sizeof(InsertTime) / sizeof(unsigned int), i;
 

@@ -60,3 +60,9 @@ Change list as below:
 8/24/2023
 	Add Galileo I/NAV data stream generation class
 	Add inter-signal correction (delay between different frequencies) support in XML format
+8/30/2023
+	Add GLONASS satellite parameter and raw measurement calculation
+	Add GLONASS slot/freq output to RINEX file
+	Add GLONASS GNAV data stream composition
+	Leap second correction in CSatelliteSignal
+	Update the PDF file for design description

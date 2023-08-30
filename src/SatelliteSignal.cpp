@@ -8,11 +8,13 @@
 
 #include <typeinfo>
 
+#include "GnssTime.h"
 #include "SatelliteSignal.h"
 #include "LNavBit.h"
 #include "INavBit.h"
 #include "D1D2NavBit.h"
 #include "BCNavBit.h"
+#include "GNavBit.h"
 #include "PilotBit.h"
 
 const SignalAttribute CSatelliteSignal::SignalAttributes[32] = {
@@ -30,7 +32,7 @@ const SignalAttribute CSatelliteSignal::SignalAttributes[32] = {
 {        1,       20, 0x97421,     10000,   },	// index 10 for FNAV
 {        1,        4,     0x7,      2000,   },	// index 11 for I/NAV E5b
 {        1,        1,     0x0,      1000,   },	// index 12 for CNAV E6
-{        1,       20, 0xffc00,      2000,   },	// index 13 for GNAV
+{        1,       10,     0x0,      2000,   },	// index 13 for GNAV
 };
 
 CSatelliteSignal::CSatelliteSignal()
@@ -109,11 +111,10 @@ BOOL CSatelliteSignal::SetSignalAttribute(GnssSystem System, int FreqIndex, NavB
 	case GlonassSystem:
 		switch (SatFreq)
 		{
-		case FREQ_INDEX_GLO_G1 : return FALSE;
-//		case FREQ_INDEX_GLO_G1:
-//		case FREQ_INDEX_GLO_G2:
-//			Attribute = &SignalAttributes[13];
-//			return (typeid(*NavData) == typeid(GNavBit)) ? TRUE : FALSE;
+		case FREQ_INDEX_GLO_G1:
+		case FREQ_INDEX_GLO_G2:
+			Attribute = &SignalAttributes[13];
+			return (typeid(*NavData) == typeid(GNavBit)) ? TRUE : FALSE;
 		default: return FALSE;	// unknown FreqIndex
 		}
 	default: return FALSE;	// unknown system
@@ -134,9 +135,18 @@ BOOL CSatelliteSignal::GetSatelliteSignal(GNSS_TIME TransmitTime, complex_number
 	int DataBit, PilotBit = 0;
 	int SecondaryLength;
 	const unsigned int *SecondaryCode = GetPilotBits(SatSystem, SatFreq, Svid, SecondaryLength);
+	int Seconds, LeapSecond;
 
 	if (NavData == NULL)	// attribute not yet set
 		return FALSE;
+	if (SatSystem == BdsSystem)	// subtract leap second difference
+		TransmitTime.MilliSeconds -= 14000;
+	else if (SatSystem == GlonassSystem)	// subtract leap second, add 3 hours
+	{
+		Seconds = (unsigned int)(TransmitTime.Week * 604800 + TransmitTime.MilliSeconds / 1000);
+		GetLeapSecond(Seconds, LeapSecond);
+		TransmitTime.MilliSeconds = (TransmitTime.MilliSeconds + 10800000 - LeapSecond * 1000) % 86400000;
+	}
 
 	FrameNumber = Milliseconds / Attribute->FrameLength;	// subframe/page number
 	Milliseconds %= Attribute->FrameLength;
