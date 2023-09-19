@@ -26,7 +26,8 @@
 #define FREQ_INDEX_GAL_E1 0
 #define FREQ_INDEX_GAL_E5a 1	// for pilot channel
 #define FREQ_INDEX_GAL_E5b 2	// for pilot channel
-#define FREQ_INDEX_GAL_E6 3
+#define FREQ_INDEX_GAL_E5 3
+#define FREQ_INDEX_GAL_E6 4
 #define FREQ_INDEX_GLO_G1 0
 #define FREQ_INDEX_GLO_G2 1
 
@@ -43,6 +44,7 @@
 #define FREQ_GAL_E1 1575.42e6
 #define FREQ_GAL_E5a 1176.45e6
 #define FREQ_GAL_E5b 1207.14e6
+#define FREQ_GAL_E5 1191.795e6
 #define FREQ_GAL_E6 1278.75e6
 
 typedef struct

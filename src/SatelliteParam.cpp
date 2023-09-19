@@ -218,6 +218,7 @@ double GetIonoDelay(double IonoDelayL1, int system, int FreqIndex)
 		case FREQ_INDEX_GAL_E1:  return IonoDelayL1;
 		case FREQ_INDEX_GAL_E5a: return IonoDelayL1 * 1.7932703213610586011342155009452; // (154/115)^2
 		case FREQ_INDEX_GAL_E5b: return IonoDelayL1 * 1.7032461936225222637173226084458; // (154/118)^2
+		case FREQ_INDEX_GAL_E5:  return IonoDelayL1 * 1.7473889738252684705925693971154; // (154/116.5)^2
 		case FREQ_INDEX_GAL_E6:  return IonoDelayL1 * 1.517824; // (154/125)^2
 		default: return IonoDelayL1;
 		}
@@ -256,6 +257,7 @@ double GetWaveLength(int system, int FreqIndex, int FreqID)
 		case FREQ_INDEX_GAL_E1:  return LIGHT_SPEED / FREQ_GAL_E1;
 		case FREQ_INDEX_GAL_E5a: return LIGHT_SPEED / FREQ_GAL_E5a;
 		case FREQ_INDEX_GAL_E5b: return LIGHT_SPEED / FREQ_GAL_E5b;
+		case FREQ_INDEX_GAL_E5:  return LIGHT_SPEED / FREQ_GAL_E5;
 		case FREQ_INDEX_GAL_E6:  return LIGHT_SPEED / FREQ_GAL_E6;
 		default: return LIGHT_SPEED / FREQ_GAL_E1;
 		}

@@ -66,3 +66,8 @@ Change list as below:
 	Add GLONASS GNAV data stream composition
 	Leap second correction in CSatelliteSignal
 	Update the PDF file for design description
+9/19/2023
+	Add complex_number class
+	Add E5 support
+	Add dummy F/NAV data stream generation
+	Satellite signal generation allows NULL pointer for data bit to generate all 0 modulation data

@@ -17,6 +17,7 @@
 #include "NavData.h"
 #include "LNavBit.h"
 #include "INavBit.h"
+#include "FNavBit.h"
 #include "D1D2NavBit.h"
 #include "BCNavBit.h"
 #include "GNavBit.h"

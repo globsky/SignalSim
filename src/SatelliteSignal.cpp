@@ -7,11 +7,13 @@
 //----------------------------------------------------------------------
 
 #include <typeinfo>
+#include <string.h>
 
 #include "GnssTime.h"
 #include "SatelliteSignal.h"
 #include "LNavBit.h"
 #include "INavBit.h"
+#include "FNavBit.h"
 #include "D1D2NavBit.h"
 #include "BCNavBit.h"
 #include "GNavBit.h"
@@ -53,6 +55,7 @@ BOOL CSatelliteSignal::SetSignalAttribute(GnssSystem System, int FreqIndex, NavB
 	NavData = pNavData;
 	Svid = svid;
 	CurrentFrame = -1;	// reset current frame to force fill DataBits[] on next call to GetSatelliteSignal()
+	memset(DataBits, 0, sizeof(DataBits));
 
 	// signal and navigation bit match
 	switch (SatSystem)
@@ -61,15 +64,15 @@ BOOL CSatelliteSignal::SetSignalAttribute(GnssSystem System, int FreqIndex, NavB
 		switch (SatFreq)
 		{
 		case FREQ_INDEX_GPS_L1: 
-			Attribute = (typeid(*NavData) == typeid(LNavBit)) ? &SignalAttributes[0] : &SignalAttributes[1];
-			return (typeid(*NavData) == typeid(LNavBit)) ? TRUE : FALSE;
-//			return (typeid(*NavData) == typeid(LNavBit) || typeid(*NavData) == typeid(CNav2Bit)) ? TRUE : FALSE;
+			Attribute = (NavData && typeid(*NavData) == typeid(LNavBit)) ? &SignalAttributes[0] : &SignalAttributes[1];
+			return NavData ? ((typeid(*NavData) == typeid(LNavBit)) ? TRUE : FALSE) : TRUE;
+//			return NavData ? ((typeid(*NavData) == typeid(LNavBit) || typeid(*NavData) == typeid(CNav2Bit)) ? TRUE : FALSE) : TRUE;
 //		case FREQ_INDEX_GPS_L2:
 //			Attribute = &SignalAttributes[2];
-//			return (typeid(*NavData) == typeid(CNavBit)) ? TRUE : FALSE;
+//			return NavData ? ((typeid(*NavData) == typeid(CNavBit)) ? TRUE : FALSE) : TRUE;
 //		case FREQ_INDEX_GPS_L5:
 //			Attribute = &SignalAttributes[3];
-//			return (typeid(*NavData) == typeid(CNavBit)) ? TRUE : FALSE;
+//			return NavData ? ((typeid(*NavData) == typeid(CNavBit)) ? TRUE : FALSE) : TRUE;
 		default: return FALSE;	// unknown FreqIndex
 		}
 	case BdsSystem:
@@ -77,18 +80,18 @@ BOOL CSatelliteSignal::SetSignalAttribute(GnssSystem System, int FreqIndex, NavB
 		{
 		case FREQ_INDEX_BDS_B1C: 
 			Attribute = &SignalAttributes[4];
-			return (typeid(*NavData) == typeid(BCNavBit)) ? TRUE : FALSE;
+			return NavData ? ((typeid(*NavData) == typeid(BCNavBit)) ? TRUE : FALSE) : TRUE;
 		case FREQ_INDEX_BDS_B1I:
 		case FREQ_INDEX_BDS_B2I:
 		case FREQ_INDEX_BDS_B3I:
 			Attribute = ((Svid < 6) || (Svid > 58)) ? &SignalAttributes[6] : &SignalAttributes[5];
-			return (typeid(*NavData) == typeid(D1D2NavBit)) ? TRUE : FALSE;
+			return NavData ? ((typeid(*NavData) == typeid(D1D2NavBit)) ? TRUE : FALSE) : TRUE;
 //		case FREQ_INDEX_BDS_B2a:
 //			Attribute = &SignalAttributes[7];
-//			return (typeid(*NavData) == typeid(BCNav2Bit)) ? TRUE : FALSE;
+//			return NavData ? ((typeid(*NavData) == typeid(BCNav2Bit)) ? TRUE : FALSE) : TRUE;
 //		case FREQ_INDEX_BDS_B2b:
 //			Attribute = &SignalAttributes[8];
-//			return (typeid(*NavData) == typeid(BCNav3Bit)) ? TRUE : FALSE;
+//			return NavData ? ((typeid(*NavData) == typeid(BCNav3Bit)) ? TRUE : FALSE) : TRUE;
 		default: return FALSE;	// unknown FreqIndex
 		}
 	case GalileoSystem:
@@ -96,16 +99,16 @@ BOOL CSatelliteSignal::SetSignalAttribute(GnssSystem System, int FreqIndex, NavB
 		{
 		case FREQ_INDEX_GAL_E1 :
 			Attribute = &SignalAttributes[9];
-			return (typeid(*NavData) == typeid(INavBit)) ? TRUE : FALSE;
-//		case FREQ_INDEX_GAL_E5a:
-//			Attribute = &SignalAttributes[10];
-//			return (typeid(*NavData) == typeid(FNavBit) || typeid(*NavData) == typeid(CNav2Bit)) ? TRUE : FALSE;
-//		case FREQ_INDEX_GAL_E5b:
-//			Attribute = &SignalAttributes[11];
-//			return (typeid(*NavData) == typeid(INavBit)) ? TRUE : FALSE;
+			return NavData ? ((typeid(*NavData) == typeid(INavBit)) ? TRUE : FALSE) : TRUE;
+		case FREQ_INDEX_GAL_E5a:
+			Attribute = &SignalAttributes[10];
+			return NavData ? ((typeid(*NavData) == typeid(FNavBit)) ? TRUE : FALSE) : TRUE;
+		case FREQ_INDEX_GAL_E5b:
+			Attribute = &SignalAttributes[11];
+			return NavData ? ((typeid(*NavData) == typeid(INavBit)) ? TRUE : FALSE) : TRUE;
 //		case FREQ_INDEX_GAL_E6 :
 //			Attribute = &SignalAttributes[12];
-//			return (typeid(*NavData) == typeid(ENavBit)) ? TRUE : FALSE;
+//			return NavData ? ((typeid(*NavData) == typeid(ENavBit)) ? TRUE : FALSE) : TRUE;
 		default: return FALSE;	// unknown FreqIndex
 		}
 	case GlonassSystem:
@@ -114,7 +117,7 @@ BOOL CSatelliteSignal::SetSignalAttribute(GnssSystem System, int FreqIndex, NavB
 		case FREQ_INDEX_GLO_G1:
 		case FREQ_INDEX_GLO_G2:
 			Attribute = &SignalAttributes[13];
-			return (typeid(*NavData) == typeid(GNavBit)) ? TRUE : FALSE;
+			return NavData ? ((typeid(*NavData) == typeid(GNavBit)) ? TRUE : FALSE) : TRUE;
 		default: return FALSE;	// unknown FreqIndex
 		}
 	default: return FALSE;	// unknown system
@@ -137,7 +140,7 @@ BOOL CSatelliteSignal::GetSatelliteSignal(GNSS_TIME TransmitTime, complex_number
 	const unsigned int *SecondaryCode = GetPilotBits(SatSystem, SatFreq, Svid, SecondaryLength);
 	int Seconds, LeapSecond;
 
-	if (NavData == NULL)	// attribute not yet set
+	if (Svid < 0)	// attribute not yet set
 		return FALSE;
 	if (SatSystem == BdsSystem)	// subtract leap second difference
 		TransmitTime.MilliSeconds -= 14000;
@@ -147,6 +150,8 @@ BOOL CSatelliteSignal::GetSatelliteSignal(GNSS_TIME TransmitTime, complex_number
 		GetLeapSecond(Seconds, LeapSecond);
 		TransmitTime.MilliSeconds = (TransmitTime.MilliSeconds + 10800000 - LeapSecond * 1000) % 86400000;
 	}
+	if (TransmitTime.MilliSeconds < 0)	// protection on negative millisecond
+		TransmitTime.MilliSeconds += 604800000;
 
 	FrameNumber = Milliseconds / Attribute->FrameLength;	// subframe/page number
 	Milliseconds %= Attribute->FrameLength;
@@ -156,7 +161,8 @@ BOOL CSatelliteSignal::GetSatelliteSignal(GNSS_TIME TransmitTime, complex_number
 
 	if (FrameNumber != CurrentFrame)
 	{
-		NavData->GetFrameData(TransmitTime, Svid, 0, DataBits);
+		if (NavData)
+			NavData->GetFrameData(TransmitTime, Svid, 0, DataBits);
 		CurrentFrame = FrameNumber;
 	}
 
