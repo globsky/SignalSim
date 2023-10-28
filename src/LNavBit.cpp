@@ -117,41 +117,30 @@ int LNavBit::SetAlmanac(int svid, PGPS_ALMANAC Alm)
 int LNavBit::SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam)
 {
 	unsigned int *Stream = GpsStream45[0][17];	// Ionosphere and UTC parameter in page 18 (indexed at 17)
-	double Value;
 	signed int IntValue;
 
 	if (IonoParam->flag == 0 || (UtcParam->flag & 3) != 3)
 		return 0;
 	Stream[0] = COMPOSE_BITS(56 + 0x40, 16, 8);
-	Value = UnscaleDouble(IonoParam->a0, -30);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(IonoParam->a0, -30);
 	Stream[0] |= COMPOSE_BITS(IntValue, 8, 8);
-	Value = UnscaleDouble(IonoParam->a1, -27);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(IonoParam->a1, -27);
 	Stream[0] |= COMPOSE_BITS(IntValue, 0, 8);
-	Value = UnscaleDouble(IonoParam->a2, -24);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(IonoParam->a2, -24);
 	Stream[1] = COMPOSE_BITS(IntValue, 16, 8);
-	Value = UnscaleDouble(IonoParam->a3, -24);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(IonoParam->a3, -24);
 	Stream[1] |= COMPOSE_BITS(IntValue, 8, 8);
-	Value = UnscaleDouble(IonoParam->b0, 11);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(IonoParam->b0, 11);
 	Stream[1] |= COMPOSE_BITS(IntValue, 0, 8);
-	Value = UnscaleDouble(IonoParam->b1, 14);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(IonoParam->b1, 14);
 	Stream[2] = COMPOSE_BITS(IntValue, 16, 8);
-	Value = UnscaleDouble(IonoParam->b2, 16);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(IonoParam->b2, 16);
 	Stream[2] |= COMPOSE_BITS(IntValue, 8, 8);
-	Value = UnscaleDouble(IonoParam->b3, 16);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(IonoParam->b3, 16);
 	Stream[2] |= COMPOSE_BITS(IntValue, 0, 8);
-	Value = UnscaleDouble(UtcParam->A1, -50);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(UtcParam->A1, -50);
 	Stream[3] = COMPOSE_BITS(IntValue, 0, 24);
-	Value = UnscaleDouble(UtcParam->A0, -30);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(UtcParam->A0, -30);
 	Stream[4] = COMPOSE_BITS(IntValue >> 8, 0, 24);
 	Stream[5] = COMPOSE_BITS(IntValue & 0xff, 16, 8);
 	Stream[5] |= COMPOSE_BITS(UtcParam->tot, 8, 8);
@@ -166,7 +155,6 @@ int LNavBit::SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam)
 
 int LNavBit::ComposeGpsStream123(PGPS_EPHEMERIS Ephemeris, unsigned int Stream[3*8])
 {
-	double Value;
 	signed int IntValue;
 	unsigned int UintValue;
 
@@ -178,78 +166,59 @@ int LNavBit::ComposeGpsStream123(PGPS_EPHEMERIS Ephemeris, unsigned int Stream[3
 	Stream[0] |= COMPOSE_BITS(IntValue, 0, 2);
 	IntValue = Ephemeris->ura >> 6;
 	Stream[1] = COMPOSE_BITS(IntValue, 23, 1);
-	Value = UnscaleDouble(Ephemeris->tgd, -31);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->tgd, -31);
 	Stream[4] = COMPOSE_BITS(IntValue, 0, 8);
 	Stream[5] = COMPOSE_BITS(Ephemeris->iodc, 16, 8);
 	Stream[5] |= COMPOSE_BITS(Ephemeris->toc >> 4, 0, 16);
-	Value = UnscaleDouble(Ephemeris->af2, -55);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->af2, -55);
 	Stream[6] = COMPOSE_BITS(IntValue, 16, 8);
-	Value = UnscaleDouble(Ephemeris->af1, -43);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->af1, -43);
 	Stream[6] |= COMPOSE_BITS(IntValue, 0, 16);
-	Value = UnscaleDouble(Ephemeris->af0, -31);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->af0, -31);
 	Stream[7] = COMPOSE_BITS(IntValue, 2, 22);
 
 	// subframe 2, Stream[8]~Stream[15]
 	Stream[8] = COMPOSE_BITS(Ephemeris->iode2, 16, 8);
-	Value = UnscaleDouble(Ephemeris->crs, -5);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->crs, -5);
 	Stream[8] |= COMPOSE_BITS(IntValue, 0, 16);
-	Value = UnscaleDouble(Ephemeris->delta_n / PI, -43);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->delta_n / PI, -43);
 	Stream[9] = COMPOSE_BITS(IntValue, 8, 16);
-	Value = UnscaleDouble(Ephemeris->M0 / PI, -31);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->M0 / PI, -31);
 	Stream[9] |= COMPOSE_BITS(IntValue >> 24, 0, 8);
 	Stream[10] = COMPOSE_BITS(IntValue, 0, 24);
-	Value = UnscaleDouble(Ephemeris->cuc, -29);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->cuc, -29);
 	Stream[11] = COMPOSE_BITS(IntValue, 8, 16);
-	Value = UnscaleDouble(Ephemeris->ecc, -33);
-	UintValue = roundu(Value);
+	UintValue = UnscaleUint(Ephemeris->ecc, -33);
 	Stream[11] |= COMPOSE_BITS(UintValue >> 24, 0, 8);
 	Stream[12] = COMPOSE_BITS(UintValue, 0, 24);
-	Value = UnscaleDouble(Ephemeris->cus, -29);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->cus, -29);
 	Stream[13] = COMPOSE_BITS(IntValue, 8, 16);
-	Value = UnscaleDouble(Ephemeris->sqrtA, -19);
-	UintValue = roundu(Value);
+	UintValue = UnscaleUint(Ephemeris->sqrtA, -19);
 	Stream[13] |= COMPOSE_BITS(UintValue >> 24, 0, 8);
 	Stream[14] = COMPOSE_BITS(UintValue, 0, 24);
 	Stream[15] = COMPOSE_BITS(Ephemeris->toe >> 4, 8, 16);
 	Stream[15] |= COMPOSE_BITS(Ephemeris->ura >> 7, 7, 1);
 
 	// subframe 3, Stream[16]~Stream[23]
-	Value = UnscaleDouble(Ephemeris->cic, -29);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->cic, -29);
 	Stream[16] = COMPOSE_BITS(IntValue, 8, 16);
-	Value = UnscaleDouble(Ephemeris->omega0 / PI, -31);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->omega0 / PI, -31);
 	Stream[16] |= COMPOSE_BITS(IntValue >> 24, 0, 8);
 	Stream[17] = COMPOSE_BITS(IntValue, 0, 24);
-	Value = UnscaleDouble(Ephemeris->cis, -29);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->cis, -29);
 	Stream[18] = COMPOSE_BITS(IntValue, 8, 16);
-	Value = UnscaleDouble(Ephemeris->i0 / PI, -31);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->i0 / PI, -31);
 	Stream[18] |= COMPOSE_BITS(IntValue >> 24, 0, 8);
 	Stream[19] = COMPOSE_BITS(IntValue, 0, 24);
-	Value = UnscaleDouble(Ephemeris->crc, -5);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->crc, -5);
 	Stream[20] = COMPOSE_BITS(IntValue, 8, 16);
-	Value = UnscaleDouble(Ephemeris->w / PI, -31);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->w / PI, -31);
 	Stream[20] |= COMPOSE_BITS(IntValue >> 24, 0, 8);
 	Stream[21] = COMPOSE_BITS(IntValue, 0, 24);
-	Value = UnscaleDouble(Ephemeris->omega_dot / PI, -43);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->omega_dot / PI, -43);
 	Stream[22] = COMPOSE_BITS(IntValue, 0, 24);
 	Stream[23] = COMPOSE_BITS(Ephemeris->iode3, 16, 8);
-	Value = UnscaleDouble(Ephemeris->idot / PI, -43);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->idot / PI, -43);
 	Stream[23] |= COMPOSE_BITS(IntValue, 2, 14);
 
 	return 0;
@@ -257,42 +226,32 @@ int LNavBit::ComposeGpsStream123(PGPS_EPHEMERIS Ephemeris, unsigned int Stream[3
 
 int LNavBit::FillGpsAlmanacPage(PGPS_ALMANAC Almanac, unsigned int Stream[8])
 {
-	double Value;
 	signed int IntValue;
 	unsigned int UintValue;
 
 	if (Almanac->flag == 0)
 		return 0;
 	Stream[0] = COMPOSE_BITS(Almanac->svid + 0x40, 16, 8);
-	Value = UnscaleDouble(Almanac->ecc, -21);
-	UintValue = roundu(Value);
+	UintValue = UnscaleUint(Almanac->ecc, -21);
 	Stream[0] |= COMPOSE_BITS(UintValue, 0, 16);
 	Stream[1] = COMPOSE_BITS(Almanac->toa >> 12, 16, 8);
-	Value = UnscaleDouble(Almanac->i0 / PI - 0.3, -19);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Almanac->i0 / PI - 0.3, -19);
 	Stream[1] |= COMPOSE_BITS(IntValue, 0, 16);
-	Value = UnscaleDouble(Almanac->omega_dot / PI, -38);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Almanac->omega_dot / PI, -38);
 	Stream[2] = COMPOSE_BITS(IntValue, 8, 16);
 	Stream[2] |= COMPOSE_BITS(Almanac->health, 0, 8);
-	Value = UnscaleDouble(Almanac->sqrtA, -11);
-	UintValue = roundu(Value);
+	UintValue = UnscaleUint(Almanac->sqrtA, -11);
 	Stream[3] = COMPOSE_BITS(UintValue, 0, 24);
-	Value = UnscaleDouble(Almanac->omega0 / PI, -23);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Almanac->omega0 / PI, -23);
 	Stream[4] = COMPOSE_BITS(IntValue, 0, 24);
-	Value = UnscaleDouble(Almanac->w / PI, -23);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Almanac->w / PI, -23);
 	Stream[5] = COMPOSE_BITS(IntValue, 0, 24);
-	Value = UnscaleDouble(Almanac->M0 / PI, -23);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Almanac->M0 / PI, -23);
 	Stream[6] = COMPOSE_BITS(IntValue, 0, 24);
-	Value = UnscaleDouble(Almanac->af0, -20);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Almanac->af0, -20);
 	Stream[7] = COMPOSE_BITS(IntValue >> 3, 16, 8);
 	Stream[7] |= COMPOSE_BITS(IntValue & 0x7, 2, 3);
-	Value = UnscaleDouble(Almanac->af1, -38);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Almanac->af1, -38);
 	Stream[7] |= COMPOSE_BITS(IntValue, 5, 11);
 
 	return 0;

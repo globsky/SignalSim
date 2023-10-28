@@ -32,6 +32,10 @@ public:
 	int roundi(double data);
 	int roundu(double data);
 	double UnscaleDouble(double value, int scale);
+	int UnscaleInt(double value, int scale);
+	unsigned int UnscaleUint(double value, int scale);
+	long long int UnscaleLong(double value, int scale);
+	unsigned long long int UnscaleULong(double value, int scale);
 	int AssignBits(unsigned int Data, int BitNumber, int BitStream[]);
 	unsigned char ConvolutionEncode(unsigned char EncodeBits);
 	unsigned int Crc24qEncode(unsigned int *BitStream, int Length);

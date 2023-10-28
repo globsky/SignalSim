@@ -104,20 +104,16 @@ int GNavBit::SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam)
 
 int GNavBit::ComposeStringEph(PGLONASS_EPHEMERIS Ephemeris, unsigned int String[][3])
 {
-	double Value;
 	unsigned int UintValue;
 
 	// string 1
 	String[0][0] = (1 << 16) | COMPOSE_BITS(Ephemeris->P, 12, 2);
 	String[0][0] |= COMPOSE_BITS(Ephemeris->tk, 0, 12);
-	Value = UnscaleDouble(fabs(Ephemeris->vx) / 1000, -20);
-	UintValue = roundu(Value); UintValue |= (Ephemeris->vx < 0) ? (1 << 23) : 0;
+	UintValue = UnscaleUint(fabs(Ephemeris->vx) / 1000, -20); UintValue |= (Ephemeris->vx < 0) ? (1 << 23) : 0;
 	String[0][1] = COMPOSE_BITS(UintValue, 8, 24);
-	Value = UnscaleDouble(fabs(Ephemeris->ax) / 1000, -30);
-	UintValue = roundu(Value); UintValue |= (Ephemeris->ax < 0) ? (1 << 4) : 0;
+	UintValue = UnscaleUint(fabs(Ephemeris->ax) / 1000, -30); UintValue |= (Ephemeris->ax < 0) ? (1 << 4) : 0;
 	String[0][1] |= COMPOSE_BITS(UintValue, 3, 5);
-	Value = UnscaleDouble(fabs(Ephemeris->x) / 1000, -11);
-	UintValue = roundu(Value); UintValue |= (Ephemeris->x < 0) ? (1 << 26) : 0;
+	UintValue = UnscaleUint(fabs(Ephemeris->x) / 1000, -11); UintValue |= (Ephemeris->x < 0) ? (1 << 26) : 0;
 	String[0][1] |= COMPOSE_BITS(UintValue >> 24, 0, 3);
 	String[0][2] = COMPOSE_BITS(UintValue, 8, 24);
 	// string 2
@@ -125,39 +121,30 @@ int GNavBit::ComposeStringEph(PGLONASS_EPHEMERIS Ephemeris, unsigned int String[
 	String[1][0] |= COMPOSE_BITS(Ephemeris->P >> 2, 12, 1);
 	UintValue = Ephemeris->tb / 900;
 	String[1][0] |= COMPOSE_BITS(UintValue, 5, 7);
-	Value = UnscaleDouble(fabs(Ephemeris->vy) / 1000, -20);
-	UintValue = roundu(Value); UintValue |= (Ephemeris->vy < 0) ? (1 << 23) : 0;
+	UintValue = UnscaleUint(fabs(Ephemeris->vy) / 1000, -20); UintValue |= (Ephemeris->vy < 0) ? (1 << 23) : 0;
 	String[1][1] = COMPOSE_BITS(UintValue, 8, 24);
-	Value = UnscaleDouble(fabs(Ephemeris->ay) / 1000, -30);
-	UintValue = roundu(Value); UintValue |= (Ephemeris->ay < 0) ? (1 << 4) : 0;
+	UintValue = UnscaleUint(fabs(Ephemeris->ay) / 1000, -30); UintValue |= (Ephemeris->ay < 0) ? (1 << 4) : 0;
 	String[1][1] |= COMPOSE_BITS(UintValue, 3, 5);
-	Value = UnscaleDouble(fabs(Ephemeris->y) / 1000, -11);
-	UintValue = roundu(Value); UintValue |= (Ephemeris->y < 0) ? (1 << 26) : 0;
+	UintValue = UnscaleUint(fabs(Ephemeris->y) / 1000, -11); UintValue |= (Ephemeris->y < 0) ? (1 << 26) : 0;
 	String[1][1] |= COMPOSE_BITS(UintValue >> 24, 0, 3);
 	String[1][2] = COMPOSE_BITS(UintValue, 8, 24);
 	// string 3
 	String[2][0] = (3 << 16) | COMPOSE_BITS(Ephemeris->P >> 3, 15, 1);
-	Value = UnscaleDouble(fabs(Ephemeris->gamma), -40);
-	UintValue = roundu(Value); UintValue |= (Ephemeris->gamma < 0) ? (1 << 10) : 0;
+	UintValue = UnscaleUint(fabs(Ephemeris->gamma), -40); UintValue |= (Ephemeris->gamma < 0) ? (1 << 10) : 0;
 	String[2][0] |= COMPOSE_BITS(UintValue, 4, 11);
 	String[2][0] |= COMPOSE_BITS(Ephemeris->P >> 5, 0, 3);
-	Value = UnscaleDouble(fabs(Ephemeris->vz) / 1000, -20);
-	UintValue = roundu(Value); UintValue |= (Ephemeris->vz < 0) ? (1 << 23) : 0;
+	UintValue = UnscaleUint(fabs(Ephemeris->vz) / 1000, -20); UintValue |= (Ephemeris->vz < 0) ? (1 << 23) : 0;
 	String[2][1] = COMPOSE_BITS(UintValue, 8, 24);
-	Value = UnscaleDouble(fabs(Ephemeris->az) / 1000, -30);
-	UintValue = roundu(Value); UintValue |= (Ephemeris->az < 0) ? (1 << 4) : 0;
+	UintValue = UnscaleUint(fabs(Ephemeris->az) / 1000, -30); UintValue |= (Ephemeris->az < 0) ? (1 << 4) : 0;
 	String[2][1] |= COMPOSE_BITS(UintValue, 3, 5);
-	Value = UnscaleDouble(fabs(Ephemeris->z) / 1000, -11);
-	UintValue = roundu(Value); UintValue |= (Ephemeris->z < 0) ? (1 << 26) : 0;
+	UintValue = UnscaleUint(fabs(Ephemeris->z) / 1000, -11); UintValue |= (Ephemeris->z < 0) ? (1 << 26) : 0;
 	String[2][1] |= COMPOSE_BITS(UintValue >> 24, 0, 3);
 	String[2][2] = COMPOSE_BITS(UintValue, 8, 24);
 	// string 4
-	Value = UnscaleDouble(fabs(Ephemeris->tn), -30);
-	UintValue = roundu(Value); UintValue |= (Ephemeris->tn < 0) ? (1 << 21) : 0;
+	UintValue = UnscaleUint(fabs(Ephemeris->tn), -30); UintValue |= (Ephemeris->tn < 0) ? (1 << 21) : 0;
 	String[3][0] = (4 << 16) | COMPOSE_BITS(UintValue >> 6, 0, 16);
 	String[3][1] = COMPOSE_BITS(UintValue, 26, 6);
-	Value = UnscaleDouble(fabs(Ephemeris->dtn), -30);
-	UintValue = roundu(Value); UintValue |= (Ephemeris->dtn < 0) ? (1 << 4) : 0;
+	UintValue = UnscaleUint(fabs(Ephemeris->dtn), -30); UintValue |= (Ephemeris->dtn < 0) ? (1 << 4) : 0;
 	String[3][1] |= COMPOSE_BITS(UintValue, 21, 5);
 	String[3][1] |= COMPOSE_BITS(Ephemeris->En, 16, 5);
 	String[3][1] |= COMPOSE_BITS(Ephemeris->P >> 4, 1, 1);
@@ -172,7 +159,6 @@ int GNavBit::ComposeStringEph(PGLONASS_EPHEMERIS Ephemeris, unsigned int String[
 
 int GNavBit::ComposeStringAlm(PGLONASS_ALMANAC Almanac, unsigned int StreamEven[3], unsigned int StreamOdd[3])
 {
-	double Value;
 	unsigned int UintValue;
 
 	if (!Almanac->flag)
@@ -183,29 +169,22 @@ int GNavBit::ComposeStringAlm(PGLONASS_ALMANAC Almanac, unsigned int StreamEven[
 	// first string
 	StreamEven[0] = COMPOSE_BITS(Almanac->flag, 15, 1);
 	StreamEven[0] |= COMPOSE_BITS(1, 13, 2);		// Mn=01 for GLONASS-M
-	Value = UnscaleDouble(fabs(Almanac->lambda), -20);
-	UintValue = roundu(Value); UintValue |= (Almanac->lambda < 0) ? (1 << 20) : 0;
+	UintValue = UnscaleUint(fabs(Almanac->lambda), -20); UintValue |= (Almanac->lambda < 0) ? (1 << 20) : 0;
 	StreamEven[1] = COMPOSE_BITS(UintValue, 9, 21);
-	Value = UnscaleDouble(fabs(Almanac->di), -20);
-	UintValue = roundu(Value); UintValue |= (Almanac->di < 0) ? (1 << 17) : 0;
+	UintValue = UnscaleUint(fabs(Almanac->di), -20); UintValue |= (Almanac->di < 0) ? (1 << 17) : 0;
 	StreamEven[1] |= COMPOSE_BITS(UintValue >> 9, 0, 9);
 	StreamEven[2] = COMPOSE_BITS(UintValue, 23, 9);
-	Value = UnscaleDouble(Almanac->ecc, -20);
-	UintValue = roundu(Value);
+	UintValue = UnscaleUint(Almanac->ecc, -20);
 	StreamEven[2] |= COMPOSE_BITS(UintValue, 8, 15);
 	// second string
-	Value = UnscaleDouble(fabs(Almanac->w), -15);
-	UintValue = roundu(Value); UintValue |= (Almanac->w < 0) ? (1 << 15) : 0;
+	UintValue = UnscaleUint(fabs(Almanac->w), -15); UintValue |= (Almanac->w < 0) ? (1 << 15) : 0;
 	StreamOdd[0] = COMPOSE_BITS(UintValue >> 8, 0, 16);
-	Value = UnscaleDouble(fabs(Almanac->t), -5);
-	UintValue = roundu(Value);
+	UintValue = UnscaleUint(fabs(Almanac->t), -5);
 	StreamOdd[1] = COMPOSE_BITS(UintValue, 11, 21);
-	Value = UnscaleDouble(fabs(Almanac->dt), -9);
-	UintValue = roundu(Value); UintValue |= (Almanac->dt < 0) ? (1 << 21) : 0;
+	UintValue = UnscaleUint(fabs(Almanac->dt), -9); UintValue |= (Almanac->dt < 0) ? (1 << 21) : 0;
 	StreamOdd[1] |= COMPOSE_BITS(UintValue >> 11, 0, 11);
 	StreamOdd[2] = COMPOSE_BITS(UintValue, 21, 11);
-	Value = UnscaleDouble(fabs(Almanac->dt_dot), -14);
-	UintValue = roundu(Value); UintValue |= (Almanac->dt < 0) ? (1 << 6) : 0;
+	UintValue = UnscaleUint(fabs(Almanac->dt_dot), -14); UintValue |= (Almanac->dt < 0) ? (1 << 6) : 0;
 	StreamOdd[2] |= COMPOSE_BITS(UintValue, 14, 7);
 	StreamOdd[2] |= COMPOSE_BITS(Almanac->freq, 9, 5);
 	return 0;

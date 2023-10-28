@@ -143,21 +143,17 @@ int INavBit::SetAlmanac(int svid, PGPS_ALMANAC Alm)
 
 int INavBit::SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam)
 {
-	double Value;
 	signed int IntValue;
 	unsigned int UintValue;
 	int i;
 	unsigned int IonoWords[2];
 
 	// IonoParam a0~a2 hold ai0~ai2
-	Value = UnscaleDouble(IonoParam->a0, -2);
-	UintValue = roundu(Value);
+	UintValue = UnscaleUint(IonoParam->a0, -2);
 	IonoWords[0] = COMPOSE_BITS(UintValue, 15, 11);
-	Value = UnscaleDouble(IonoParam->a1, -8);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(IonoParam->a1, -8);
 	IonoWords[0] |= COMPOSE_BITS(IntValue, 4, 11);
-	Value = UnscaleDouble(IonoParam->a2, -15);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(IonoParam->a2, -15);
 	IonoWords[0] |= COMPOSE_BITS(IntValue >> 10, 0, 4);
 	IonoWords[1] = COMPOSE_BITS(IntValue, 22, 10);
 
@@ -170,12 +166,10 @@ int INavBit::SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam)
 
 	// Word 6 for UTC parameters
 	GalUtcData[0] = 0x18000000;	// put Type=6 to 6MSB
-	Value = UnscaleDouble(UtcParam->A0, -30);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(UtcParam->A0, -30);
 	GalUtcData[0] |= COMPOSE_BITS(IntValue >> 6, 0, 26);
 	GalUtcData[1] = COMPOSE_BITS(IntValue, 26, 6);
-	Value = UnscaleDouble(UtcParam->A1, -50);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(UtcParam->A1, -50);
 	GalUtcData[1] |= COMPOSE_BITS(IntValue, 2, 24);
 	GalUtcData[1] |= COMPOSE_BITS(UtcParam->TLS >> 6, 0, 2);
 	GalUtcData[2] = COMPOSE_BITS(UtcParam->TLS, 26, 6);
@@ -191,98 +185,77 @@ int INavBit::SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam)
 
 int INavBit::ComposeEphWords(PGPS_EPHEMERIS Ephemeris, unsigned int *EphData)
 {
-	double Value;
 	signed int IntValue;
 	unsigned int UintValue;
 
 	// Word 1
 	EphData[0] = 0x04000000 | COMPOSE_BITS(Ephemeris->iodc, 16, 10) | COMPOSE_BITS((Ephemeris->toe / 60), 2, 14);
-	Value = UnscaleDouble(Ephemeris->M0 / PI, -31);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->M0 / PI, -31);
 	EphData[0] |= COMPOSE_BITS(IntValue >> 30, 0, 2);
 	EphData[1] = COMPOSE_BITS(IntValue, 2, 30);
-	Value = UnscaleDouble(Ephemeris->ecc, -33);
-	UintValue = roundu(Value);
+	UintValue = UnscaleUint(Ephemeris->ecc, -33);
 	EphData[1] |= COMPOSE_BITS(UintValue >> 30, 0, 2);
 	EphData[2] = COMPOSE_BITS(UintValue, 2, 30);
-	Value = UnscaleDouble(Ephemeris->sqrtA, -19);
-	UintValue = roundu(Value);
+	UintValue = UnscaleUint(Ephemeris->sqrtA, -19);
 	EphData[2] |= COMPOSE_BITS(UintValue >> 30, 0, 2);
 	EphData[3] = COMPOSE_BITS(UintValue, 2, 30);
 
 	// Word 2
 	EphData[4] = 0x08000000 | COMPOSE_BITS(Ephemeris->iodc, 16, 10);
-	Value = UnscaleDouble(Ephemeris->omega0 / PI, -31);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->omega0 / PI, -31);
 	EphData[4] |= COMPOSE_BITS(IntValue >> 16, 0, 16);
 	EphData[5] = COMPOSE_BITS(IntValue, 16, 16);
-	Value = UnscaleDouble(Ephemeris->i0 / PI, -31);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->i0 / PI, -31);
 	EphData[5] |= COMPOSE_BITS(IntValue >> 16, 0, 16);
 	EphData[6] = COMPOSE_BITS(IntValue, 16, 16);
-	Value = UnscaleDouble(Ephemeris->w / PI, -31);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->w / PI, -31);
 	EphData[6] |= COMPOSE_BITS(IntValue >> 16, 0, 16);
 	EphData[7] = COMPOSE_BITS(IntValue, 16, 16);
-	Value = UnscaleDouble(Ephemeris->idot / PI, -43);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->idot / PI, -43);
 	EphData[7] |= COMPOSE_BITS(IntValue >> 16, 2, 14);
 
 	// Word 3
 	EphData[8] = 0x0c000000 | COMPOSE_BITS(Ephemeris->iodc, 16, 10);
-	Value = UnscaleDouble(Ephemeris->omega_dot / PI, -43);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->omega_dot / PI, -43);
 	EphData[8] |= COMPOSE_BITS(IntValue >> 8, 0, 16);
 	EphData[9] = COMPOSE_BITS(IntValue, 24, 8);
-	Value = UnscaleDouble(Ephemeris->delta_n / PI, -43);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->delta_n / PI, -43);
 	EphData[9] |= COMPOSE_BITS(IntValue >> 8, 8, 16);
-	Value = UnscaleDouble(Ephemeris->cuc, -29);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->cuc, -29);
 	EphData[9] |= COMPOSE_BITS(IntValue >> 8, 0, 8);
 	EphData[10] = COMPOSE_BITS(IntValue, 24, 8);
-	Value = UnscaleDouble(Ephemeris->cus, -29);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->cus, -29);
 	EphData[10] |= COMPOSE_BITS(IntValue, 8, 16);
-	Value = UnscaleDouble(Ephemeris->crc, -5);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->crc, -5);
 	EphData[10] |= COMPOSE_BITS(IntValue >> 8, 0, 8);
 	EphData[11] = COMPOSE_BITS(IntValue, 24, 8);
-	Value = UnscaleDouble(Ephemeris->crs, -5);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->crs, -5);
 	EphData[11] |= COMPOSE_BITS(IntValue, 8, 16);
 	EphData[11] |= COMPOSE_BITS(Ephemeris->ura, 0, 8);
 
 	// Word 4
 	EphData[12] = 0x10000000 | COMPOSE_BITS(Ephemeris->iodc, 16, 10) | COMPOSE_BITS(Ephemeris->svid, 10, 6);
-	Value = UnscaleDouble(Ephemeris->cic, -29);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->cic, -29);
 	EphData[12] |= COMPOSE_BITS(IntValue >> 6, 0, 10);
 	EphData[13] = COMPOSE_BITS(IntValue, 26, 6);
-	Value = UnscaleDouble(Ephemeris->cis, -29);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->cis, -29);
 	EphData[13] |= COMPOSE_BITS(IntValue, 10, 16);
 	UintValue = Ephemeris->toc / 60;
 	EphData[13] |= COMPOSE_BITS(UintValue >> 4, 0, 10);
 	EphData[14] = COMPOSE_BITS(UintValue, 28, 4);
-	Value = UnscaleDouble(Ephemeris->af0, -34);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->af0, -34);
 	EphData[14] |= COMPOSE_BITS(IntValue >> 3, 0, 28);
 	EphData[15] = COMPOSE_BITS(IntValue, 29, 3);
-	Value = UnscaleDouble(Ephemeris->af1, -46);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->af1, -46);
 	EphData[15] |= COMPOSE_BITS(IntValue, 8, 21);
-	Value = UnscaleDouble(Ephemeris->af2, -59);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->af2, -59);
 	EphData[15] |= COMPOSE_BITS(IntValue, 2, 6);
 
 	// Word 5
 	EphData[16] &= 0x03ffffff; EphData[16] = 0x14000000;	// put Type=5 to 6MSB
-	Value = UnscaleDouble(Ephemeris->tgd, -32);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->tgd, -32);
 	EphData[17] = COMPOSE_BITS(IntValue, 7, 10);
-	Value = UnscaleDouble(Ephemeris->tgd2, -32);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Ephemeris->tgd2, -32);
 	EphData[17] |= COMPOSE_BITS(IntValue >> 3, 0, 7);
 	EphData[18] = COMPOSE_BITS(IntValue, 29, 3);
 

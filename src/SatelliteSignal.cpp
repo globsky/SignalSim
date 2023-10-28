@@ -67,9 +67,9 @@ BOOL CSatelliteSignal::SetSignalAttribute(GnssSystem System, int FreqIndex, NavB
 			Attribute = (NavData && typeid(*NavData) == typeid(LNavBit)) ? &SignalAttributes[0] : &SignalAttributes[1];
 			return NavData ? ((typeid(*NavData) == typeid(LNavBit)) ? TRUE : FALSE) : TRUE;
 //			return NavData ? ((typeid(*NavData) == typeid(LNavBit) || typeid(*NavData) == typeid(CNav2Bit)) ? TRUE : FALSE) : TRUE;
-//		case FREQ_INDEX_GPS_L2:
-//			Attribute = &SignalAttributes[2];
-//			return NavData ? ((typeid(*NavData) == typeid(CNavBit)) ? TRUE : FALSE) : TRUE;
+		case FREQ_INDEX_GPS_L2:
+			Attribute = &SignalAttributes[2];
+			return NavData ? ((typeid(*NavData) == typeid(LNavBit)) ? TRUE : FALSE) : TRUE;
 //		case FREQ_INDEX_GPS_L5:
 //			Attribute = &SignalAttributes[3];
 //			return NavData ? ((typeid(*NavData) == typeid(CNavBit)) ? TRUE : FALSE) : TRUE;
@@ -132,7 +132,7 @@ BOOL CSatelliteSignal::SetSignalAttribute(GnssSystem System, int FreqIndex, NavB
 
 BOOL CSatelliteSignal::GetSatelliteSignal(GNSS_TIME TransmitTime, complex_number &DataSignal, complex_number &PilotSignal)
 {
-	int Milliseconds = TransmitTime.MilliSeconds;
+	int Milliseconds;
 	int BitLength = (Attribute->CodeLength * Attribute->NHLength);
 	int FrameNumber, BitNumber, BitPos, SecondaryPosition;
 	int DataBit, PilotBit = 0;
@@ -153,6 +153,7 @@ BOOL CSatelliteSignal::GetSatelliteSignal(GNSS_TIME TransmitTime, complex_number
 	if (TransmitTime.MilliSeconds < 0)	// protection on negative millisecond
 		TransmitTime.MilliSeconds += 604800000;
 
+	Milliseconds = TransmitTime.MilliSeconds;
 	FrameNumber = Milliseconds / Attribute->FrameLength;	// subframe/page number
 	Milliseconds %= Attribute->FrameLength;
 	BitNumber = Milliseconds / BitLength;	// current bit position within current subframe/page

@@ -358,9 +358,10 @@ int BCNavBit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
 
 void BCNavBit::ComposeSubframe2(PGPS_EPHEMERIS Eph, unsigned int Subframe2[25])
 {
-	double Value;
 	signed int IntValue;
 	unsigned int UintValue;
+	long long int LongValue;
+	unsigned long long int ULongValue;
 
 	// IODC and IODE in WORD0 ~ WORD1(15MSB)
 	Subframe2[0] = COMPOSE_BITS(Eph->iodc >> 7, 0, 3);
@@ -373,117 +374,93 @@ void BCNavBit::ComposeSubframe2(PGPS_EPHEMERIS Eph, unsigned int Subframe2[25])
 	Subframe2[2] = COMPOSE_BITS(UintValue, 22, 2);
 	UintValue = (Eph->axis > 4e7) ? ((Eph->svid <= 5) ? 1 : 2) : 3;	// SatType
 	Subframe2[2] |= COMPOSE_BITS(UintValue, 20, 2);
-	Value = Eph->axis - ((UintValue == 3) ? 27906100.0 : 42162200.0);	// deltaA
-	Value = UnscaleDouble(Value, -9);
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Eph->axis - ((UintValue == 3) ? 27906100.0 : 42162200.0), -9);	// deltaA
 	Subframe2[2] |= COMPOSE_BITS(IntValue >> 6, 0, 20);
 	Subframe2[3] = COMPOSE_BITS(IntValue, 18, 6);
-	Value = 0;//UnscaleDouble(Eph->axis_dot, -21);	// Adot
-	IntValue = roundi(Value);
+	IntValue = 0;//UnscaleInt(Eph->axis_dot, -21);	// Adot
 	Subframe2[3] |= COMPOSE_BITS(IntValue >> 7, 0, 18);
 	Subframe2[4] = COMPOSE_BITS(IntValue, 17, 7);
-	Value = UnscaleDouble(Eph->delta_n / PI, -44);	// delta_n
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Eph->delta_n / PI, -44);	// delta_n
 	Subframe2[4] |= COMPOSE_BITS(IntValue, 0, 17);
-	Value = 0;//UnscaleDouble(Eph->???, -57);	// delta n dot
-	IntValue = roundi(Value);
+	IntValue = 0;//UnscaleInt(Eph->???, -57);	// delta n dot
 	Subframe2[5] = COMPOSE_BITS(IntValue, 1, 23);
-	IntValue = (Eph->M0 < 0) ? 1 : 0;	// M0
-	Value = IntValue ? (Eph->M0 / PI + 1) : (Eph->M0 / PI);
-	Value = UnscaleDouble(Value, -32);
-	UintValue = roundu(Value);
+	LongValue = UnscaleLong(Eph->M0 / PI, -32);
+	IntValue = (LongValue & 0x100000000LL) ? 1 : 0;
+	UintValue = (unsigned int)LongValue;
 	Subframe2[5] |= COMPOSE_BITS(IntValue, 0, 1);
 	Subframe2[6] = COMPOSE_BITS(UintValue >> 8, 0, 24);
 	Subframe2[7] = COMPOSE_BITS(UintValue, 16, 8);
-	IntValue = (Eph->ecc >= 0.25) ? 1 : 0;	// ecc
-	Value = IntValue ? (Eph->ecc - 0.25) : (Eph->ecc);
-	Value = UnscaleDouble(Value, -34);
-	UintValue = roundu(Value);
+	ULongValue = UnscaleULong(Eph->ecc, -34);
+	IntValue = (ULongValue & 0x100000000LL) ? 1 : 0;
+	UintValue = (unsigned int)ULongValue;
 	Subframe2[7] |= COMPOSE_BITS(IntValue, 15, 1);
 	Subframe2[7] |= COMPOSE_BITS(UintValue >> 17, 0, 15);
 	Subframe2[8] = COMPOSE_BITS(UintValue, 7, 17);
-	IntValue = (Eph->w < 0) ? 1 : 0;	// w
-	Value = IntValue ? (Eph->w / PI + 1) : (Eph->w / PI);
-	Value = UnscaleDouble(Value, -32);
-	UintValue = roundu(Value);
+	LongValue = UnscaleLong(Eph->w / PI, -32);
+	IntValue = (LongValue & 0x100000000LL) ? 1 : 0;
+	UintValue = (unsigned int)LongValue;
 	Subframe2[8] |= COMPOSE_BITS(IntValue, 6, 1);
 	Subframe2[8] |= COMPOSE_BITS(UintValue >> 26, 0, 6);
 	Subframe2[9] = COMPOSE_BITS(UintValue >> 2, 0, 24);
 	Subframe2[10] = COMPOSE_BITS(UintValue, 22, 2);
 
 	// ephemeris2 222bits in WORD10 ~ WORD19(8MSB)
-	IntValue = (Eph->omega0 < 0) ? 1 : 0;	// Omega0
-	Value = IntValue ? (Eph->omega0 / PI + 1) : (Eph->omega0 / PI);
-	Value = UnscaleDouble(Value, -32);
-	UintValue = roundu(Value);
+	LongValue = UnscaleLong(Eph->omega0 / PI, -32);
+	IntValue = (LongValue & 0x100000000LL) ? 1 : 0;
+	UintValue = (unsigned int)LongValue;
 	Subframe2[10] |= COMPOSE_BITS(IntValue, 21, 1);
 	Subframe2[10] |= COMPOSE_BITS(UintValue >> 11, 0, 21);
 	Subframe2[11] = COMPOSE_BITS(UintValue, 13, 11);
-	IntValue = (Eph->i0 < 0) ? 1 : 0;	// i0
-	Value = IntValue ? (Eph->i0 / PI + 1) : (Eph->i0 / PI);
-	Value = UnscaleDouble(Value, -32);
-	UintValue = roundu(Value);
+	LongValue = UnscaleLong(Eph->i0 / PI, -32);
+	IntValue = (LongValue & 0x100000000LL) ? 1 : 0;
+	UintValue = (unsigned int)LongValue;
 	Subframe2[11] |= COMPOSE_BITS(IntValue, 12, 1);
 	Subframe2[11] |= COMPOSE_BITS(UintValue >> 20, 0, 12);
 	Subframe2[12] = COMPOSE_BITS(UintValue, 4, 20);
-	Value = UnscaleDouble(Eph->omega_dot / PI, -44);	// omega dot
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Eph->omega_dot / PI, -44);	// omega dot
 	Subframe2[12] |= COMPOSE_BITS(IntValue >> 15, 0, 4);
 	Subframe2[13] = COMPOSE_BITS(IntValue, 9, 15);
-	Value = UnscaleDouble(Eph->idot / PI, -44);	// i dot
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Eph->idot / PI, -44);	// i dot
 	Subframe2[13] |= COMPOSE_BITS(IntValue >> 6, 0, 9);
 	Subframe2[14] = COMPOSE_BITS(IntValue, 18, 6);
-	Value = UnscaleDouble(Eph->cis, -30);	// cis
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Eph->cis, -30);	// cis
 	Subframe2[14] |= COMPOSE_BITS(IntValue, 2, 16);
-	Value = UnscaleDouble(Eph->cic, -30);	// cic
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Eph->cic, -30);	// cic
 	Subframe2[14] |= COMPOSE_BITS(IntValue >> 14, 0, 2);
 	Subframe2[15] = COMPOSE_BITS(IntValue, 10, 14);
-	Value = UnscaleDouble(Eph->crs, -8);	// crs
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Eph->crs, -8);	// crs
 	Subframe2[15] |= COMPOSE_BITS(IntValue >> 14, 0, 10);
 	Subframe2[16] = COMPOSE_BITS(IntValue, 10, 14);
-	Value = UnscaleDouble(Eph->crc, -8);	// crc
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Eph->crc, -8);	// crc
 	Subframe2[16] |= COMPOSE_BITS(IntValue >> 14, 0, 10);
 	Subframe2[17] = COMPOSE_BITS(IntValue, 10, 14);
-	Value = UnscaleDouble(Eph->cus, -30);	// cus
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Eph->cus, -30);	// cus
 	Subframe2[17] |= COMPOSE_BITS(IntValue >> 11, 0, 10);
 	Subframe2[18] = COMPOSE_BITS(IntValue, 13, 11);
-	Value = UnscaleDouble(Eph->cuc, -30);	// cuc
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Eph->cuc, -30);	// cuc
 	Subframe2[18] |= COMPOSE_BITS(IntValue >> 8, 0, 13);
 	Subframe2[19] = COMPOSE_BITS(IntValue, 16, 8);
 
 	// clock error 69bits in WORD19 ~ WORD22(5MSB)
 	UintValue = Eph->toc / 300;	// toc
 	Subframe2[19] |= COMPOSE_BITS(UintValue, 5, 11);
-	Value = UnscaleDouble(Eph->af0, -34);	// af0
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Eph->af0, -34);	// af0
 	Subframe2[19] |= COMPOSE_BITS(IntValue >> 20, 0, 5);
 	Subframe2[20] = COMPOSE_BITS(IntValue, 4, 20);
-	Value = UnscaleDouble(Eph->af1, -50);	// af1
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Eph->af1, -50);	// af1
 	Subframe2[20] |= COMPOSE_BITS(IntValue >> 18, 0, 4);
 	Subframe2[21] = COMPOSE_BITS(IntValue, 6, 18);
-	Value = UnscaleDouble(Eph->af2, -66);	// af2
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Eph->af2, -66);	// af2
 	Subframe2[21] |= COMPOSE_BITS(IntValue >> 5, 0, 6);
 	Subframe2[22] = COMPOSE_BITS(IntValue, 19, 5);
 
 	// TGD 36bits in WORD22 ~ WORD23(17MSB)
-	Value = UnscaleDouble(Eph->tgd2, -34);	// TGD B2a
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Eph->tgd2, -34);	// TGD B2a
 	Subframe2[22] |= COMPOSE_BITS(IntValue, 7, 12);
-	Value = 0;//UnscaleDouble(Eph->???, -34);	// ISC B1C
-	IntValue = roundi(Value);
+	IntValue = 0;//UnscaleInt(Eph->???, -34);	// ISC B1C
 	Subframe2[22] |= COMPOSE_BITS(IntValue >> 5, 0, 7);
 	Subframe2[23] = COMPOSE_BITS(IntValue, 19, 5);
-	Value = UnscaleDouble(Eph->tgd, -34);	// TGD B1C
-	IntValue = roundi(Value);
+	IntValue = UnscaleInt(Eph->tgd, -34);	// TGD B1C
 	Subframe2[23] |= COMPOSE_BITS(IntValue, 7, 12);
 }
 

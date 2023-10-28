@@ -71,3 +71,6 @@ Change list as below:
 	Add E5 support
 	Add dummy F/NAV data stream generation
 	Satellite signal generation allows NULL pointer for data bit to generate all 0 modulation data
+10/28/2023
+	Replace UnscaleDouble and roundi/roundu with UnscaleInt/UnscaleUint
+	Add UnscaleLong/UnscaleULong to better support data fields longer than 32bit (C-NAV and BC-NAV)

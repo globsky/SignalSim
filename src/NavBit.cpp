@@ -104,6 +104,47 @@ double NavBit::UnscaleDouble(double value, int scale)
 	return data.d_data;
 }
 
+int NavBit::UnscaleInt(double value, int scale)
+{
+	long long int long_value = UnscaleLong(value, scale);
+	return (int)long_value;
+}
+
+unsigned int NavBit::UnscaleUint(double value, int scale)
+{
+	unsigned long long int long_value = UnscaleULong(value, scale);
+	return (unsigned int)long_value;
+}
+
+long long int NavBit::UnscaleLong(double value, int scale)
+{
+	DOUBLE_INT_UNION *data = (DOUBLE_INT_UNION *)(&value);
+	long long int fraction;
+	int sign;
+
+	sign = (data->i_data[1] & 0x80000000);
+	fraction = (long long int)UnscaleULong(value, scale);
+	return (sign ? -fraction : fraction);
+}
+
+unsigned long long int NavBit::UnscaleULong(double value, int scale)
+{
+	DOUBLE_INT_UNION *data = (DOUBLE_INT_UNION *)(&value);
+	unsigned long long int fraction;
+	int exp, shift;
+
+	exp = ((data->i_data[1] & 0x7ff00000) >> 20);
+	data->i_data[1] &= 0xfffff;	// clear sign/exp
+	fraction = *(long long *)(&value);
+	if (exp == 0 && fraction == 0)
+		return 0;
+	fraction |= 0x10000000000000LL;	// add 1. part
+	shift = 1074 - exp + scale;
+	fraction += (1LL << shift);	// round
+	fraction >>= (shift + 1);
+	return fraction;
+}
+
 // put bit in Data from MSB ot LSB into BitStream, bit order from bit(BitNumber-1) to bit(0) of Data
 int NavBit::AssignBits(unsigned int Data, int BitNumber, int BitStream[])
 {
