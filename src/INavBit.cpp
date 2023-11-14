@@ -130,7 +130,7 @@ int INavBit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits
 
 int INavBit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
 {
-	if (svid < 1 || svid > 36 || !Eph || !Eph->flag)
+	if (svid < 1 || svid > 36 || !Eph || !Eph->valid)
 		return 0;
 	ComposeEphWords(Eph, GalEphData[svid-1]);
 	return svid;
@@ -143,19 +143,20 @@ int INavBit::SetAlmanac(int svid, PGPS_ALMANAC Alm)
 
 int INavBit::SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam)
 {
+	PIONO_NEQUICK IonoGal = (PIONO_NEQUICK)IonoParam;
 	signed int IntValue;
 	unsigned int UintValue;
 	int i;
 	unsigned int IonoWords[2];
 
-	// IonoParam a0~a2 hold ai0~ai2
-	UintValue = UnscaleUint(IonoParam->a0, -2);
+	UintValue = UnscaleUint(IonoGal->ai0, -2);
 	IonoWords[0] = COMPOSE_BITS(UintValue, 15, 11);
-	IntValue = UnscaleInt(IonoParam->a1, -8);
+	IntValue = UnscaleInt(IonoGal->ai1, -8);
 	IonoWords[0] |= COMPOSE_BITS(IntValue, 4, 11);
-	IntValue = UnscaleInt(IonoParam->a2, -15);
+	IntValue = UnscaleInt(IonoGal->ai2, -15);
 	IonoWords[0] |= COMPOSE_BITS(IntValue >> 10, 0, 4);
 	IonoWords[1] = COMPOSE_BITS(IntValue, 22, 10);
+	IonoWords[1] |= COMPOSE_BITS(IonoGal->flag, 17, 5);
 
 	// put ai0~ai2 into Word 5
 	for (i = 0; i < 36; i ++)
@@ -183,6 +184,8 @@ int INavBit::SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam)
 	return 0;
 }
 
+// Word Type 1~5 each has 128 content bits fill EphData[] sequencially
+// each 128bit has the order MSB first and least index first
 int INavBit::ComposeEphWords(PGPS_EPHEMERIS Ephemeris, unsigned int *EphData)
 {
 	signed int IntValue;
@@ -258,6 +261,11 @@ int INavBit::ComposeEphWords(PGPS_EPHEMERIS Ephemeris, unsigned int *EphData)
 	IntValue = UnscaleInt(Ephemeris->tgd2, -32);
 	EphData[17] |= COMPOSE_BITS(IntValue >> 3, 0, 7);
 	EphData[18] = COMPOSE_BITS(IntValue, 29, 3);
+	IntValue = Ephemeris->health;
+	EphData[18] |= COMPOSE_BITS(IntValue >> 7, 27, 2);	// E5b HS
+	EphData[18] |= COMPOSE_BITS(IntValue >> 1, 25, 2);	// E1B HS
+	EphData[18] |= COMPOSE_BITS(IntValue >> 5, 24, 1);	// E5b DVS
+	EphData[18] |= COMPOSE_BITS(IntValue, 23, 1);		// E1B DVS
 
 	return 0;
 }

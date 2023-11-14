@@ -21,11 +21,11 @@ public:
 	~CNavData();
 
 	bool AddNavData(NavDataType Type, void *NavData);
-	PGPS_EPHEMERIS FindEphemeris(GnssSystem system, GNSS_TIME time, int svid);
+	PGPS_EPHEMERIS FindEphemeris(GnssSystem system, GNSS_TIME time, int svid, unsigned char FirstPrioritySource = 0);
 	PGLONASS_EPHEMERIS FindGloEphemeris(GNSS_TIME time, int slot);
 	PIONO_PARAM GetGpsIono() { return &GpsIono; }
 	PIONO_PARAM GetBdsIono() { return &BdsIono[0]; }
-	PIONO_PARAM GetGalileoIono() { return &GalileoIono; }
+	PIONO_PARAM GetGalileoIono() { return (PIONO_PARAM)&GalileoIono; }
 	PUTC_PARAM GetGpsUtcParam() { return &GpsUtcParam; }
 	PUTC_PARAM GetBdsUtcParam() { return &BdsUtcParam; }
 	PUTC_PARAM GetGalileoUtcParam() { return &GalileoUtcParam; }
@@ -47,7 +47,7 @@ private:
 	PGLONASS_EPHEMERIS GlonassEphmerisPool;
 	IONO_PARAM GpsIono;
 	IONO_PARAM BdsIono[24];
-	IONO_PARAM GalileoIono;
+	IONO_NEQUICK GalileoIono;
 	UTC_PARAM GpsUtcParam;
 	UTC_PARAM BdsUtcParam;
 	UTC_PARAM GalileoUtcParam;

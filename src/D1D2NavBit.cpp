@@ -94,7 +94,7 @@ int D1D2NavBit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavB
 
 int D1D2NavBit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
 {
-	if (!Eph || !Eph->flag)
+	if (!Eph || !Eph->valid)
 		return 0;
 	
 	if (svid < 1)

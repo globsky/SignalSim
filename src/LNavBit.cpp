@@ -89,7 +89,7 @@ int LNavBit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits
 
 int LNavBit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
 {
-	if (svid < 1 || svid > 32 || !Eph || !Eph->flag)
+	if (svid < 1 || svid > 32 || !Eph || !Eph->valid)
 		return 0;
 	ComposeGpsStream123(Eph, GpsStream123[svid-1]);
 	return svid;
@@ -153,18 +153,23 @@ int LNavBit::SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam)
 	return 0;
 }
 
+// fill ephemeris data into subframe 1/2/3
+// Word1/2 removed, parity not included
+// 24 information bits occupies bit0~23 of each DWORD in Stream[]
 int LNavBit::ComposeGpsStream123(PGPS_EPHEMERIS Ephemeris, unsigned int Stream[3*8])
 {
 	signed int IntValue;
 	unsigned int UintValue;
 
 	// subframe 1, Stream[0]~Stream[7]
-	IntValue = Ephemeris->ura & 0x3f;
-	Stream[0] = COMPOSE_BITS(IntValue, 8, 6);
+	IntValue = Ephemeris->flag & 3;
+	Stream[0] = COMPOSE_BITS(IntValue, 12, 2);
+	IntValue = Ephemeris->ura & 0xf;
+	Stream[0] |= COMPOSE_BITS(IntValue, 8, 4);
 	Stream[0] |= COMPOSE_BITS(Ephemeris->health, 2, 6);
 	IntValue = Ephemeris->iodc >> 8;
 	Stream[0] |= COMPOSE_BITS(IntValue, 0, 2);
-	IntValue = Ephemeris->ura >> 6;
+	IntValue = Ephemeris->flag >> 2;
 	Stream[1] = COMPOSE_BITS(IntValue, 23, 1);
 	IntValue = UnscaleInt(Ephemeris->tgd, -31);
 	Stream[4] = COMPOSE_BITS(IntValue, 0, 8);
@@ -197,7 +202,7 @@ int LNavBit::ComposeGpsStream123(PGPS_EPHEMERIS Ephemeris, unsigned int Stream[3
 	Stream[13] |= COMPOSE_BITS(UintValue >> 24, 0, 8);
 	Stream[14] = COMPOSE_BITS(UintValue, 0, 24);
 	Stream[15] = COMPOSE_BITS(Ephemeris->toe >> 4, 8, 16);
-	Stream[15] |= COMPOSE_BITS(Ephemeris->ura >> 7, 7, 1);
+	Stream[15] |= COMPOSE_BITS(Ephemeris->flag >> 3, 7, 1);
 
 	// subframe 3, Stream[16]~Stream[23]
 	IntValue = UnscaleInt(Ephemeris->cic, -29);

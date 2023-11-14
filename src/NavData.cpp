@@ -46,10 +46,14 @@ bool CNavData::AddNavData(NavDataType Type, void *NavData)
 	switch (Type)
 	{
 	case NavDataGpsIono:
+	case NavDataIonGps:
 		memcpy(&GpsIono, NavData, sizeof(IONO_PARAM));
 		return true;
-	case NavDataGalileoIono:
-		memcpy(&GalileoIono, NavData, sizeof(IONO_PARAM));
+	case NavDataIonBds:
+		memcpy(&BdsIono[0], NavData, sizeof(IONO_PARAM));
+		return true;
+	case NavDataIonGalileo:
+		memcpy(&GalileoIono, NavData, sizeof(IONO_NEQUICK));
 		return true;
 	case NavDataBdsIonoA:
 		TimeMark = Iono->flag & 0x1f;
@@ -73,7 +77,9 @@ bool CNavData::AddNavData(NavDataType Type, void *NavData)
 			BdsIono[TimeMark].flag |= 1;	// set valid flag
 		}
 		return true;
-	case NavDataGpsEph:
+	case NavDataGpsLnav:
+	case NavDataGpsCnav:
+	case NavDataGpsCnav2:
 		if (GpsEphemerisNumber == GpsEphmerisPoolSize)
 		{
 			GpsEphmerisPoolSize += EPH_NUMBER_INC;
@@ -85,7 +91,10 @@ bool CNavData::AddNavData(NavDataType Type, void *NavData)
 		memcpy(&GpsEphmerisPool[GpsEphemerisNumber], NavData, sizeof(GPS_EPHEMERIS));
 		GpsEphemerisNumber ++;
 		break;
-	case NavDataBdsEph:
+	case NavDataBdsD1D2:
+	case NavDataBdsCnav1:
+	case NavDataBdsCnav2:
+	case NavDataBdsCnav3:
 		if (BdsEphemerisNumber == BdsEphmerisPoolSize)
 		{
 			BdsEphmerisPoolSize += EPH_NUMBER_INC;
@@ -97,7 +106,8 @@ bool CNavData::AddNavData(NavDataType Type, void *NavData)
 		memcpy(&BdsEphmerisPool[BdsEphemerisNumber], NavData, sizeof(GPS_EPHEMERIS));
 		BdsEphemerisNumber ++;
 		break;
-	case NavDataGalileoEph:
+	case NavDataGalileoINav:
+	case NavDataGalileoFNav:
 		if (GalileoEphemerisNumber == GalileoEphmerisPoolSize)
 		{
 			GalileoEphmerisPoolSize += EPH_NUMBER_INC;
@@ -109,7 +119,7 @@ bool CNavData::AddNavData(NavDataType Type, void *NavData)
 		memcpy(&GalileoEphmerisPool[GalileoEphemerisNumber], NavData, sizeof(GPS_EPHEMERIS));
 		GalileoEphemerisNumber ++;
 		break;
-	case NavDataGlonassEph:
+	case NavDataGlonassFdma:
 		if (GlonassEphemerisNumber == GlonassEphmerisPoolSize)
 		{
 			GlonassEphmerisPoolSize += EPH_NUMBER_INC;
@@ -149,13 +159,14 @@ bool CNavData::AddNavData(NavDataType Type, void *NavData)
 	return true;
 }
 
-PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int svid)
+PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int svid, unsigned char FirstPrioritySource)
 {
 	int i, time_diff, diff;
 	PGPS_EPHEMERIS Eph = NULL;
 	PGPS_EPHEMERIS EphmerisPool;
 	int EphemerisNumber;
 	int Week = time.Week;
+	BOOL DoAssignment = 0;
 
 	if (system == GpsSystem)
 	{
@@ -182,10 +193,22 @@ PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int sv
 		diff = (Week - EphmerisPool[i].week) * 604800 + (time.MilliSeconds / 1000 - EphmerisPool[i].toe);
 		if (diff < 0)
 			diff = -diff;
-		if ((svid == EphmerisPool[i].svid) && (diff < 7200) && ((Eph == NULL) || ((Eph != NULL) && (diff < time_diff))))
+		if ((svid == EphmerisPool[i].svid) && (diff < 7200))	// same svid and within +-2 hours time span
 		{
-			Eph = &EphmerisPool[i];
-			time_diff = diff;
+			if (Eph == NULL)	// not assigned, assign anyway
+				DoAssignment = 1;
+			else if (Eph->source != FirstPrioritySource && EphmerisPool[i].source == FirstPrioritySource)	// new ephemeris from desired source
+				DoAssignment = 1;
+			else if (diff < time_diff)	// either both old and new ephemeris do or do not from desired source, but has smaller time difference
+				DoAssignment = 1;
+			else
+				DoAssignment = 0;
+
+			if (DoAssignment)
+			{
+				Eph = &EphmerisPool[i];
+				time_diff = diff;
+			}
 		}
 	}
 
@@ -237,9 +260,9 @@ void CNavData::ReadNavFile(char *filename)
 		if (DataType != NavDataUnknown)
 			AddNavData(DataType, (void *)&NavData);
 	}
-	while ((DataType = LoadNavFileEphemeris(fp, (void *)&NavData)) != NavDataEnd)
+	while ((DataType = LoadNavFileContents(fp, (void *)&NavData)) != NavDataEnd)
 	{
-		if (DataType == NavDataGlonassEph)
+		if (DataType == NavDataGlonassFdma)
 			if (pEph->n > 0 && pEph->n <= 24)
 				GlonassSlotFreq[pEph->n-1] = pEph->freq;
 		if (DataType != NavDataUnknown)

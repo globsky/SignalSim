@@ -350,12 +350,16 @@ int BCNavBit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBit
 
 int BCNavBit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
 {
-	if (svid < 1 || svid > 63 || !Eph || !Eph->flag)
+	if (svid < 1 || svid > 63 || !Eph || !Eph->valid)
 		return 0;
 	ComposeSubframe2(Eph, BdsSubframe2[svid-1]);
 	return svid;
 }
 
+// 600 bits subframe information divided int 25 WORDs
+// each WORD has 24bits in 24LSB of unsigned int data in Subframe2[]
+// bit order is MSB first (from bit23) and least index first
+// each 24bits divided into four 6bit symbols in LDPC encode
 void BCNavBit::ComposeSubframe2(PGPS_EPHEMERIS Eph, unsigned int Subframe2[25])
 {
 	signed int IntValue;
@@ -372,7 +376,7 @@ void BCNavBit::ComposeSubframe2(PGPS_EPHEMERIS Eph, unsigned int Subframe2[25])
 	UintValue = Eph->toe / 300;	// toe
 	Subframe2[1] |= COMPOSE_BITS(UintValue >> 2, 0, 9);
 	Subframe2[2] = COMPOSE_BITS(UintValue, 22, 2);
-	UintValue = (Eph->axis > 4e7) ? ((Eph->svid <= 5) ? 1 : 2) : 3;	// SatType
+	UintValue = Eph->flag;	// SatType
 	Subframe2[2] |= COMPOSE_BITS(UintValue, 20, 2);
 	IntValue = UnscaleInt(Eph->axis - ((UintValue == 3) ? 27906100.0 : 42162200.0), -9);	// deltaA
 	Subframe2[2] |= COMPOSE_BITS(IntValue >> 6, 0, 20);
@@ -382,7 +386,7 @@ void BCNavBit::ComposeSubframe2(PGPS_EPHEMERIS Eph, unsigned int Subframe2[25])
 	Subframe2[4] = COMPOSE_BITS(IntValue, 17, 7);
 	IntValue = UnscaleInt(Eph->delta_n / PI, -44);	// delta_n
 	Subframe2[4] |= COMPOSE_BITS(IntValue, 0, 17);
-	IntValue = 0;//UnscaleInt(Eph->???, -57);	// delta n dot
+	IntValue = UnscaleInt(Eph->delta_n_dot, -57);	// delta n dot
 	Subframe2[5] = COMPOSE_BITS(IntValue, 1, 23);
 	LongValue = UnscaleLong(Eph->M0 / PI, -32);
 	IntValue = (LongValue & 0x100000000LL) ? 1 : 0;

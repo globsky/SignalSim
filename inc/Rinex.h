@@ -65,11 +65,17 @@ enum NavDataType {
 	NavDataGpsIono, NavDataBdsIonoA, NavDataBdsIonoB, NavDataGalileoIono,
 	NavDataGpsUtc, NavDataBdsUtc, NavDataGalileoUtc, NavDataGalileoGps, NavDataLeapSecond,
 	NavDataGlonassFreq,
-	NavDataGpsEph, NavDataBdsEph, NavDataGalileoEph, NavDataGlonassEph
+	NavDataGpsLnav, NavDataGpsCnav, NavDataGpsCnav2,
+	NavDataBdsD1D2, NavDataBdsCnav1, NavDataBdsCnav2, NavDataBdsCnav3,
+	NavDataGalileoINav, NavDataGalileoFNav,
+	NavDataNavICLnav,
+	NavDataGlonassFdma,
+	NavDataSbasNav,
+	NavDataIonGps, NavDataIonBds, NavDataIonBdgim, NavDataIonGalileo, NavDataIonQzss, NavDataIonIrnss,
 };
 
 NavDataType LoadNavFileHeader(FILE *fp_nav, void *NavData);
-NavDataType LoadNavFileEphemeris(FILE *fp_nav, void *NavData);
+NavDataType LoadNavFileContents(FILE *fp_nav, void *NavData);
 void OutputHeader(FILE *fp, PRINEX_HEADER Header);
 void OutputObservation(FILE *fp, UTC_TIME time, int TotalObsNumber, SAT_OBSERVATION Observations[]);
 

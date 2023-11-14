@@ -76,7 +76,8 @@ bool GpsSatPosSpeedEph(GnssSystem system, double TransmitTime, PGPS_EPHEMERIS pE
 		delta_t += 604800;
 
 	// get Ek from Mk with recursive algorithm
-	Ek1 = Ek = Mk = pEph->M0 + (pEph->n * delta_t);
+	alpha = pEph->delta_n_dot * delta_t;
+	Ek1 = Ek = Mk = pEph->M0 + ((pEph->n + alpha / 2) * delta_t);
 	for (i = 0; i < 10; i ++)
 	{
 		Ek = Mk + pEph->ecc * sin(Ek);
@@ -96,7 +97,7 @@ bool GpsSatPosSpeedEph(GnssSystem system, double TransmitTime, PGPS_EPHEMERIS pE
 
 	// get u(k), r(k) and i(k)
 	uk = phi;
-	rk = pEph->axis * Ek1;
+	rk = (pEph->axis + pEph->axis_dot * delta_t) * Ek1;
 	ik = pEph->i0 + (pEph->idot * delta_t);
 	// apply 2nd order correction to u(k), r(k) and i(k)
 	duk = (pEph->cuc * cos_temp) + (pEph->cus * sin_temp);
@@ -106,10 +107,10 @@ bool GpsSatPosSpeedEph(GnssSystem system, double TransmitTime, PGPS_EPHEMERIS pE
 	rk += drk;
 	ik += dik;
 	// calculate derivatives of r(k) and u(k)
-	pEph->Ek_dot = pEph->n / Ek1;
+	pEph->Ek_dot = (pEph->n + alpha) / Ek1;
 	uk_dot = phi_dot = pEph->Ek_dot * pEph->root_ecc / Ek1;
 	phi_dot = phi_dot * 2.0;
-	rk_dot = pEph->axis * pEph->ecc * sin(Ek) * pEph->Ek_dot;
+	rk_dot = pEph->axis * pEph->ecc * sin(Ek) * pEph->Ek_dot + pEph->axis_dot * Ek1;
 	drk_dot = ((pEph->crs * cos_temp) - (pEph->crc * sin_temp)) * phi_dot;
 	duk_dot = ((pEph->cus * cos_temp) - (pEph->cuc * sin_temp)) * phi_dot;
 	dik_dot = ((pEph->cis * cos_temp) - (pEph->cic * sin_temp)) * phi_dot;

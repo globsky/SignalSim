@@ -77,24 +77,28 @@ typedef struct
 	double SubMilliSeconds;
 } GLONASS_TIME, *PGLONASS_TIME;
 
-typedef struct // GPS ephemeris, also used by BDS and Galileo
+typedef struct // GPS ephemeris, also used by BDS, Galileo, QZSS and NavIC
 {
 	unsigned short	iodc;
 	unsigned char	iode2;
 	unsigned char	iode3;
 
-	unsigned char	ura;	// URA in 4LSB, code on L2 in bit4/5, L2 channel code in bit6, fit interval flag in bit7
-	unsigned char	flag;	// bit0 means ephemeris valid
-	unsigned char	health;
+	unsigned char	ura;	// URA for corresponding system
 	unsigned char	svid;	// satellite PRN number starting from 1
+	unsigned char	source;	// source of navigation (from which type of navigation message)
+	unsigned char	valid;	// bit0 means ephemeris valid, other bits means valid for tgd_ext
+	unsigned short	flag;	// definition various
+	unsigned short	health;	// definition various
 
 	int	toe;
 	int	toc;
+	int top;
 	int	week;
 
-	// parameter
+	// orbit parameter
 	double M0;			// Mean Anomaly at Reference Time
 	double delta_n;		// Mean Motion Difference from Computed Value
+	double delta_n_dot;	// Rate of Mean Motion Difference from Computed Value
 	double ecc;			// Eccentricity
 	double sqrtA;		// Square Root of the Semi-Major Axis
 	double axis_dot;	// Change rate of axis, valid for L1C/B1C
@@ -109,11 +113,13 @@ typedef struct // GPS ephemeris, also used by BDS and Galileo
 	double crs;			// Amplitude of the Sine Harmonic Correction Term to the Orbit Radius
 	double cic;			// Amplitude of the Cosine Harmonic Correction Term to the Angle of Inclination
 	double cis;			// Amplitude of the Sine Harmonic Correction Term to the Angle of Inclination
-	double tgd;			// Group Delay
-	double tgd2;		// Group Delay for secondary frequency (eg. B2 in BDS)
+	// clock and delay parameters
 	double af0;			// Satellite Clock Correction
 	double af1;			// Satellite Clock Correction
 	double af2;			// Satellite Clock Correction
+	double tgd;			// Group Delay for primary frequency (L1C/A, B1I, E1)
+	double tgd2;		// Group Delay for secondary frequency (eg. L2C and B2I)
+	double tgd_ext[5];	// Group Delay for other frequency and channels (TGD - ISC)
 
 	// variables derived from basic data, to avoid calculate every time
 	double axis;		// Semi-major Axis of Orbit, equals to sqrtA^2
@@ -124,6 +130,16 @@ typedef struct // GPS ephemeris, also used by BDS and Galileo
 	double Ek;			// Ek, derived from Mk
 	double Ek_dot;		// change rate of Ek
 } GPS_EPHEMERIS, *PGPS_EPHEMERIS;
+
+// definitions for source field
+#define EPH_SOURCE_LNAV 0
+#define EPH_SOURCE_D1D2 0
+#define EPH_SOURCE_INAV 0
+#define EPH_SOURCE_CNAV 1
+#define EPH_SOURCE_CNV1 1
+#define EPH_SOURCE_FNAV 1
+#define EPH_SOURCE_CNV2 2
+#define EPH_SOURCE_CNV3 3
 
 typedef struct        			
 {
@@ -201,11 +217,34 @@ typedef struct
     unsigned long	flag; // bit0:1, availble, bit8~13: svid
 } IONO_PARAM, *PIONO_PARAM;
 
+typedef struct
+{
+    double	ai0;
+    double	ai1;
+    double	ai2;
+    unsigned long	flag; // bit0:1, availble, bit8~13: svid
+} IONO_NEQUICK, *PIONO_NEQUICK;
+
+typedef struct
+{
+    double	alpha1;
+    double	alpha2;
+    double	alpha3;
+    double	alpha4;
+    double	alpha5;
+    double	alpha6;
+    double	alpha7;
+    double	alpha8;
+    double	alpha9;
+    unsigned long	flag; // bit0:1, availble, bit8~13: svid
+} IONO_BDGIM, *PIONO_BDGIM;
+
 // UTC parameters
 typedef  struct _PACKED_
 {
-	double	A0;  // second, 2**-30
-	double	A1;  // second/second, 2**-50
+	double	A0;  // second
+	double	A1;  // second/second
+	double	A2;  // second/second^2
 	short	WN;
 	short	WNLSF;
 	unsigned char	tot; // scale factor 2**12 for GPS/BDS and 3600 for Galileo

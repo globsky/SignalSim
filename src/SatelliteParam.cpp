@@ -24,7 +24,7 @@ int GetVisibleSatellite(KINEMATIC_INFO Position, GNSS_TIME time, OUTPUT_PARAM Ou
 
 	for (i = 0; i < Number; i ++)
 	{
-		if (Eph[i] == NULL || Eph[i]->flag == 0 || Eph[i]->health != 0)
+		if (Eph[i] == NULL || Eph[i]->valid == 0 || Eph[i]->health != 0)
 			continue;
 		if (system == GpsSystem)
 		{
@@ -153,7 +153,30 @@ void GetSatelliteParam(KINEMATIC_INFO PositionEcef, LLA_POSITION PositionLla, GN
 	{
 		TravelTime = Distance / LIGHT_SPEED - GpsClockCorrection(Eph, SatelliteTime);
 		TravelTime -= WGS_F_GTR * Eph->ecc * Eph->sqrtA * sin(Eph->Ek + TimeDiff * Eph->Ek_dot);		// relativity correction
-		SatelliteParam->GroupDelay[0] = Eph->tgd;
+		// assign GroupDelay[]
+		switch (system)
+		{
+		case GpsSystem:
+			SatelliteParam->GroupDelay[FREQ_INDEX_GPS_L1] = Eph->tgd;	// L1C/A
+			SatelliteParam->GroupDelay[FREQ_INDEX_GPS_L2] = Eph->tgd2;	// L2C
+			SatelliteParam->GroupDelay[FREQ_INDEX_GPS_L5] = Eph->tgd_ext[3];	// L2C
+			break;
+		case BdsSystem:
+			SatelliteParam->GroupDelay[FREQ_INDEX_BDS_B1C] = Eph->tgd_ext[1];	// B1C
+			SatelliteParam->GroupDelay[FREQ_INDEX_BDS_B1I] = Eph->tgd;	// B1I
+			SatelliteParam->GroupDelay[FREQ_INDEX_BDS_B2I] = Eph->tgd2;	// B2I
+			SatelliteParam->GroupDelay[FREQ_INDEX_BDS_B3I] = 0;	// B3I
+			SatelliteParam->GroupDelay[FREQ_INDEX_BDS_B2a] = Eph->tgd_ext[3];	// B2a
+			SatelliteParam->GroupDelay[FREQ_INDEX_BDS_B2a] = Eph->tgd_ext[4];	// B2b
+			break;
+		case GalileoSystem:
+			SatelliteParam->GroupDelay[FREQ_INDEX_GAL_E1] = Eph->tgd;	// E1
+			SatelliteParam->GroupDelay[FREQ_INDEX_GAL_E5a] = Eph->tgd_ext[2];	// E5a
+			SatelliteParam->GroupDelay[FREQ_INDEX_GAL_E5b] = Eph->tgd_ext[4];	// E5b
+			SatelliteParam->GroupDelay[FREQ_INDEX_GAL_E5] = (Eph->tgd_ext[2] + Eph->tgd_ext[4]) / 2;	// E5
+			SatelliteParam->GroupDelay[FREQ_INDEX_GAL_E6] = Eph->tgd_ext[4];	// E6
+			break;
+		}
 	}
 	SatelliteParam->TravelTime = TravelTime;
 	SatelliteParam->Elevation = Elevation;
@@ -271,8 +294,6 @@ double GetWaveLength(int system, int FreqIndex, int FreqID)
 double GetTravelTime(PSATELLITE_PARAM SatelliteParam, int FreqIndex)
 {
 	double TravelTime = SatelliteParam->TravelTime + SatelliteParam->GroupDelay[0];
-	if (FreqIndex)
-		TravelTime -= SatelliteParam->GroupDelay[FreqIndex];	// ISC adjustment
 	TravelTime += GetIonoDelay(SatelliteParam->IonoDelay, SatelliteParam->system, FreqIndex) / LIGHT_SPEED;
 	return TravelTime;
 }
@@ -280,8 +301,6 @@ double GetTravelTime(PSATELLITE_PARAM SatelliteParam, int FreqIndex)
 double GetCarrierPhase(PSATELLITE_PARAM SatelliteParam, int FreqIndex)
 {
 	double TravelTime = SatelliteParam->TravelTime + SatelliteParam->GroupDelay[0];
-	if (FreqIndex)
-		TravelTime -= SatelliteParam->GroupDelay[FreqIndex];	// ISC adjustment
 	TravelTime = TravelTime * LIGHT_SPEED - GetIonoDelay(SatelliteParam->IonoDelay, SatelliteParam->system, FreqIndex);
 	return TravelTime / GetWaveLength(SatelliteParam->system, FreqIndex, SatelliteParam->FreqID);
 }

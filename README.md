@@ -74,3 +74,8 @@ Change list as below:
 10/28/2023
 	Replace UnscaleDouble and roundi/roundu with UnscaleInt/UnscaleUint
 	Add UnscaleLong/UnscaleULong to better support data fields longer than 32bit (C-NAV and BC-NAV)
+11/13/2023
+	Add support to RINEX 4 format navigation file
+	Modify Rinex.cpp to support RINEX 4 format data set
+	Expand and modify GPS_EPHEMERIS structure to support ephemeris from different navigation data format
+	Calculate clock/delay for different frequency with corresponding parameters
