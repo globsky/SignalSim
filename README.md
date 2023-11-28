@@ -79,3 +79,8 @@ Change list as below:
 	Modify Rinex.cpp to support RINEX 4 format data set
 	Expand and modify GPS_EPHEMERIS structure to support ephemeris from different navigation data format
 	Calculate clock/delay for different frequency with corresponding parameters
+11/27/2023
+	Change BCNavBit to virtual class and derive three classes for B-CNAV1/2/3 data stream
+	Combine iode2/iode3 to iode in ephemeris structure
+	Add B-CNAV2 and B-CNAV3 support in CSatelliteSignal
+	Modify GetTravelTime() and GetCarrierPhase() to use correct group delay

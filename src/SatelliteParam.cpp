@@ -293,14 +293,14 @@ double GetWaveLength(int system, int FreqIndex, int FreqID)
 
 double GetTravelTime(PSATELLITE_PARAM SatelliteParam, int FreqIndex)
 {
-	double TravelTime = SatelliteParam->TravelTime + SatelliteParam->GroupDelay[0];
+	double TravelTime = SatelliteParam->TravelTime + SatelliteParam->GroupDelay[FreqIndex];
 	TravelTime += GetIonoDelay(SatelliteParam->IonoDelay, SatelliteParam->system, FreqIndex) / LIGHT_SPEED;
 	return TravelTime;
 }
 
 double GetCarrierPhase(PSATELLITE_PARAM SatelliteParam, int FreqIndex)
 {
-	double TravelTime = SatelliteParam->TravelTime + SatelliteParam->GroupDelay[0];
+	double TravelTime = SatelliteParam->TravelTime + SatelliteParam->GroupDelay[FreqIndex];
 	TravelTime = TravelTime * LIGHT_SPEED - GetIonoDelay(SatelliteParam->IonoDelay, SatelliteParam->system, FreqIndex);
 	return TravelTime / GetWaveLength(SatelliteParam->system, FreqIndex, SatelliteParam->FreqID);
 }

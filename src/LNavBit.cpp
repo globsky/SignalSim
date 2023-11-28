@@ -183,7 +183,7 @@ int LNavBit::ComposeGpsStream123(PGPS_EPHEMERIS Ephemeris, unsigned int Stream[3
 	Stream[7] = COMPOSE_BITS(IntValue, 2, 22);
 
 	// subframe 2, Stream[8]~Stream[15]
-	Stream[8] = COMPOSE_BITS(Ephemeris->iode2, 16, 8);
+	Stream[8] = COMPOSE_BITS(Ephemeris->iode, 16, 8);
 	IntValue = UnscaleInt(Ephemeris->crs, -5);
 	Stream[8] |= COMPOSE_BITS(IntValue, 0, 16);
 	IntValue = UnscaleInt(Ephemeris->delta_n / PI, -43);
@@ -222,7 +222,7 @@ int LNavBit::ComposeGpsStream123(PGPS_EPHEMERIS Ephemeris, unsigned int Stream[3
 	Stream[21] = COMPOSE_BITS(IntValue, 0, 24);
 	IntValue = UnscaleInt(Ephemeris->omega_dot / PI, -43);
 	Stream[22] = COMPOSE_BITS(IntValue, 0, 24);
-	Stream[23] = COMPOSE_BITS(Ephemeris->iode3, 16, 8);
+	Stream[23] = COMPOSE_BITS(Ephemeris->iode, 16, 8);
 	IntValue = UnscaleInt(Ephemeris->idot / PI, -43);
 	Stream[23] |= COMPOSE_BITS(IntValue, 2, 14);
 

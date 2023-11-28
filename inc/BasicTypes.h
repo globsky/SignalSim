@@ -79,11 +79,9 @@ typedef struct
 
 typedef struct // GPS ephemeris, also used by BDS, Galileo, QZSS and NavIC
 {
+	unsigned short	ura;	// URA for corresponding system
 	unsigned short	iodc;
-	unsigned char	iode2;
-	unsigned char	iode3;
-
-	unsigned char	ura;	// URA for corresponding system
+	unsigned char	iode;
 	unsigned char	svid;	// satellite PRN number starting from 1
 	unsigned char	source;	// source of navigation (from which type of navigation message)
 	unsigned char	valid;	// bit0 means ephemeris valid, other bits means valid for tgd_ext

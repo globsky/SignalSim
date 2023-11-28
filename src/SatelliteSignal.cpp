@@ -15,7 +15,9 @@
 #include "INavBit.h"
 #include "FNavBit.h"
 #include "D1D2NavBit.h"
-#include "BCNavBit.h"
+#include "BCNav1Bit.h"
+#include "BCNav2Bit.h"
+#include "BCNav3Bit.h"
 #include "GNavBit.h"
 #include "PilotBit.h"
 
@@ -28,8 +30,8 @@ const SignalAttribute CSatelliteSignal::SignalAttributes[32] = {
 {       10,        1,     0x0,     18000,   },	// index  4 for BCNAV1
 {        1,       20, 0x72b20,      6000,   },	// index  5 for D1
 {        1,        2,     0x0,       600,   },	// index  6 for D2
-{        1,        5,     0x8,     18000,   },	// index  7 for BCNAV2
-{        1,        1,     0x0,     18000,   },	// index  8 for BCNAV3
+{        1,        5,     0x8,      3000,   },	// index  7 for BCNAV2
+{        1,        1,     0x0,      1000,   },	// index  8 for BCNAV3
 {        4,        1,     0x0,      2000,   },	// index  9 for I/NAV E1
 {        1,       20, 0x97421,     10000,   },	// index 10 for FNAV
 {        1,        4,     0x7,      2000,   },	// index 11 for I/NAV E5b
@@ -80,18 +82,18 @@ BOOL CSatelliteSignal::SetSignalAttribute(GnssSystem System, int FreqIndex, NavB
 		{
 		case FREQ_INDEX_BDS_B1C: 
 			Attribute = &SignalAttributes[4];
-			return NavData ? ((typeid(*NavData) == typeid(BCNavBit)) ? TRUE : FALSE) : TRUE;
+			return NavData ? ((typeid(*NavData) == typeid(BCNav1Bit)) ? TRUE : FALSE) : TRUE;
 		case FREQ_INDEX_BDS_B1I:
 		case FREQ_INDEX_BDS_B2I:
 		case FREQ_INDEX_BDS_B3I:
 			Attribute = ((Svid < 6) || (Svid > 58)) ? &SignalAttributes[6] : &SignalAttributes[5];
 			return NavData ? ((typeid(*NavData) == typeid(D1D2NavBit)) ? TRUE : FALSE) : TRUE;
-//		case FREQ_INDEX_BDS_B2a:
-//			Attribute = &SignalAttributes[7];
-//			return NavData ? ((typeid(*NavData) == typeid(BCNav2Bit)) ? TRUE : FALSE) : TRUE;
-//		case FREQ_INDEX_BDS_B2b:
-//			Attribute = &SignalAttributes[8];
-//			return NavData ? ((typeid(*NavData) == typeid(BCNav3Bit)) ? TRUE : FALSE) : TRUE;
+		case FREQ_INDEX_BDS_B2a:
+			Attribute = &SignalAttributes[7];
+			return NavData ? ((typeid(*NavData) == typeid(BCNav2Bit)) ? TRUE : FALSE) : TRUE;
+		case FREQ_INDEX_BDS_B2b:
+			Attribute = &SignalAttributes[8];
+			return NavData ? ((typeid(*NavData) == typeid(BCNav3Bit)) ? TRUE : FALSE) : TRUE;
 		default: return FALSE;	// unknown FreqIndex
 		}
 	case GalileoSystem:

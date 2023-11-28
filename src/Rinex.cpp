@@ -437,7 +437,7 @@ BOOL DecodeEphParam(NavDataType DataType, char *str, FILE *fp_nav, PGPS_EPHEMERI
 			Eph->axis_dot = 0.0;
 			Eph->delta_n_dot = 0.0;
 			Eph->iodc = (unsigned short)data[26];      /* IODC */
-			Eph->iode2 = Eph->iode3 = (unsigned char)data[3];      /* IODE/AODE */
+			Eph->iode = (unsigned char)data[3];      /* IODE/AODE */
 			Eph->week = (int)data[21];      /* week number */
 			Eph->health = (unsigned short)data[24];      /* sv health */
 			Eph->ura = GetUraIndex(data[23]);
@@ -453,7 +453,7 @@ BOOL DecodeEphParam(NavDataType DataType, char *str, FILE *fp_nav, PGPS_EPHEMERI
 			Eph->axis_dot = data[3];
 			Eph->delta_n_dot = data[20];
 			Eph->iodc = 0;      /* IODC */
-			Eph->iode2 = Eph->iode3 = 0;      /* IODE/AODE */
+			Eph->iode = 0;      /* IODE/AODE */
 			Eph->week = (int)data[32];      /* week number for WNop */
 			Eph->health = (unsigned short)data[24];      /* sv health */
 			Eph->ura = GetUraIndex(data[23]);
@@ -470,7 +470,7 @@ BOOL DecodeEphParam(NavDataType DataType, char *str, FILE *fp_nav, PGPS_EPHEMERI
 			Eph->axis_dot = data[3];
 			Eph->delta_n_dot = data[20];
 			Eph->iodc = 0;      /* IODC */
-			Eph->iode2 = Eph->iode3 = 0;      /* IODE/AODE */
+			Eph->iode = 0;      /* IODE/AODE */
 			Eph->week = (int)data[36];      /* week number for WNop */
 			Eph->health = (unsigned short)data[24];      /* sv health */
 			Eph->ura = GetUraIndex(data[23]);
@@ -488,7 +488,7 @@ BOOL DecodeEphParam(NavDataType DataType, char *str, FILE *fp_nav, PGPS_EPHEMERI
 			Eph->axis_dot = 0.0;
 			Eph->delta_n_dot = 0.0;
 			Eph->iodc = (unsigned short)data[3];      /* IOD */
-			Eph->iode2 = Eph->iode3 = (unsigned char)data[3];      /* IODE/AODE */
+			Eph->iode = (unsigned char)data[3];      /* IODE/AODE */
 			Eph->week = (int)data[21];      /* week number */
 			Eph->health = (unsigned short)data[24];      /* sv health */
 			Eph->ura = GetGalileoUra(data[23]);
@@ -503,7 +503,7 @@ BOOL DecodeEphParam(NavDataType DataType, char *str, FILE *fp_nav, PGPS_EPHEMERI
 			Eph->axis_dot = 0.0;
 			Eph->delta_n_dot = 0.0;
 			Eph->iodc = (unsigned short)data[28];      /* AODC */
-			Eph->iode2 = Eph->iode3 = (unsigned char)data[3];      /* IODE/AODE */
+			Eph->iode = (unsigned char)data[3];      /* IODE/AODE */
 			Eph->week = (int)data[21];      /* week number */
 			Eph->health = (data[24] != 0) ? 0x80 : 0;      /* sv health */
 			Eph->ura = GetUraIndex(data[23]);
@@ -518,12 +518,12 @@ BOOL DecodeEphParam(NavDataType DataType, char *str, FILE *fp_nav, PGPS_EPHEMERI
 		case NavDataBdsCnav1:
 			Eph->axis_dot = data[3];
 			Eph->delta_n_dot = data[20];
-			Eph->iodc = 0;      /* IODC */
-			Eph->iode2 = Eph->iode3 = 0;      /* IODE/AODE */
+			Eph->iodc = (unsigned short)data[34];      /* IODC */
+			Eph->iode = (unsigned char)Eph->iodc;      /* IODE/AODE */
 			Eph->week = toc_time.Week - 1356;      /* week number from toc */
 			Eph->health = (unsigned short)data[32];      /* sv health */
 			Eph->ura = GetUraIndex(data[23]);
-			Eph->flag = (unsigned short)data[33];
+			Eph->flag = (unsigned short)data[21] | ((unsigned short)data[33] << 2) | ((unsigned short)data[31] << 11);
 			Eph->tgd = data[29];      /* TGD for B1I */
 			Eph->tgd2 = data[29] * TGD_GAMMA_E5b;      /* TGD for B2I */
 			Eph->tgd_ext[0] = data[29] - data[27];	/* TGD for L1Cd */
@@ -535,12 +535,12 @@ BOOL DecodeEphParam(NavDataType DataType, char *str, FILE *fp_nav, PGPS_EPHEMERI
 		case NavDataBdsCnav2:
 			Eph->axis_dot = data[3];
 			Eph->delta_n_dot = data[20];
-			Eph->iodc = 0;      /* IODC */
-			Eph->iode2 = Eph->iode3 = 0;      /* IODE/AODE */
+			Eph->iodc = (unsigned short)data[34];      /* IODC */
+			Eph->iode = (unsigned char)Eph->iodc;      /* IODE/AODE */
 			Eph->week = toc_time.Week - 1356;      /* week number from toc */
 			Eph->health = (unsigned short)data[32];      /* sv health */
 			Eph->ura = GetUraIndex(data[23]);
-			Eph->flag = (unsigned short)data[33];
+			Eph->flag = (unsigned short)data[21] | ((unsigned short)data[33] << 2) | ((unsigned short)data[31] << 11);
 			Eph->tgd = data[29];      /* TGD for B1I */
 			Eph->tgd2 = data[29] * TGD_GAMMA_E5b;      /* TGD for B2I */
 			Eph->tgd_ext[0] = Eph->tgd_ext[1] = data[29];	/* TGD for B1Cd and B1Cp */
@@ -553,11 +553,11 @@ BOOL DecodeEphParam(NavDataType DataType, char *str, FILE *fp_nav, PGPS_EPHEMERI
 			Eph->axis_dot = data[3];
 			Eph->delta_n_dot = data[20];
 			Eph->iodc = 0;      /* IODC */
-			Eph->iode2 = Eph->iode3 = 0;      /* IODE/AODE */
+			Eph->iode = (unsigned char)Eph->iodc;      /* IODE/AODE */
 			Eph->week = toc_time.Week - 1356;      /* week number from toc */
 			Eph->health = (unsigned short)data[28];      /* sv health */
 			Eph->ura = GetUraIndex(data[23]);
-			Eph->flag = (unsigned short)data[29];
+			Eph->flag = (unsigned short)data[21] | ((unsigned short)data[29] << 8) | ((unsigned short)data[27] << 11);;
 			Eph->tgd = data[29] / TGD_GAMMA_E5b;      /* TGD for B1I */
 			Eph->tgd2 = data[29];      /* TGD for B2I */
 			Eph->tgd_ext[0] = Eph->tgd_ext[1] = Eph->tgd;	/* TGD for B1Cd and B1Cp */
@@ -570,7 +570,7 @@ BOOL DecodeEphParam(NavDataType DataType, char *str, FILE *fp_nav, PGPS_EPHEMERI
 			Eph->axis_dot = 0.0;
 			Eph->delta_n_dot = 0.0;
 			Eph->iodc = (unsigned short)data[26];      /* IODC */
-			Eph->iode2 = Eph->iode3 = (unsigned char)Eph->iodc;      /* IODE/AODE */
+			Eph->iode = (unsigned char)Eph->iodc;      /* IODE/AODE */
 			Eph->week = (int)data[21];      /* week number */
 			Eph->health = (unsigned short)data[24];      /* sv health */
 			Eph->ura = GetUraIndex(data[23]);

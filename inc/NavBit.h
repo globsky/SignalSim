@@ -11,7 +11,7 @@
 
 #include "BasicTypes.h"
 
-#define COMPOSE_BITS(data, start, width) (((data) & ((1 << width) - 1)) << start)
+#define COMPOSE_BITS(data, start, width) (((data) & ((1UL << width) - 1)) << start)
 
 typedef union
 {
