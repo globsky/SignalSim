@@ -248,7 +248,7 @@ int BCNav1Bit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBi
 	for (i = 0; i < 200; i ++)
 		AssignBits(Symbol2[i], 6, bits2+i*6);
 
-	// generate CRC for subframe2
+	// generate CRC for subframe3
 	data = BdsSubframe3[page];
 	AppendCRC(data, 11);
 	// assign each 6bit into Symbol3 array

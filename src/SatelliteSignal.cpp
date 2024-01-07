@@ -18,6 +18,7 @@
 #include "BCNav1Bit.h"
 #include "BCNav2Bit.h"
 #include "BCNav3Bit.h"
+#include "CNav2Bit.h"
 #include "GNavBit.h"
 #include "PilotBit.h"
 
@@ -67,14 +68,14 @@ BOOL CSatelliteSignal::SetSignalAttribute(GnssSystem System, int FreqIndex, NavB
 		{
 		case FREQ_INDEX_GPS_L1: 
 			Attribute = (NavData && typeid(*NavData) == typeid(LNavBit)) ? &SignalAttributes[0] : &SignalAttributes[1];
-			return NavData ? ((typeid(*NavData) == typeid(LNavBit)) ? TRUE : FALSE) : TRUE;
-//			return NavData ? ((typeid(*NavData) == typeid(LNavBit) || typeid(*NavData) == typeid(CNav2Bit)) ? TRUE : FALSE) : TRUE;
+//			return NavData ? ((typeid(*NavData) == typeid(LNavBit)) ? TRUE : FALSE) : TRUE;
+			return NavData ? ((typeid(*NavData) == typeid(LNavBit) || typeid(*NavData) == typeid(CNav2Bit)) ? TRUE : FALSE) : TRUE;
 		case FREQ_INDEX_GPS_L2:
 			Attribute = &SignalAttributes[2];
 			return NavData ? ((typeid(*NavData) == typeid(LNavBit)) ? TRUE : FALSE) : TRUE;
-//		case FREQ_INDEX_GPS_L5:
-//			Attribute = &SignalAttributes[3];
-//			return NavData ? ((typeid(*NavData) == typeid(CNavBit)) ? TRUE : FALSE) : TRUE;
+		case FREQ_INDEX_GPS_L5:
+			Attribute = &SignalAttributes[3];
+			return NavData ? ((typeid(*NavData) == typeid(CNav2Bit)) ? TRUE : FALSE) : TRUE;
 		default: return FALSE;	// unknown FreqIndex
 		}
 	case BdsSystem:
@@ -108,8 +109,9 @@ BOOL CSatelliteSignal::SetSignalAttribute(GnssSystem System, int FreqIndex, NavB
 		case FREQ_INDEX_GAL_E5b:
 			Attribute = &SignalAttributes[11];
 			return NavData ? ((typeid(*NavData) == typeid(INavBit)) ? TRUE : FALSE) : TRUE;
-//		case FREQ_INDEX_GAL_E6 :
-//			Attribute = &SignalAttributes[12];
+		case FREQ_INDEX_GAL_E6 :
+			Attribute = &SignalAttributes[12];
+			return TRUE;
 //			return NavData ? ((typeid(*NavData) == typeid(ENavBit)) ? TRUE : FALSE) : TRUE;
 		default: return FALSE;	// unknown FreqIndex
 		}
@@ -205,7 +207,7 @@ BOOL CSatelliteSignal::GetSatelliteSignal(GNSS_TIME TransmitTime, complex_number
 			break;
 		case FREQ_INDEX_GPS_L5:
 			DataSignal = complex_number(0, DataBit * AMPLITUDE_1_2);
-			PilotSignal = complex_number(AMPLITUDE_1_2, 0);
+			PilotSignal = complex_number(PilotBit * AMPLITUDE_1_2, 0);
 			break;
 		}
 		break;

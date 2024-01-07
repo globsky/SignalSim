@@ -84,3 +84,8 @@ Change list as below:
 	Combine iode2/iode3 to iode in ephemeris structure
 	Add B-CNAV2 and B-CNAV3 support in CSatelliteSignal
 	Modify GetTravelTime() and GetCarrierPhase() to use correct group delay
+1/6/2024
+	Add GPS L1C CNAV2 navigation stream generation class
+	Fix bugs in BDS D1/D2 navigation stream generation
+	Add L1C/L5/E6 support into CSatelliteSignal class
+	Observation support multi-frequency in structure and RINEX output

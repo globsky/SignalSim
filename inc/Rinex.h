@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include "BasicTypes.h"
 
+#define RINEX_MAX_FREQ 3
+
 typedef struct
 {
 	int MajorVersion;
@@ -31,10 +33,10 @@ typedef struct
 	double AntennaDelta[3];
 	// each system output maximum observation of 3 frequencies
 	// bit0~3 as mask for PSR/ADR/Doppler/CN0 respectively, bit4~7 as channel select (I/Q/D/P etc.), bit8~12 as frequency select
-	unsigned int SysObsTypeGps[3];
-	unsigned int SysObsTypeGlonass[3];
-	unsigned int SysObsTypeBds[3];
-	unsigned int SysObsTypeGalileo[3];
+	unsigned int SysObsTypeGps[RINEX_MAX_FREQ];
+	unsigned int SysObsTypeGlonass[RINEX_MAX_FREQ];
+	unsigned int SysObsTypeBds[RINEX_MAX_FREQ];
+	unsigned int SysObsTypeGalileo[RINEX_MAX_FREQ];
 	UTC_TIME FirstObs;
 	UTC_TIME LastObs;
 	unsigned int GlonassSlotMask;
@@ -59,6 +61,48 @@ typedef struct
 #define RINEX_HEADER_SLOT_FREQ	0x00004000
 #define RINEX_HEADER_FIRST_OBS	0x00010000
 #define RINEX_HEADER_LAST_OBS	0x00020000
+
+// definitions commonly used for SysObsTypexxx
+#define OBS_TYPE_MASK_PSR       0x1
+#define OBS_TYPE_MASK_ADR       0x2
+#define OBS_TYPE_MASK_DOP       0x4
+#define OBS_TYPE_MASK_CN0       0x8
+#define OBS_TYPE_MASK_ALL       0xf
+#define OBS_CHANNEL_GPS_CA      (0x0 << 4)
+#define OBS_CHANNEL_GPS_L1CD    (0x1 << 4)
+#define OBS_CHANNEL_GPS_L1CP    (0x2 << 4)
+#define OBS_CHANNEL_GPS_L1CDP   (0x3 << 4)
+#define OBS_CHANNEL_GPS_L2CM    (0x2 << 4)
+#define OBS_CHANNEL_GPS_L2CL    (0x3 << 4)
+#define OBS_CHANNEL_GPS_L2CML   (0x4 << 4)
+#define OBS_CHANNEL_GPS_L2P     (0x5 << 4)
+#define OBS_CHANNEL_GPS_L2Z     (0x6 << 4)
+#define OBS_CHANNEL_GLO_CA      (0x0 << 4)
+#define OBS_CHANNEL_GAL_E1B     (0x1 << 4)
+#define OBS_CHANNEL_GAL_E1C     (0x2 << 4)
+#define OBS_CHANNEL_GAL_E1BC    (0x3 << 4)
+#define OBS_CHANNEL_I           (0x0 << 4)
+#define OBS_CHANNEL_Q           (0x1 << 4)
+#define OBS_CHANNEL_IQ          (0x2 << 4)
+#define OBS_CHANNEL_D           (0x0 << 4)
+#define OBS_CHANNEL_P           (0x1 << 4)
+#define OBS_CHANNEL_DP          (0x2 << 4)
+#define OBS_FREQUENCY_GPS_L1    (0x0 << 8)
+#define OBS_FREQUENCY_GPS_L2    (0x1 << 8)
+#define OBS_FREQUENCY_GPS_L5    (0x2 << 8)
+#define OBS_FREQUENCY_GLO_G1    (0x0 << 8)
+#define OBS_FREQUENCY_GLO_G2    (0x1 << 8)
+#define OBS_FREQUENCY_GAL_E1    (0x0 << 8)
+#define OBS_FREQUENCY_GAL_E5a   (0x1 << 8)
+#define OBS_FREQUENCY_GAL_E5b   (0x2 << 8)
+#define OBS_FREQUENCY_GAL_E5    (0x3 << 8)
+#define OBS_FREQUENCY_GAL_E6    (0x4 << 8)
+#define OBS_FREQUENCY_BDS_B1C   (0x0 << 8)
+#define OBS_FREQUENCY_BDS_B1    (0x1 << 8)
+#define OBS_FREQUENCY_BDS_B2    (0x2 << 8)
+#define OBS_FREQUENCY_BDS_B3    (0x3 << 8)
+#define OBS_FREQUENCY_BDS_B2a   (0x4 << 8)
+#define OBS_FREQUENCY_BDS_B2b   (0x5 << 8)
 
 enum NavDataType {
 	NavDataEnd = 0, NavDataUnknown,

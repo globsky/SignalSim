@@ -252,14 +252,17 @@ typedef  struct _PACKED_
 	unsigned long	flag; // bit0: UTC parameter available, bit1: leap second available
 } UTC_PARAM, *PUTC_PARAM;
 
+#define MAX_OBS_FREQ 6
+
 typedef struct
 {
 	int system;
 	int svid;
-	double PseudoRange;
-	double CarrierPhase;
-	double Doppler;
-	double CN0;
+	unsigned int ValidMask;
+	double PseudoRange[MAX_OBS_FREQ];
+	double CarrierPhase[MAX_OBS_FREQ];
+	double Doppler[MAX_OBS_FREQ];
+	double CN0[MAX_OBS_FREQ];
 } SAT_OBSERVATION, *PSAT_OBSERVATION;
 
 #endif //__BASIC_TYPE_H__

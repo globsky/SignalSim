@@ -23,8 +23,8 @@ const char *TimeUnit[] = { "s", "ms" };
 const char *ChannelEnable[] = { "auto", "true" };
 const char *FreqIDs[] = { "L1", "L2", "L5", "", "", "", "", "",
                     "B1C", "B1I", "B2I", "B3I", "B2a", "B2b", "", "",
-					"E1", "E5a", "E5b", "E6", "", "", "", "",
-					"G1", "G2", "", "", "", "", "", "", };
+					"E1", "E5a", "E5b", "E5", "E6", "", "", "",
+					"G1", "G2", "G3", "", "", "", "", "", };
 
 ATTRIBUTE_TYPE TimeTypeAttr = { "type", SystemType, sizeof(SystemType) / sizeof(char *), 0 };
 ATTRIBUTE_TYPE TrajectoryNameAttr = { "name", FlexibleName, sizeof(FlexibleName) / sizeof(char *), -1 };

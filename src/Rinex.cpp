@@ -743,14 +743,14 @@ void PrintObsType(FILE *fp, char system, unsigned int mask[3])
 	}
 }
 
-static const char GpsFreqCode[] = {'1', '2', '5', };
-static const char BdsFreqCode[] = {'1', '2', '7', '6', '5', '7', };
-static const char GalileoFreqCode[] = {'1', '5', '7', '6', };
-static const char GlonassFreqCode[] = {'1', '2', };
+static const char GpsFreqCode[] = {'1', '2', '5', };	// L1/L2/L5
+static const char BdsFreqCode[] = {'1', '2', '7', '6', '5', '7', };	// B1C/B1/B2/B3/B2a/B2b
+static const char GalileoFreqCode[] = {'1', '5', '7', '8', '6', };	// E1/E5a/E5b/E5/E6
+static const char GlonassFreqCode[] = {'1', '2', '3', '4', '6'};	// G1/G2/G3/G1a/G2a
 static const char TypeCode[] = {'C', 'L', 'D', 'S', };
 static const char GpsChannelCode[][16] = {
-	{'C', 'S', 'L', 'X', 'P', 'W', 'Y', 'M', 'N', },
-	{'C', 'D', 'S', 'L', 'X', 'P', 'W', 'Y', 'M', 'N', },
+	{'C', 'S', 'L', 'X', 'P', 'W', 'Y', 'M', 'N', 'R', },
+	{'C', 'D', 'S', 'L', 'X', 'P', 'W', 'Y', 'M', 'N', 'R', },
 	{'I', 'Q', 'X', },
 };
 static const char ChannelCodeABC[] = {'A', 'B', 'C', 'X', 'Z', };
@@ -773,7 +773,7 @@ void SetObsField(char *s, char system, int freq, int channel, int type)
 	case 'E':
 		s[0] = TypeCode[type];
 		s[1] = GalileoFreqCode[freq];
-		s[2] = ((freq == 0) || (freq == 3)) ? ChannelCodeABC[channel] : ChannelCodeIQX[channel];
+		s[2] = ((freq == 0) || (freq == 4)) ? ChannelCodeABC[channel] : ChannelCodeIQX[channel];
 		break;
 	case 'R':
 		s[0] = TypeCode[type];
@@ -820,9 +820,17 @@ void PrintSlotFreq(FILE *fp, int SlotFreq[], unsigned int SlotMask)
 
 void PrintObservation(FILE *fp, SAT_OBSERVATION obs)
 {
-	char str[128];
-	char SystemId[4] = { 'G', 'C', 'E', 'R' };
+	char str[256];
+	int i, obs_number = 0;
 
-	sprintf(str, "%c%02d  %12.3f   %13.3f  %14.3f          %6.3f\n", SystemId[obs.system], obs.svid, obs.PseudoRange, obs.CarrierPhase, obs.Doppler, obs.CN0);
+	sprintf(str, "%c%02d", "GCER"[obs.system], obs.svid);
+	for (i = 0; i < MAX_OBS_FREQ; i ++)
+	{
+		if ((obs.ValidMask & (1 << i)) == 0)
+			continue;
+		sprintf(str + 3 + obs_number * 64, "  %12.3f   %13.3f  %14.3f          %6.3f  ", obs.PseudoRange[i], obs.CarrierPhase[i], obs.Doppler[i], obs.CN0[i]);
+		obs_number ++;
+	}
+	strcat(str, "\n");
 	fputs(str, fp);
 }

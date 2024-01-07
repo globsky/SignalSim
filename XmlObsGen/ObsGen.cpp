@@ -19,7 +19,8 @@
 #define TOTAL_GAL_SAT 36
 #define TOTAL_GLO_SAT 24
 
-void CalcObservation(PSAT_OBSERVATION Obs, PSATELLITE_PARAM SatParam);
+void CalcObservation(PSAT_OBSERVATION Obs, PSATELLITE_PARAM SatParam, unsigned int FreqSelect);
+void SetSysObsType(int system, unsigned int ObsType[], unsigned int FreqSelect);
 
 void main(void)
 {
@@ -134,10 +135,14 @@ void main(void)
 		RinexHeader.ApproxPos[0] = PosVel.x;
 		RinexHeader.ApproxPos[1] = PosVel.y;
 		RinexHeader.ApproxPos[2] = PosVel.z;
-		RinexHeader.SysObsTypeGps[0] = 0xf; RinexHeader.SysObsTypeGps[1] = RinexHeader.SysObsTypeGps[2] = 0x0;
-		RinexHeader.SysObsTypeGlonass[0] = 0xf; RinexHeader.SysObsTypeGlonass[1] = RinexHeader.SysObsTypeGlonass[2] = 0x0;
-		RinexHeader.SysObsTypeBds[0] = 0xf | (1 << 4); RinexHeader.SysObsTypeBds[1] = RinexHeader.SysObsTypeBds[2] = 0x0;
-		RinexHeader.SysObsTypeGalileo[0] = 0xf | (2 << 4); RinexHeader.SysObsTypeGalileo[1] = RinexHeader.SysObsTypeGalileo[2] = 0x0;
+//		RinexHeader.SysObsTypeGps[0] = OBS_TYPE_MASK_ALL; RinexHeader.SysObsTypeGps[1] = RinexHeader.SysObsTypeGps[2] = 0x0;
+//		RinexHeader.SysObsTypeGlonass[0] = OBS_TYPE_MASK_ALL; RinexHeader.SysObsTypeGlonass[1] = RinexHeader.SysObsTypeGlonass[2] = 0x0;
+//		RinexHeader.SysObsTypeBds[0] = OBS_TYPE_MASK_ALL | OBS_CHANNEL_P; RinexHeader.SysObsTypeBds[1] = RinexHeader.SysObsTypeBds[2] = 0x0;
+//		RinexHeader.SysObsTypeGalileo[0] = OBS_TYPE_MASK_ALL | OBS_CHANNEL_GAL_E1C; RinexHeader.SysObsTypeGalileo[1] = RinexHeader.SysObsTypeGalileo[2] = 0x0;
+		SetSysObsType(0, RinexHeader.SysObsTypeGps, OutputParam.FreqSelect[0]);
+		SetSysObsType(1, RinexHeader.SysObsTypeBds, OutputParam.FreqSelect[1]);
+		SetSysObsType(2, RinexHeader.SysObsTypeGalileo, OutputParam.FreqSelect[2]);
+		SetSysObsType(3, RinexHeader.SysObsTypeGlonass, OutputParam.FreqSelect[3]);
 		RinexHeader.Interval = OutputParam.Interval / 1000.;
 		for (i = 0; i < 24; i ++)
 			RinexHeader.GlonassFreqNumber[i] = NavData.GetGlonassSlotFreq(i + 1);
@@ -170,7 +175,7 @@ void main(void)
 			index = GpsEphVisible[i]->svid - 1;
 			GetSatelliteParam(PosVel, CurPos, time, GpsSystem, GpsEphVisible[i], NavData.GetGpsIono(), &GpsSatelliteParam[index]);
 			GetSatelliteCN0(ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, &GpsSatelliteParam[index]);
-			CalcObservation(Obs, &GpsSatelliteParam[index]);
+			CalcObservation(Obs, &GpsSatelliteParam[index], OutputParam.FreqSelect[0]);
 			Obs ++;
 			ObservationNumber ++;
 		}
@@ -179,7 +184,7 @@ void main(void)
 			index = BdsEphVisible[i]->svid - 1;
 			GetSatelliteParam(PosVel, CurPos, time, BdsSystem, BdsEphVisible[i], NavData.GetGpsIono(), &BdsSatelliteParam[index]);
 			GetSatelliteCN0(ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, &BdsSatelliteParam[index]);
-			CalcObservation(Obs, &BdsSatelliteParam[index]);
+			CalcObservation(Obs, &BdsSatelliteParam[index], OutputParam.FreqSelect[1]);
 			Obs ++;
 			ObservationNumber ++;
 		}
@@ -188,7 +193,7 @@ void main(void)
 			index = GalEphVisible[i]->svid - 1;
 			GetSatelliteParam(PosVel, CurPos, time, GalileoSystem, GalEphVisible[i], NavData.GetGpsIono(), &GalSatelliteParam[index]);
 			GetSatelliteCN0(ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, &GalSatelliteParam[index]);
-			CalcObservation(Obs, &GalSatelliteParam[index]);
+			CalcObservation(Obs, &GalSatelliteParam[index], OutputParam.FreqSelect[2]);
 			Obs ++;
 			ObservationNumber ++;
 		}
@@ -197,7 +202,7 @@ void main(void)
 			index = GloEphVisible[i]->n - 1;
 			GetSatelliteParam(PosVel, CurPos, time, GlonassSystem, (PGPS_EPHEMERIS)GloEphVisible[i], NavData.GetGpsIono(), &GloSatelliteParam[index]);
 			GetSatelliteCN0(ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, &GloSatelliteParam[index]);
-			CalcObservation(Obs, &GloSatelliteParam[index]);
+			CalcObservation(Obs, &GloSatelliteParam[index], OutputParam.FreqSelect[3]);
 			Obs ++;
 			ObservationNumber ++;
 		}
@@ -241,7 +246,7 @@ void main(void)
 				index = GpsEphVisible[i]->svid - 1;
 				GetSatelliteParam(PosVel, CurPos, time, GpsSystem, GpsEphVisible[i], NavData.GetGpsIono(), &GpsSatelliteParam[index]);
 				GetSatelliteCN0(ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, &GpsSatelliteParam[index]);
-				CalcObservation(Obs, &GpsSatelliteParam[index]);
+				CalcObservation(Obs, &GpsSatelliteParam[index], OutputParam.FreqSelect[0]);
 				Obs ++;
 				ObservationNumber ++;
 			}
@@ -250,7 +255,7 @@ void main(void)
 				index = BdsEphVisible[i]->svid - 1;
 				GetSatelliteParam(PosVel, CurPos, time, BdsSystem, BdsEphVisible[i], NavData.GetGpsIono(), &BdsSatelliteParam[index]);
 				GetSatelliteCN0(ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, &BdsSatelliteParam[index]);
-				CalcObservation(Obs, &BdsSatelliteParam[index]);
+				CalcObservation(Obs, &BdsSatelliteParam[index], OutputParam.FreqSelect[1]);
 				Obs ++;
 				ObservationNumber ++;
 			}
@@ -259,7 +264,7 @@ void main(void)
 				index = GalEphVisible[i]->svid - 1;
 				GetSatelliteParam(PosVel, CurPos, time, GalileoSystem, GalEphVisible[i], NavData.GetGpsIono(), &GalSatelliteParam[index]);
 				GetSatelliteCN0(ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, &GalSatelliteParam[index]);
-				CalcObservation(Obs, &GalSatelliteParam[index]);
+				CalcObservation(Obs, &GalSatelliteParam[index], OutputParam.FreqSelect[2]);
 				Obs ++;
 				ObservationNumber ++;
 			}
@@ -268,7 +273,7 @@ void main(void)
 				index = GloEphVisible[i]->n - 1;
 				GetSatelliteParam(PosVel, CurPos, time, GlonassSystem, (PGPS_EPHEMERIS)GloEphVisible[i], NavData.GetGpsIono(), &GloSatelliteParam[index]);
 				GetSatelliteCN0(ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, &GloSatelliteParam[index]);
-				CalcObservation(Obs, &GloSatelliteParam[index]);
+				CalcObservation(Obs, &GloSatelliteParam[index], OutputParam.FreqSelect[3]);
 				Obs ++;
 				ObservationNumber ++;
 			}
@@ -297,14 +302,56 @@ void main(void)
 	fclose(fp);
 }
 
-void CalcObservation(PSAT_OBSERVATION Obs, PSATELLITE_PARAM SatParam)
+void CalcObservation(PSAT_OBSERVATION Obs, PSATELLITE_PARAM SatParam, unsigned int FreqSelect)
 {
+	int i;
+
 	Obs->system = SatParam->system;
 	Obs->svid = SatParam->svid;
-	Obs->PseudoRange = GetTravelTime(SatParam, 0) * LIGHT_SPEED;
-	Obs->CarrierPhase = GetCarrierPhase(SatParam, 0);
-//	Obs->PseudoRange = (SatParam->TravelTime + SatParam->GroupDelay[0]) * LIGHT_SPEED + SatParam->IonoDelay;
-//	Obs->CarrierPhase = (SatParam->TravelTime + SatParam->GroupDelay[0]) * 1575.42e6 - SatParam->IonoDelay / WAVELENGTH_GPSL1;
-	Obs->Doppler = GetDoppler(SatParam, 0);
-	Obs->CN0 = SatParam->CN0 / 100.;
+	Obs->ValidMask = FreqSelect;
+	for (i = 0; i < MAX_OBS_FREQ; i ++)
+	{
+		if ((FreqSelect & (1 << i)) == 0)
+			continue;
+		Obs->PseudoRange[i] = GetTravelTime(SatParam, i) * LIGHT_SPEED;
+		Obs->CarrierPhase[i] = GetCarrierPhase(SatParam, i);
+		Obs->Doppler[i] = GetDoppler(SatParam, i);
+		Obs->CN0[i] = SatParam->CN0 / 100.;
+	}
+}
+
+void SetSysObsType(int system, unsigned int ObsType[], unsigned int FreqSelect)
+{
+	int MaxFreqIndex[4] = { 3, 6, 5, 3 };
+	int MaxFreq = MaxFreqIndex[system];
+	int i, ObsTypeIndex = 0;
+
+	// clear all types
+	for (i = 0; i < RINEX_MAX_FREQ; i ++)
+		ObsType[i] = 0;
+
+	// set ObsType according to FreqSelect bit mask
+	for (i = 0; i < MaxFreq && ObsTypeIndex < RINEX_MAX_FREQ; i ++)
+	{
+		if ((FreqSelect & (1 << i)) == 0)
+			continue;
+		ObsType[ObsTypeIndex] = (i << 8) | OBS_TYPE_MASK_ALL;	// set frequency and type mask
+		// set channel code
+		switch (system)
+		{
+		case 0:	// GPS
+			ObsType[ObsTypeIndex] |= (i == 0) ? OBS_CHANNEL_GPS_CA : (i == 1) ? OBS_CHANNEL_GPS_L2CL : OBS_CHANNEL_Q;
+			break;
+		case 1:	// BDS
+			ObsType[ObsTypeIndex] |= ((i >= 1) && (i <= 3)) ? OBS_CHANNEL_I : OBS_CHANNEL_P;
+			break;
+		case 2:	// GAL
+			ObsType[ObsTypeIndex] |= ((i == 0) || (i == 4)) ? OBS_CHANNEL_GAL_E1C : OBS_CHANNEL_Q;
+			break;
+		case 3:	// GLO
+			ObsType[ObsTypeIndex] |= OBS_CHANNEL_GLO_CA;
+			break;
+		}
+		ObsTypeIndex ++;
+	}
 }

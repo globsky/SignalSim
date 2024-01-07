@@ -22,6 +22,7 @@
 #include "BCNav1Bit.h"
 #include "BCNav2Bit.h"
 #include "BCNav3Bit.h"
+#include "CNav2Bit.h"
 #include "GNavBit.h"
 #include "XmlInterpreter.h"
 #include "SatelliteParam.h"

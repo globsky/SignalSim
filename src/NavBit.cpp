@@ -176,7 +176,7 @@ unsigned char NavBit::ConvolutionEncode(unsigned char EncodeBits)
 // input BitStream filled with MSB first and start from index 0
 // if encoded bits does not fit all bits in BitStream (Length is not multiple of 32)
 // 0s need to be filled first (at MSBs of BitStream[0]) to make sure last encoded bits
-// in bit0 of last index of BitStream array (this is because encode 0 into all zero
+// in bit0 of last index of BitStream array (this is because encoding 0 into all zero
 // state CRC24Q encode does not change encoder status)
 unsigned int NavBit::Crc24qEncode(unsigned int *BitStream, int Length)
 {

@@ -31,7 +31,7 @@ D1D2NavBit::~D1D2NavBit()
 
 int D1D2NavBit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits)
 {
-	int i, SOW, subframe, page, D1Data;
+	int i, SOW, subframe, page = 0, D1Data;
 	unsigned int CurWord, Stream[10];
 
 	for (i = 0; i < 10; i++)
@@ -60,7 +60,7 @@ int D1D2NavBit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavB
 		else
 		{
 			for (i = 0; i < 9; i++)
-				Stream[i + 1] = BdsStream123[svid - 1][(subframe - 1) * 9 + i];
+				Stream[i + 1] = BdsStream123[svid - 6][(subframe - 1) * 9 + i];
 		}
 	}
 	else	// D2 bit Stream
@@ -69,8 +69,8 @@ int D1D2NavBit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavB
 		subframe = ((StartTime.MilliSeconds / 600) % 5) + 1;
 		if (subframe == 1)	// subframe 1, further determine page number
 		{
-			page = (StartTime.MilliSeconds / 6000) % 10;
-			for (i = 0; i < 4; i++)
+			page = (StartTime.MilliSeconds / 3000) % 10;
+			for (i = 0; i < 4; i ++)
 				Stream[i + 1] = BdsStreamD2[(svid <= 5) ? (svid - 1) : (svid - 54)][page * 4 + i];
 		}
 	}
@@ -169,8 +169,9 @@ int D1D2NavBit::ComposeBdsStream123(PGPS_EPHEMERIS Ephemeris, PIONO_PARAM IonoPa
 	Stream[0] = COMPOSE_BITS(Ephemeris->health, 9, 1);
 	Stream[0] |= COMPOSE_BITS(Ephemeris->iodc, 4, 5);
 	Stream[0] |= COMPOSE_BITS(Ephemeris->ura, 0, 4);
+	Stream[1] = COMPOSE_BITS(Ephemeris->week, 9, 13);
 	IntValue = Ephemeris->toc >> 3;
-	Stream[1] = COMPOSE_BITS(IntValue >> 8, 0, 9);
+	Stream[1] |= COMPOSE_BITS(IntValue >> 8, 0, 9);
 	Stream[2] = COMPOSE_BITS(IntValue, 14, 8);
 	IntValue = roundi(Ephemeris->tgd * 1e10);
 	Stream[2] |= COMPOSE_BITS(IntValue, 4, 10);
@@ -296,13 +297,14 @@ int D1D2NavBit::ComposeBdsStreamD2(PGPS_EPHEMERIS Ephemeris, PIONO_PARAM IonoPar
 	Stream[0*4+0] |= COMPOSE_BITS(Ephemeris->health, 5, 1);
 	Stream[0*4+0] |= COMPOSE_BITS(Ephemeris->iodc, 0, 5);
 	Stream[0*4+1] = COMPOSE_BITS(Ephemeris->ura, 18, 4);
+	Stream[0*4+1] |= COMPOSE_BITS(Ephemeris->week, 5, 13);
 	IntValue = Ephemeris->toc >> 3;
 	Stream[0*4+1] |= COMPOSE_BITS(IntValue >> 12, 0, 5);
 	Stream[0*4+2] = COMPOSE_BITS(IntValue, 10, 12);
 	IntValue = roundi(Ephemeris->tgd * 1e10);
 	Stream[0*4+2] |= COMPOSE_BITS(IntValue, 0, 10);
 	IntValue = roundi(Ephemeris->tgd2 * 1e10);
-	Stream[0*4+3] |= COMPOSE_BITS(IntValue, 12, 10);
+	Stream[0*4+3] = COMPOSE_BITS(IntValue, 12, 10);
 	// page 2
 	Stream[1*4+0] = COMPOSE_BITS(2, 6, 4);
 	Value = UnscaleDouble(IonoParam->a0, -30);
@@ -428,8 +430,8 @@ int D1D2NavBit::ComposeBdsStreamD2(PGPS_EPHEMERIS Ephemeris, PIONO_PARAM IonoPar
 	Stream[9*4+0] |= COMPOSE_BITS(IntValue, 1, 5);
 	Value = UnscaleDouble(Ephemeris->idot / PI, -43);
 	IntValue = roundi(Value);
-	Stream[9*4+1] |= COMPOSE_BITS(IntValue >> 13, 0, 1);
-	Stream[9*4+2] = COMPOSE_BITS(IntValue, 13, 9);
+	Stream[9*4+0] |= COMPOSE_BITS(IntValue >> 13, 0, 1);
+	Stream[9*4+1] = COMPOSE_BITS(IntValue, 9, 13);
 
 	return 0;
 }
