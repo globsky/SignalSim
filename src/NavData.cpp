@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "NavData.h"
+#include "Almanac.h"
 #include "GnssTime.h"
 
 CNavData::CNavData()
@@ -20,6 +21,10 @@ CNavData::CNavData()
 	GlonassEphmerisPool = (PGLONASS_EPHEMERIS)malloc(sizeof(GLONASS_EPHEMERIS) * EPH_NUMBER_INC);
 	GpsEphmerisPoolSize = BdsEphmerisPoolSize = GalileoEphmerisPoolSize = GlonassEphmerisPoolSize = EPH_NUMBER_INC;
 	memset(&GpsUtcParam, 0, sizeof(UTC_PARAM));
+	memset(GpsAlmanac, 0, sizeof(GpsAlmanac));
+	memset(BdsAlmanac, 0, sizeof(BdsAlmanac));
+	memset(GalileoAlmanac, 0, sizeof(GalileoAlmanac));
+	memset(GlonassAlmanac, 0, sizeof(GlonassAlmanac));
 	// set default FreqID for each glonass SLOT
 	GlonassSlotFreq[ 0] =  1; GlonassSlotFreq[ 1] = -4; GlonassSlotFreq[ 2] =  5; GlonassSlotFreq[ 3] =  6;
 	GlonassSlotFreq[ 4] =  1; GlonassSlotFreq[ 5] = -4; GlonassSlotFreq[ 6] =  5; GlonassSlotFreq[ 7] =  6;
@@ -159,7 +164,7 @@ bool CNavData::AddNavData(NavDataType Type, void *NavData)
 	return true;
 }
 
-PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int svid, unsigned char FirstPrioritySource)
+PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int svid, int IgnoreTimeLimit, unsigned char FirstPrioritySource)
 {
 	int i, time_diff, diff;
 	PGPS_EPHEMERIS Eph = NULL;
@@ -177,7 +182,6 @@ PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int sv
 	{
 		EphmerisPool = BdsEphmerisPool;
 		EphemerisNumber = BdsEphemerisNumber;
-		Week -= 1356;
 	}
 	else if (system == GalileoSystem)
 	{
@@ -193,9 +197,11 @@ PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int sv
 		diff = (Week - EphmerisPool[i].week) * 604800 + (time.MilliSeconds / 1000 - EphmerisPool[i].toe);
 		if (diff < 0)
 			diff = -diff;
-		if ((svid == EphmerisPool[i].svid) && (diff < 7200))	// same svid and within +-2 hours time span
+		if (svid == EphmerisPool[i].svid)	// same svid
 		{
-			if (Eph == NULL)	// not assigned, assign anyway
+			if (!IgnoreTimeLimit && diff > 7200) // exceed +-2 hours time span
+				DoAssignment = 0;
+			else if (Eph == NULL)	// not assigned, assign anyway
 				DoAssignment = 1;
 			else if (Eph->source != FirstPrioritySource && EphmerisPool[i].source == FirstPrioritySource)	// new ephemeris from desired source
 				DoAssignment = 1;
@@ -215,24 +221,22 @@ PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int sv
 	return Eph;
 }
 
-PGLONASS_EPHEMERIS CNavData::FindGloEphemeris(GNSS_TIME time, int slot)
+PGLONASS_EPHEMERIS CNavData::FindGloEphemeris(GLONASS_TIME GlonassTime, int slot)
 {
 	int i, time_diff, diff;
 	PGLONASS_EPHEMERIS Eph = NULL;
-	UTC_TIME UtcTime = GpsTimeToUtc(time, FALSE);;
-	GLONASS_TIME GloTime = UtcToGlonassTime(UtcTime);
 
 	for (i = 0; i < GlonassEphemerisNumber; i ++)
 	{
 		if (slot != (int)GlonassEphmerisPool[i].n)
 			continue;
-		diff = GloTime.Day - GlonassEphmerisPool[i].day;
+		diff = GlonassTime.Day - GlonassEphmerisPool[i].day;
 		// day range between -730~730
 		if (diff > 730)
 			diff -= 1461;
 		else if (diff < -730)
 			diff += 1461;
-		diff = diff * 86400 + (GloTime.MilliSeconds / 1000 - GlonassEphmerisPool[i].tb);
+		diff = diff * 86400 + (GlonassTime.MilliSeconds / 1000 - GlonassEphmerisPool[i].tb);
 		if (diff < 0)
 			diff = -diff;
 		if ((diff < 1800) && ((Eph == NULL) || ((Eph != NULL) && (diff < time_diff))))
@@ -267,5 +271,81 @@ void CNavData::ReadNavFile(char *filename)
 				GlonassSlotFreq[pEph->n-1] = pEph->freq;
 		if (DataType != NavDataUnknown)
 			AddNavData(DataType, (void *)&NavData);
+	}
+}
+
+void CNavData::ReadAlmFile(char *filename)
+{
+	FILE *fp;
+	AlmanacType Type;
+
+	if ((fp = fopen(filename, "r")) == NULL)
+		return;
+	Type = CheckAlmnanacType(fp);
+	switch (Type)
+	{
+	case AlmanacGps:
+		ReadAlmanacGps(fp, GpsAlmanac);
+		break;
+	case AlmanacBds:
+		ReadAlmanacBds(fp, BdsAlmanac);
+		break;
+	case AlmanacGalileo:
+		ReadAlmanacGalileo(fp, GalileoAlmanac);
+		break;
+	case AlmanacGlonass:
+		ReadAlmanacGlonass(fp, GlonassAlmanac);
+		break;
+	}
+}
+
+void CNavData::CompleteAlmanac(GnssSystem system, GNSS_TIME time)
+{
+	PGPS_ALMANAC Almanac;
+	PGPS_EPHEMERIS Eph = NULL;
+	int AlmanacNumber;
+	int i, toa = -1, week;
+
+	if (system == GpsSystem)
+	{
+		Almanac = GpsAlmanac;
+		AlmanacNumber = GpsSatNumber;
+	}
+	else if (system == BdsSystem)
+	{
+		Almanac = BdsAlmanac;
+		AlmanacNumber = BdsSatNumber;
+	}
+	else if (system == GalileoSystem)
+	{
+		Almanac = GalileoAlmanac;
+		AlmanacNumber = GalileoSatNumber;
+	}
+	else
+		return;
+
+	// if there is valid almanac, use toa of valid almanac as first priority
+	for (i = 0; i < AlmanacNumber; i ++)
+		if (Almanac[i].flag)
+		{
+			toa = Almanac[i].toa;
+			week = Almanac[i].week;
+			break;
+		}
+	// else assign toa with given system time
+	if (toa < 0)
+	{
+		toa = (time.MilliSeconds + 2048000) / 4096000 * 4096;	// round to nearest 2^12
+		week = time.Week;
+	}
+
+	// for any almanac not valid, find whether there is valid ephemeris
+	for (i = 0; i < AlmanacNumber; i ++)
+	{
+		if (Almanac[i].flag)
+			continue;
+		if ((Eph = FindEphemeris(system, time, i + 1, 1)) == NULL)
+			continue;
+		Almanac[i] = GetAlmanacFromEphemeris(Eph, week, toa);
 	}
 }

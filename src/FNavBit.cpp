@@ -34,9 +34,9 @@ int FNavBit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
 	return svid;
 }
 
-int FNavBit::SetAlmanac(int svid, PGPS_ALMANAC Alm)
+int FNavBit::SetAlmanac(GPS_ALMANAC Alm[])
 {
-	return svid;
+	return 0;
 }
 
 int FNavBit::SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam)

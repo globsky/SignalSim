@@ -19,10 +19,42 @@ const unsigned int D1D2NavBit::BCHPoly[4] = { 0x7ac0, 0x3d60, 0x1eb0, 0x7590 };
 
 D1D2NavBit::D1D2NavBit()
 {
+	int i;
+
 	memset(BdsStream123, 0x0, sizeof(BdsStream123));
-	memset(BdsStream45, 0x0, sizeof(BdsStream45));
+	memset(BdsStreamAlm, 0x0, sizeof(BdsStreamAlm));
+	memset(BdsStreamInfo, 0x0, sizeof(BdsStreamInfo));
+	memset(BdsStreamHealth, 0x0, sizeof(BdsStreamHealth));
 	memset(BdsStreamD2, 0x0, sizeof(BdsStreamD2));
 	memset(&IonoParamSave, 0, sizeof(IONO_PARAM));
+	// fill page number and AlEpID/AmID
+	for (i = 0; i < 30; i ++)	// subframe 4 page 1~24 and subframe 5 page1~6
+	{
+		BdsStreamAlm[i][0] = (i < 24) ? ((i + 1) << 2) : ((i - 23) << 2);
+		BdsStreamAlm[i][8] = 3;	// AlEpID = 11
+	}
+	for (; i < 43; i ++)	// subframe 5 page 11~23 for svid 31~43
+	{
+		BdsStreamAlm[i][0] = ((i - 19) << 2);
+		BdsStreamAlm[i][8] = 1;	// AmID = 01
+	}
+	for (; i < 56; i ++)	// subframe 5 page 11~23 for svid 44~56
+	{
+		BdsStreamAlm[i][0] = ((i - 32) << 2);
+		BdsStreamAlm[i][8] = 2;	// AmID = 01
+	}
+	for (; i < 63; i ++)	// subframe 5 page 11~17 for svid 57~63
+	{
+		BdsStreamAlm[i][0] = ((i - 45) << 2);
+		BdsStreamAlm[i][8] = 3;	// AmID = 01
+	}
+	for (i = 0; i < 4; i ++)	// subframe 5 page 7~10
+		BdsStreamInfo[0][0] = (i + 7) << 2;
+	for (i = 0; i < 3; i ++)	// subframe 5 page 24
+	{
+		BdsStreamHealth[i][0] = 24 << 2;
+		BdsStreamHealth[i][6] = (i + 1) << 15;	// AmID
+	}
 }
 
 D1D2NavBit::~D1D2NavBit()
@@ -31,7 +63,7 @@ D1D2NavBit::~D1D2NavBit()
 
 int D1D2NavBit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits)
 {
-	int i, SOW, subframe, page = 0, D1Data;
+	int i, SOW, subframe, page = 0, page_ext, D1Data;
 	unsigned int CurWord, Stream[10];
 
 	for (i = 0; i < 10; i++)
@@ -53,9 +85,31 @@ int D1D2NavBit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavB
 		subframe = ((SOW / 6) % 5) + 1;
 		if (subframe > 3)	// subframe 4/5, further determine page number
 		{
-			page = (SOW / 30) % 24;
-			for (i = 0; i < 9; i++)
-				Stream[i + 1] = BdsStream45[subframe - 4][page][i];
+			page = (SOW / 30) % 72;
+			page_ext = page / 24;
+			page %= 24;
+			if (subframe == 4)
+				memcpy(Stream + 1, BdsStreamAlm[page], sizeof(unsigned int) * 9);
+			else if (page < 6)	// subframe 5 page 1~6
+				memcpy(Stream + 1, BdsStreamAlm[page+24], sizeof(unsigned int) * 9);
+			else if (page < 10)	// subframe 5 page 7~10
+				memcpy(Stream + 1, BdsStreamInfo[page-6], sizeof(unsigned int) * 9);
+			else if (page < 23)	// subframe 5 page 11~23
+			{
+				if (page_ext == 0)	// AmID = 1
+					memcpy(Stream + 1, BdsStreamAlm[page+20], sizeof(unsigned int) * 9);
+				else if (page_ext == 1)	// AmID = 2
+					memcpy(Stream + 1, BdsStreamAlm[page+33], sizeof(unsigned int) * 9);
+				else if (page < 17)	// AmID = 3
+					memcpy(Stream + 1, BdsStreamAlm[page+46], sizeof(unsigned int) * 9);
+				else	// subframe 5 undefined page
+				{
+					memset(Stream + 1, 0, sizeof(unsigned int) * 9);
+					Stream[1] = (page + 1) << 24;
+				}
+			}
+			else	// subframe 5 page 24
+				memcpy(Stream + 1, BdsStreamHealth[page_ext], sizeof(unsigned int) * 9);
 		}
 		else
 		{
@@ -111,28 +165,47 @@ int D1D2NavBit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
 	return svid;
 }
 
-int D1D2NavBit::SetAlmanac(int svid, PGPS_ALMANAC Alm)
+int D1D2NavBit::SetAlmanac(GPS_ALMANAC Alm[])
 {
-	unsigned int *Stream;
+	int i, toa = 0, week = 0;
 
-	if (svid < 1)
-		return 0;
-	else if (svid <= 24)
-		Stream = BdsStream45[0][svid-1];	// SV01 to SV24 in subframe 4 page 1 to 24
-	else if (svid <= 30)
-		Stream = BdsStream45[1][svid-25];	// SV25 to SV30 in subframe 5 page 1 to 6
-	else if (svid <= 43)	// TODO: use AmID to extend almanac page
-		Stream = BdsStream45[1][svid-21];	// SV31 to SV43 in subframe 5 page 11 to 24
-	else
-		return 0;
-	
-	FillBdsAlmanacPage(Alm, Stream);
-	return svid;
+	// fill in almanac page
+	for (i = 0; i < 63; i ++)
+	{
+		FillBdsAlmanacPage(&Alm[i], BdsStreamAlm[i]);
+		if (Alm[i].flag == 1)
+		{
+			toa = Alm[i].toa >> 12;
+			week = Alm[i].week & 0xff;
+		}
+	}
+	memset(BdsStreamInfo, 0, sizeof(unsigned int) * 18);
+	BdsStreamInfo[0][0] = 7 << 2;
+	BdsStreamInfo[1][0] = 8 << 2;
+	memset(BdsStreamHealth, 0x0, sizeof(BdsStreamHealth));
+	for (i = 0; i < 3; i ++)	// subframe 5 page 24
+	{
+		BdsStreamHealth[i][0] = 24 << 2;
+		BdsStreamHealth[i][6] = (i + 1) << 15;	// AmID
+	}
+	// fill in health page 7
+	FillBdsHealthPage(Alm, 19, BdsStreamInfo[0]);
+	// fill in health page 8
+	FillBdsHealthPage(Alm + 19, 11, BdsStreamInfo[1]);
+	BdsStreamInfo[1][6] |= COMPOSE_BITS(toa, 19, 3);
+	BdsStreamInfo[1][5] |= COMPOSE_BITS((toa >> 3), 0, 5);
+	BdsStreamInfo[1][5] |= COMPOSE_BITS(week, 5, 8);
+	// fill in health page 24
+	FillBdsHealthPage(Alm + 30, 13, BdsStreamHealth[0]);
+	FillBdsHealthPage(Alm + 43, 13, BdsStreamHealth[1]);
+	FillBdsHealthPage(Alm + 56, 7, BdsStreamHealth[2]);
+
+	return 0;
 }
 
 int D1D2NavBit::SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam)
 {
-	unsigned int *Stream = BdsStream45[0][9];	// UTC parameter in page 10 (indexed at 9)
+	unsigned int *Stream = BdsStreamInfo[3];	// UTC parameter in page 10 (indexed at 3)
 	double Value;
 	signed int IntValue;
 
@@ -461,7 +534,10 @@ int D1D2NavBit::FillBdsAlmanacPage(PGPS_ALMANAC Almanac, unsigned int Stream[9])
 	Value = UnscaleDouble(Almanac->ecc, -21);
 	UintValue = roundu(Value);
 	Stream[4] |= COMPOSE_BITS(UintValue, 3, 17);
-	Value = UnscaleDouble(Almanac->i0 / PI, -19);
+	if (Almanac->i0 > 0.5)
+		Value = UnscaleDouble(Almanac->i0 / PI - 0.3, -19);
+	else
+		Value = UnscaleDouble(Almanac->i0 / PI, -19);
 	IntValue = roundi(Value);
 	Stream[4] |= COMPOSE_BITS(IntValue >> 13, 0, 3);
 	Stream[5] = COMPOSE_BITS(IntValue, 9, 13);
@@ -481,6 +557,30 @@ int D1D2NavBit::FillBdsAlmanacPage(PGPS_ALMANAC Almanac, unsigned int Stream[9])
 
 	return 0;
 }
+
+int D1D2NavBit::FillBdsHealthPage(PGPS_ALMANAC Almanac, int Length, unsigned int Stream[9])
+{
+	int i, index0, index1;
+	int health;
+
+	for (i = 0; i < Length; i ++)
+	{
+		health = (Almanac[i].flag == 1) ? 0 : (0x1ff + Almanac[i].health);
+		index0 = i * 9 + 20;	// first bit position
+		index1 = index0 + 8;	// last bit position
+		if ((index0 / 22) == (index1 / 22))	// in same WORD
+			Stream[index0/22] |= COMPOSE_BITS(health, (21 - (index1 % 22)), 9);
+		else
+		{
+			Stream[index1/22] |= COMPOSE_BITS(health, (21 - (index1 % 22)), ((index1 % 22) + 1));	// fill in LSB
+			health >>= ((index1 % 22) + 1);
+			Stream[index0/22] |= COMPOSE_BITS(health, 0, (8 - (index0 % 22)));	// fill in MSB
+		}
+	}
+
+	return i;
+}
+
 // calculate BCH and XOR to lowest 4bit
 // to check BCH, after calling this function, the lowest 4bit of return value should be 0
 // to calculate BCH, set lowest 4bit as 0 and return value contains the full word

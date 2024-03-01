@@ -41,18 +41,25 @@ int GNavBit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits
 		return 1;
 
 	string = StartTime.MilliSeconds / 2000;
-	frame = (string / 15) % 5;
+	frame = (string / 15) % 2880;	// frame within one day
 	string %= 15;
 
 	if (string < 4)	// Ephemeris string
 		data = StringEph[svid - 1][string];
 	else
-		data = StringAlm[frame][string - 4];
+		data = StringAlm[frame % 5][string - 4];
 
 	// left shift 8bit for check sum space and add word m as string number
-	Stream[0] = (data[0] & 0xffff);
+	Stream[0] = (data[0] & 0xfffff);
 	Stream[1] = data[1];
 	Stream[2] = data[2] & 0xffffff00;
+	if (string == 0)	// first string, place tk here
+	{
+		Stream[0] |= ((frame / 120) << 7);	// hours
+		Stream[0] |= (frame % 120);	// 30 seconds
+	}
+	else if (string >= 4)
+		Stream[0] |= (string + 1) << 16;
 
 	// add check sum and put 85 bits to NavBits position 85~169 (leave first 85 places for meander code expansion)
 	Stream[2] |= CheckSum(Stream);
@@ -83,18 +90,31 @@ int GNavBit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
 	return svid;
 }
 
-int GNavBit::SetAlmanac(int svid, PGPS_ALMANAC Alm)
+int GNavBit::SetAlmanac(GPS_ALMANAC Alm[])
 {
-	int frame, string;
+	PGLONASS_ALMANAC GloAlm = (PGLONASS_ALMANAC)Alm;
+	int i, frame, string;
 
-	if (svid < 1 || svid > 24)
+	for (i = 0; i < 24; i ++)
+		if (GloAlm->flag == 1)
+			break;
+	if (i == 24)
 		return 0;
-	frame = (svid - 1) / 5;
-	string = (svid - 1) % 5 + 6;
-	ComposeStringAlm((PGLONASS_ALMANAC)Alm, StringAlm[frame][string-5], StringAlm[frame][string-4]);
-	StringAlm[frame][string - 5][0] |= ((string << 16) | (svid << 8));
-	StringAlm[frame][string - 4][0] |= ((string + 1) << 16);
-	return svid;
+
+	// compose string 5 for each frame (t_c and t_GPS set to 0)
+	StringAlm[0][0][0] = StringAlm[1][0][0] = StringAlm[2][0][0] = StringAlm[3][0][0] = StringAlm[4][0][0] = (5 << 16) | COMPOSE_BITS(GloAlm[i].day, 5, 11);
+	StringAlm[0][0][1] = StringAlm[1][0][1] = StringAlm[2][0][1] = StringAlm[3][0][1] = StringAlm[4][0][1] = COMPOSE_BITS(GloAlm[i].leap_year >> 1, 0, 4);
+	StringAlm[0][0][2] = StringAlm[1][0][2] = StringAlm[2][0][2] = StringAlm[3][0][2] = StringAlm[4][0][2] = ((GloAlm[i].leap_year & 1) << 31) | 0x100;
+	for (i = 0; i < 24; i ++)
+	{
+		frame = i / 5;
+		string = (i % 5) * 2 + 6;
+		ComposeStringAlm((PGLONASS_ALMANAC)Alm + i, i + 1, StringAlm[frame][string-5], StringAlm[frame][string-4]);
+		StringAlm[frame][string - 5][0] |= ((string << 16) | ((i + 1) << 8));
+		StringAlm[frame][string - 4][0] |= ((string + 1) << 16);
+	}
+
+	return 0;
 }
 
 int GNavBit::SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam)
@@ -108,7 +128,7 @@ int GNavBit::ComposeStringEph(PGLONASS_EPHEMERIS Ephemeris, unsigned int String[
 
 	// string 1
 	String[0][0] = (1 << 16) | COMPOSE_BITS(Ephemeris->P, 12, 2);
-	String[0][0] |= COMPOSE_BITS(Ephemeris->tk, 0, 12);
+//	String[0][0] |= COMPOSE_BITS(Ephemeris->tk, 0, 12);
 	UintValue = UnscaleUint(fabs(Ephemeris->vx) / 1000, -20); UintValue |= (Ephemeris->vx < 0) ? (1 << 23) : 0;
 	String[0][1] = COMPOSE_BITS(UintValue, 8, 24);
 	UintValue = UnscaleUint(fabs(Ephemeris->ax) / 1000, -30); UintValue |= (Ephemeris->ax < 0) ? (1 << 4) : 0;
@@ -157,7 +177,7 @@ int GNavBit::ComposeStringEph(PGLONASS_EPHEMERIS Ephemeris, unsigned int String[
 	return 0;
 }
 
-int GNavBit::ComposeStringAlm(PGLONASS_ALMANAC Almanac, unsigned int StreamEven[3], unsigned int StreamOdd[3])
+int GNavBit::ComposeStringAlm(PGLONASS_ALMANAC Almanac, int slot, unsigned int StreamEven[3], unsigned int StreamOdd[3])
 {
 	unsigned int UintValue;
 
@@ -169,8 +189,12 @@ int GNavBit::ComposeStringAlm(PGLONASS_ALMANAC Almanac, unsigned int StreamEven[
 	// first string
 	StreamEven[0] = COMPOSE_BITS(Almanac->flag, 15, 1);
 	StreamEven[0] |= COMPOSE_BITS(1, 13, 2);		// Mn=01 for GLONASS-M
+	StreamEven[0] |= COMPOSE_BITS(slot, 8, 5);
+	UintValue = UnscaleInt(fabs(Almanac->clock_error), -18); UintValue |= (Almanac->clock_error < 0) ? (1 << 9) : 0;
+	StreamEven[0] |= COMPOSE_BITS((UintValue >> 2), 0, 8);
+	StreamEven[1] = COMPOSE_BITS(UintValue, 30, 2);
 	UintValue = UnscaleUint(fabs(Almanac->lambda), -20); UintValue |= (Almanac->lambda < 0) ? (1 << 20) : 0;
-	StreamEven[1] = COMPOSE_BITS(UintValue, 9, 21);
+	StreamEven[1] |= COMPOSE_BITS(UintValue, 9, 21);
 	UintValue = UnscaleUint(fabs(Almanac->di), -20); UintValue |= (Almanac->di < 0) ? (1 << 17) : 0;
 	StreamEven[1] |= COMPOSE_BITS(UintValue >> 9, 0, 9);
 	StreamEven[2] = COMPOSE_BITS(UintValue, 23, 9);
@@ -178,7 +202,7 @@ int GNavBit::ComposeStringAlm(PGLONASS_ALMANAC Almanac, unsigned int StreamEven[
 	StreamEven[2] |= COMPOSE_BITS(UintValue, 8, 15);
 	// second string
 	UintValue = UnscaleUint(fabs(Almanac->w), -15); UintValue |= (Almanac->w < 0) ? (1 << 15) : 0;
-	StreamOdd[0] = COMPOSE_BITS(UintValue >> 8, 0, 16);
+	StreamOdd[0] = COMPOSE_BITS(UintValue, 0, 16);
 	UintValue = UnscaleUint(fabs(Almanac->t), -5);
 	StreamOdd[1] = COMPOSE_BITS(UintValue, 11, 21);
 	UintValue = UnscaleUint(fabs(Almanac->dt), -9); UintValue |= (Almanac->dt < 0) ? (1 << 21) : 0;
@@ -198,23 +222,21 @@ int GNavBit::ComposeStringAlm(PGLONASS_ALMANAC Almanac, unsigned int StreamEven[
 unsigned int GNavBit::CheckSum(unsigned int Data[3])
 {
 	unsigned int CheckSumValue = 0;
-	unsigned int xor_value[3];
-	int i, j;
+	unsigned int xor_value;
+	int i;
 
+	Data[2] &= ~0xf;	// clear checksum bits
 	// calculate parity value
-	for (i = 7; i >= 0; i--)
+	for (i = 0; i < 8; i ++)
 	{
-		for (j = 0; j < 3; j++)
-		{
-			xor_value[j] = Data[j] & CheckSumTable[i][j];
-			// calculate bit 1 number
-			xor_value[j] = (xor_value[j] & 0x55555555) + ((xor_value[j] & 0xaaaaaaaa) >> 1);
-			xor_value[j] = (xor_value[j] & 0x33333333) + ((xor_value[j] & 0xcccccccc) >> 2);
-			xor_value[j] = (xor_value[j] & 0x0f0f0f0f) + ((xor_value[j] & 0xf0f0f0f0) >> 4);
-			xor_value[j] = (xor_value[j] & 0x000f000f) + ((xor_value[j] & 0x0f000f00) >> 8);
-			xor_value[j] = (xor_value[j] & 0x0000000f) + ((xor_value[j] & 0x000f0000) >> 16);
-		}
-		CheckSumValue = (CheckSumValue << 1) | ((xor_value[0] + xor_value[1] + xor_value[2]) & 1);
+		xor_value = (Data[0] & CheckSumTable[i][0]) ^ (Data[1] & CheckSumTable[i][1]) ^ ((Data[2] | CheckSumValue) & CheckSumTable[i][2]);
+		// calculate bit 1 number
+		xor_value = (xor_value & 0x55555555) + ((xor_value & 0xaaaaaaaa) >> 1);
+		xor_value = (xor_value & 0x33333333) + ((xor_value & 0xcccccccc) >> 2);
+		xor_value = (xor_value & 0x0f0f0f0f) + ((xor_value & 0xf0f0f0f0) >> 4);
+		xor_value = (xor_value & 0x000f000f) + ((xor_value & 0x0f000f00) >> 8);
+		xor_value = (xor_value & 0x0000000f) + ((xor_value & 0x000f0000) >> 16);
+		CheckSumValue |= ((xor_value & 1) << i);
 	}
 
 	return CheckSumValue;

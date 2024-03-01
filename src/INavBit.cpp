@@ -136,9 +136,9 @@ int INavBit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
 	return svid;
 }
 
-int INavBit::SetAlmanac(int svid, PGPS_ALMANAC Alm)
+int INavBit::SetAlmanac(GPS_ALMANAC Alm[])
 {
-	return svid;
+	return 0;
 }
 
 int INavBit::SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam)

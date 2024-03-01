@@ -19,7 +19,7 @@ public:
 
 	int GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits);
 	int SetEphemeris(int svid, PGPS_EPHEMERIS Eph);
-	int SetAlmanac(int svid, PGPS_ALMANAC Alm);
+	int SetAlmanac(GPS_ALMANAC Alm[]);
 	int SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam);
 
 private:
@@ -30,7 +30,7 @@ private:
 	static const unsigned int CheckSumTable[8][3];
 
 	int ComposeStringEph(PGLONASS_EPHEMERIS Ephemeris, unsigned int String[][3]);
-	int ComposeStringAlm(PGLONASS_ALMANAC Almanac, unsigned int StringEven[3], unsigned int StringOdd[3]);
+	int ComposeStringAlm(PGLONASS_ALMANAC Almanac, int slot, unsigned int StringEven[3], unsigned int StringOdd[3]);
 	unsigned int CheckSum(unsigned int Data[3]);
 };
 

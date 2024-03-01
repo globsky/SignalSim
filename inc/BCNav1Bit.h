@@ -22,7 +22,7 @@ public:
 
 	int GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits);
 	int SetEphemeris(int svid, PGPS_EPHEMERIS Eph);
-	int SetAlmanac(int svid, PGPS_ALMANAC Alm) { return 0; };
+	int SetAlmanac(GPS_ALMANAC Alm[]) { return 0; };
 	int SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam) { return 0; };
 
 private:

@@ -27,7 +27,7 @@ public:
 
 	virtual int GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits) = 0;	// Param reserved for same Navigation bit structure in different signal
 	virtual int SetEphemeris(int svid, PGPS_EPHEMERIS Eph) = 0;
-	virtual int SetAlmanac(int svid, PGPS_ALMANAC Alm) = 0;
+	virtual int SetAlmanac(GPS_ALMANAC Alm[]) = 0;
 	virtual int SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam) = 0;
 	int roundi(double data);
 	int roundu(double data);

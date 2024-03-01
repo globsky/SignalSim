@@ -89,3 +89,12 @@ Change list as below:
 	Fix bugs in BDS D1/D2 navigation stream generation
 	Add L1C/L5/E6 support into CSatelliteSignal class
 	Observation support multi-frequency in structure and RINEX output
+2/29/2024
+	Made following changes to enable almanac read and data stream generation containing almanac subframe/string
+	Change function parameter of SetAlmanac() in NavBit and all derived classes
+	Add functions to read almanac file in Almanac.cpp
+	Add array to store almanacs in CNavData class
+	Add functions to read almanac files and convert ephemeris to almanac in CNavData class
+	Ephemeris to almanac conversion for GLONASS and BDS GEO satellites will be added in future version
+	The time parameter of FindEphemeris() and FindGloEphemeris() definition changes to follow corresponding system
+	Add almanac subframe/string generation for D1/D2, LNAC and GNAV data stream

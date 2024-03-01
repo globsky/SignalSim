@@ -17,12 +17,21 @@
 class CNavData
 {
 public:
+	static const int GpsSatNumber = 32;
+	static const int BdsSatNumber = 63;
+	static const int GalileoSatNumber = 36;
+	static const int GlonassSatNumber = 24;
+
 	CNavData();
 	~CNavData();
 
 	bool AddNavData(NavDataType Type, void *NavData);
-	PGPS_EPHEMERIS FindEphemeris(GnssSystem system, GNSS_TIME time, int svid, unsigned char FirstPrioritySource = 0);
-	PGLONASS_EPHEMERIS FindGloEphemeris(GNSS_TIME time, int slot);
+	PGPS_EPHEMERIS FindEphemeris(GnssSystem system, GNSS_TIME time, int svid, int IgnoreTimeLimit = 0, unsigned char FirstPrioritySource = 0);
+	PGLONASS_EPHEMERIS FindGloEphemeris(GLONASS_TIME GlonassTime, int slot);
+	PGPS_ALMANAC GetGpsAlmanac() { return GpsAlmanac; }
+	PGPS_ALMANAC GetBdsAlmanac() { return BdsAlmanac; }
+	PGPS_ALMANAC GetGalileoAlmanac() { return GalileoAlmanac; }
+	PGLONASS_ALMANAC GetGlonassAlmanac() { return GlonassAlmanac; }
 	PIONO_PARAM GetGpsIono() { return &GpsIono; }
 	PIONO_PARAM GetBdsIono() { return &BdsIono[0]; }
 	PIONO_PARAM GetGalileoIono() { return (PIONO_PARAM)&GalileoIono; }
@@ -31,6 +40,8 @@ public:
 	PUTC_PARAM GetGalileoUtcParam() { return &GalileoUtcParam; }
 	int GetGlonassSlotFreq(int slot) { return (slot > 0 && slot <= 24) ? GlonassSlotFreq[slot-1] : 7; }
 	void ReadNavFile(char *filename);
+	void ReadAlmFile(char *filename);
+	void CompleteAlmanac(GnssSystem system, GNSS_TIME time);
 
 private:
 	int GpsEphemerisNumber;
@@ -45,6 +56,10 @@ private:
 	PGPS_EPHEMERIS BdsEphmerisPool;
 	PGPS_EPHEMERIS GalileoEphmerisPool;
 	PGLONASS_EPHEMERIS GlonassEphmerisPool;
+	GPS_ALMANAC GpsAlmanac[GpsSatNumber];
+	GPS_ALMANAC BdsAlmanac[BdsSatNumber];
+	GPS_ALMANAC GalileoAlmanac[GalileoSatNumber];
+	GLONASS_ALMANAC GlonassAlmanac[GlonassSatNumber];
 	IONO_PARAM GpsIono;
 	IONO_PARAM BdsIono[24];
 	IONO_NEQUICK GalileoIono;

@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------
-// Trajectory.h:
-//   Declaration of trajectory processing class
+// Rinex.h:
+//   Declaration of RINEX file read/write functions
 //
 //          Copyright (C) 2020-2029 by Jun Mo, All rights reserved.
 //

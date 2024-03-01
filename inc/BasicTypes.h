@@ -192,7 +192,8 @@ typedef struct
 {
 	unsigned char flag;	// bit0 means almanac valid
 	signed char freq;	// frequency number of satellite
-	short ReferenceDay;	// reference day of almanac
+	short leap_year;	// reference leap year of almanac
+	short day;			// reference day of almanac
 	double t;			// reference time of almanac
 	double lambda;		// longitude of ascending node of orbit
 	double di;			// inclination correction
@@ -200,6 +201,7 @@ typedef struct
 	double w;			// Argument of Perigee
 	double dt;			// correction to the mean value of Draconian period
 	double dt_dot;		// rate of change of orbital period
+	double clock_error;	// correction of satellite clock
 } GLONASS_ALMANAC, * PGLONASS_ALMANAC;
 
 typedef struct

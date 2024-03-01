@@ -20,10 +20,22 @@ const unsigned char LNavBit::ParityTable[6][16] = {
  
 const unsigned int LNavBit::ParityAdjust[4] = { 0x00, 0xa5, 0xf6, 0x53};
 
+const int LNavBit::PageId[2][25] = {
+	{ 57, 25, 26, 27, 28, 57, 29, 30, 31, 32, 57, 62, 52, 53, 54, 57, 55, 56, 58, 59, 57, 60, 61, 62, 63 },
+	{  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 51 }
+};
+
 LNavBit::LNavBit()
 {
+	int i;
+
 	memset(GpsStream123, 0xaa, sizeof(GpsStream123));
-	memset(GpsStream45, 0xaa, sizeof(GpsStream45));
+	memset(GpsStream45, 0x55, sizeof(GpsStream45));
+	// assign page id
+	for (i = 0; i < 25; i ++)
+		GpsStream45[0][i][0] = (GpsStream45[0][i][0] & ~0x3f0000) | (PageId[0][i] << 16);
+	for (i = 0; i < 25; i ++)
+		GpsStream45[1][i][0] = (GpsStream45[1][i][0] & ~0x3f0000) | (PageId[1][i] << 16);
 }
 
 LNavBit::~LNavBit()
@@ -95,23 +107,19 @@ int LNavBit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
 	return svid;
 }
 
-int LNavBit::SetAlmanac(int svid, PGPS_ALMANAC Alm)
+int LNavBit::SetAlmanac(GPS_ALMANAC Alm[])
 {
-	unsigned int *Stream;
+	int i;
 
-	if (svid < 1)
-		return 0;
-	else if (svid <= 24)
-		Stream = GpsStream45[1][svid-1];	// SV01 to SV24 in subframe 5 page 1 to 24
-	else if (svid <= 28)
-		Stream = GpsStream45[0][svid-24];	// SV25 to SV28 in subframe 4 page 2 to 5
-	else if (svid <= 32)
-		Stream = GpsStream45[0][svid-23];	// SV29 to SV32 in subframe 4 page 7 to 10
-	else
-		return 0;
-	
-	FillGpsAlmanacPage(Alm, Stream);
-	return svid;
+	for (i = 0; i < 24; i ++)
+		FillGpsAlmanacPage(Alm + i, GpsStream45[1][i]);
+	for (; i < 28; i ++)
+		FillGpsAlmanacPage(Alm + i, GpsStream45[0][i-23]);
+	for (; i < 32; i ++)
+		FillGpsAlmanacPage(Alm + i, GpsStream45[0][i-22]);
+	FillGpsHealthPage(Alm, GpsStream45[0][24], GpsStream45[1][24]);
+
+	return 0;
 }
 
 int LNavBit::SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam)
@@ -258,6 +266,52 @@ int LNavBit::FillGpsAlmanacPage(PGPS_ALMANAC Almanac, unsigned int Stream[8])
 	Stream[7] |= COMPOSE_BITS(IntValue & 0x7, 2, 3);
 	IntValue = UnscaleInt(Almanac->af1, -38);
 	Stream[7] |= COMPOSE_BITS(IntValue, 5, 11);
+
+	return 0;
+}
+
+int LNavBit::FillGpsHealthPage(GPS_ALMANAC Almanac[], unsigned int Stream4[8], unsigned int Stream5[8])
+{
+	int i;
+	int toa, week;
+
+	for (i = 0; i < 32; i ++)
+		if (Almanac[i].flag == 1)
+			break;
+	if (i < 32)	// has valid almanac, get toa and week number
+	{
+		toa = Almanac[i].toa >> 12;
+		week = Almanac[i].week & 0xff;
+	}
+	else
+		toa = week = 0;
+
+	// subframe 5 page 25
+	Stream5[0] = COMPOSE_BITS(0x73, 16, 8);	// DataID = 01, PageID = 51
+	Stream5[0] |= COMPOSE_BITS(toa, 8, 8);
+	Stream5[0] |= COMPOSE_BITS(week, 0, 8);
+	for (i = 0; i < 24; i += 4)
+	{
+		Stream5[i/4+1] = COMPOSE_BITS((Almanac[i].flag ? 0 : 0x3f), 18, 6);
+		Stream5[i/4+1] |= COMPOSE_BITS((Almanac[i+1].flag ? 0 : 0x3f), 12, 6);
+		Stream5[i/4+1] |= COMPOSE_BITS((Almanac[i+2].flag ? 0 : 0x3f), 6, 6);
+		Stream5[i/4+1] |= COMPOSE_BITS((Almanac[i+3].flag ? 0 : 0x3f), 0, 6);
+	}
+
+	// subframe 4 page 25
+	// assign AS flag 1100 as AS on and all signal capability
+	Stream4[0] = COMPOSE_BITS(0x7f, 16, 8);	// DataID = 01, PageID = 63
+	Stream4[0] |= 0xcccc;
+	for (i = 1; i < 5; i ++)
+		Stream4[i] = 0xcccccc;
+	Stream4[5] = 0xcccc00 + (Almanac[24].flag ? 0 : 0x3f);	// SV25 health
+	Stream5[6] = COMPOSE_BITS((Almanac[25].flag ? 0 : 0x3f), 18, 6);
+	Stream5[6] |= COMPOSE_BITS((Almanac[26].flag ? 0 : 0x3f), 12, 6);
+	Stream5[6] |= COMPOSE_BITS((Almanac[27].flag ? 0 : 0x3f), 6, 6);
+	Stream5[6] = COMPOSE_BITS((Almanac[28].flag ? 0 : 0x3f), 0, 6);
+	Stream5[7] = COMPOSE_BITS((Almanac[29].flag ? 0 : 0x3f), 18, 6);
+	Stream5[7] |= COMPOSE_BITS((Almanac[30].flag ? 0 : 0x3f), 12, 6);
+	Stream5[7] |= COMPOSE_BITS((Almanac[31].flag ? 0 : 0x3f), 6, 6);
 
 	return 0;
 }

@@ -27,6 +27,7 @@ void main(void)
 	int i, index;
 	GNSS_TIME time;
 	UTC_TIME UtcTime;
+	GNSS_TIME BdsTime;
 	GLONASS_TIME GlonassTime;
 	CTrajectory Trajectory;
 	CNavData NavData;
@@ -78,6 +79,7 @@ void main(void)
 	CurPos = StartPos;
 	SpeedLocalToEcef(StartPos, StartVel, PosVel);
 	time = UtcToGpsTime(UtcTime);
+	BdsTime = UtcToBdsTime(UtcTime);
 	GlonassTime = UtcToGlonassTime(UtcTime);
 	UtcTime = GpsTimeToUtc(time, FALSE);	// convert back to UTC represented GPS time
 	PowerControl.ResetTime();
@@ -110,11 +112,11 @@ void main(void)
 	for (i = 1; i <= TOTAL_GPS_SAT; i ++)
 		GpsEph[i-1] = NavData.FindEphemeris(GpsSystem, time, i);
 	for (i = 1; i <= TOTAL_BDS_SAT; i ++)
-		BdsEph[i-1] = NavData.FindEphemeris(BdsSystem, time, i);
+		BdsEph[i-1] = NavData.FindEphemeris(BdsSystem, BdsTime, i);
 	for (i = 1; i <= TOTAL_GAL_SAT; i ++)
 		GalEph[i-1] = NavData.FindEphemeris(GalileoSystem, time, i);
 	for (i = 1; i <= TOTAL_GLO_SAT; i ++)
-		GloEph[i-1] = NavData.FindGloEphemeris(time, i);
+		GloEph[i-1] = NavData.FindGloEphemeris(GlonassTime, i);
 
 	fp = fopen(OutputParam.filename, "w");
 	if (fp == NULL)
