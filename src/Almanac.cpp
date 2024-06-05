@@ -284,7 +284,8 @@ int GetAlmanacGlonass(FILE *fp, PGLONASS_ALMANAC Alm)
 	UTC_TIME UtcTime;
 	GLONASS_TIME GlonassTime;
 
-	fgets(str, 255, fp);
+	if (!fgets(str, 255, fp) || str[0] == '\0')	// end of file or empty string read
+		return 0;
 	sscanf(str, "%d %d.%d.%d %lf %lf %lf %lf %lf %lf %lf %d %lf", &slot, &(UtcTime.Day), &(UtcTime.Month), &(UtcTime.Year),
 		&(Alm->t), &Period, &(Alm->ecc), &Inclination,
 		&(Alm->lambda), &(Alm->w), &(Alm->clock_error), &freq, &(Alm->dt));

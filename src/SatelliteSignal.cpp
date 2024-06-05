@@ -143,6 +143,7 @@ BOOL CSatelliteSignal::GetSatelliteSignal(GNSS_TIME TransmitTime, complex_number
 	int SecondaryLength;
 	const unsigned int *SecondaryCode = GetPilotBits(SatSystem, SatFreq, Svid, SecondaryLength);
 	int Seconds, LeapSecond;
+	int GalileoE1Signal = (SatSystem == GalileoSystem && SatFreq == FREQ_INDEX_GAL_E1) ? 1 : 0;
 
 	if (Svid < 0)	// attribute not yet set
 		return FALSE;
@@ -157,7 +158,7 @@ BOOL CSatelliteSignal::GetSatelliteSignal(GNSS_TIME TransmitTime, complex_number
 	if (TransmitTime.MilliSeconds < 0)	// protection on negative millisecond
 		TransmitTime.MilliSeconds += 604800000;
 
-	Milliseconds = TransmitTime.MilliSeconds;
+	Milliseconds = TransmitTime.MilliSeconds + (GalileoE1Signal ? 1000 : 0);	// E1 page has 1000ms bias to week boundary
 	FrameNumber = Milliseconds / Attribute->FrameLength;	// subframe/page number
 	Milliseconds %= Attribute->FrameLength;
 	BitNumber = Milliseconds / BitLength;	// current bit position within current subframe/page
@@ -167,7 +168,7 @@ BOOL CSatelliteSignal::GetSatelliteSignal(GNSS_TIME TransmitTime, complex_number
 	if (FrameNumber != CurrentFrame)
 	{
 		if (NavData)
-			NavData->GetFrameData(TransmitTime, Svid, 0, DataBits);
+			NavData->GetFrameData(TransmitTime, Svid, GalileoE1Signal, DataBits);
 		CurrentFrame = FrameNumber;
 	}
 

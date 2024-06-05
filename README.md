@@ -98,3 +98,7 @@ Change list as below:
 	Ephemeris to almanac conversion for GLONASS and BDS GEO satellites will be added in future version
 	The time parameter of FindEphemeris() and FindGloEphemeris() definition changes to follow corresponding system
 	Add almanac subframe/string generation for D1/D2, LNAC and GNAV data stream
+6/5/2024
+	Add almanac word (word 7~10) to Galileo E1 data stream
+	Add Reed-Solomon encoded ephemeris (word 17~20) to Galileo E1 data stream
+	Bug fixes on E1 ephemeris word and TOW composition
