@@ -230,7 +230,7 @@ BOOL CSatelliteSignal::GetSatelliteSignal(GNSS_TIME TransmitTime, complex_number
 			PilotSignal = complex_number(PilotBit * AMPLITUDE_1_2, 0);
 			break;
 		case FREQ_INDEX_BDS_B2b:
-			DataSignal = complex_number((double)DataBit, 0);
+			DataSignal = complex_number(0, -DataBit * AMPLITUDE_1_2);	// B2b nominal power is 3dB lower than B2a, phase align with B2a data
 			PilotSignal = complex_number(0, 0);
 			break;
 		}

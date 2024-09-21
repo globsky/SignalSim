@@ -23,6 +23,7 @@
 #define FREQ_INDEX_BDS_B3I 3
 #define FREQ_INDEX_BDS_B2a 4	// for pilot channel
 #define FREQ_INDEX_BDS_B2b 5	// for pilot channel
+#define FREQ_INDEX_BDS_B2ab 6
 #define FREQ_INDEX_GAL_E1 0
 #define FREQ_INDEX_GAL_E5a 1	// for pilot channel
 #define FREQ_INDEX_GAL_E5b 2	// for pilot channel
@@ -41,6 +42,7 @@
 #define FREQ_BDS_B3I 1268.52e6
 #define FREQ_BDS_B2a 1176.45e6
 #define FREQ_BDS_B2b 1207.14e6
+#define FREQ_BDS_B2ab 1191.795e6
 #define FREQ_GAL_E1 1575.42e6
 #define FREQ_GAL_E5a 1176.45e6
 #define FREQ_GAL_E5b 1207.14e6

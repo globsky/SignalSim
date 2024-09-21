@@ -679,7 +679,7 @@ unsigned char GetUraIndex(double data)
 
 unsigned char GetGalileoUra(double data)
 {
-	int value = (int)(data * 100);	// convert to cm
+	int value = (int)(data * 100 + 0.5);	// convert to cm
 
 	if (value < 0 || value > 6000)
 		return 255;

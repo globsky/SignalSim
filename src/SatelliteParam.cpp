@@ -167,7 +167,8 @@ void GetSatelliteParam(KINEMATIC_INFO PositionEcef, LLA_POSITION PositionLla, GN
 			SatelliteParam->GroupDelay[FREQ_INDEX_BDS_B2I] = Eph->tgd2;	// B2I
 			SatelliteParam->GroupDelay[FREQ_INDEX_BDS_B3I] = 0;	// B3I
 			SatelliteParam->GroupDelay[FREQ_INDEX_BDS_B2a] = Eph->tgd_ext[3];	// B2a
-			SatelliteParam->GroupDelay[FREQ_INDEX_BDS_B2a] = Eph->tgd_ext[4];	// B2b
+			SatelliteParam->GroupDelay[FREQ_INDEX_BDS_B2b] = Eph->tgd_ext[4];	// B2b
+			SatelliteParam->GroupDelay[FREQ_INDEX_BDS_B2ab] = (Eph->tgd_ext[3] + Eph->tgd_ext[4]) / 2;	// B2a+B2b
 			break;
 		case GalileoSystem:
 			SatelliteParam->GroupDelay[FREQ_INDEX_GAL_E1] = Eph->tgd;	// E1
@@ -272,6 +273,7 @@ double GetWaveLength(int system, int FreqIndex, int FreqID)
 		case FREQ_INDEX_BDS_B2b: return LIGHT_SPEED / FREQ_BDS_B2b;
 		case FREQ_INDEX_BDS_B3I: return LIGHT_SPEED / FREQ_BDS_B3I;
 		case FREQ_INDEX_BDS_B2a: return LIGHT_SPEED / FREQ_BDS_B2a;
+		case FREQ_INDEX_BDS_B2ab:  return LIGHT_SPEED / FREQ_BDS_B2ab;
 		default: return LIGHT_SPEED / FREQ_BDS_B1C;
 		}
 	case GalileoSystem:
