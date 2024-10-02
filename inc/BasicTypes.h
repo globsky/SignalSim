@@ -79,7 +79,7 @@ typedef struct
 
 typedef struct // GPS ephemeris, also used by BDS, Galileo, QZSS and NavIC
 {
-	unsigned short	ura;	// URA for corresponding system
+	signed short	ura;	// URA for corresponding system
 	unsigned short	iodc;
 	unsigned char	iode;
 	unsigned char	svid;	// satellite PRN number starting from 1

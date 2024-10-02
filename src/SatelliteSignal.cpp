@@ -12,13 +12,14 @@
 #include "GnssTime.h"
 #include "SatelliteSignal.h"
 #include "LNavBit.h"
+#include "CNavBit.h"
+#include "CNav2Bit.h"
 #include "INavBit.h"
 #include "FNavBit.h"
 #include "D1D2NavBit.h"
 #include "BCNav1Bit.h"
 #include "BCNav2Bit.h"
 #include "BCNav3Bit.h"
-#include "CNav2Bit.h"
 #include "GNavBit.h"
 #include "PilotBit.h"
 
@@ -26,7 +27,7 @@ const SignalAttribute CSatelliteSignal::SignalAttributes[32] = {
  // CodeLength NHLength  NHCode FrameLength 
 {        1,       20,     0x0,      6000,   },	// index  0 for LNAV
 {       10,        1,     0x0,     18000,   },	// index  1 for CNAV2
-{       20,        1,     0x0,      6000,   },	// index  2 for CNAV L2C
+{       20,        1,     0x0,     12000,   },	// index  2 for CNAV L2C
 {        1,       10,   0x2b0,      6000,   },	// index  3 for CNAV L5
 {       10,        1,     0x0,     18000,   },	// index  4 for BCNAV1
 {        1,       20, 0x72b20,      6000,   },	// index  5 for D1
@@ -72,10 +73,10 @@ BOOL CSatelliteSignal::SetSignalAttribute(GnssSystem System, int FreqIndex, NavB
 			return NavData ? ((typeid(*NavData) == typeid(LNavBit) || typeid(*NavData) == typeid(CNav2Bit)) ? TRUE : FALSE) : TRUE;
 		case FREQ_INDEX_GPS_L2:
 			Attribute = &SignalAttributes[2];
-			return NavData ? ((typeid(*NavData) == typeid(LNavBit)) ? TRUE : FALSE) : TRUE;
+			return NavData ? ((typeid(*NavData) == typeid(CNavBit)) ? TRUE : FALSE) : TRUE;
 		case FREQ_INDEX_GPS_L5:
 			Attribute = &SignalAttributes[3];
-			return NavData ? ((typeid(*NavData) == typeid(CNav2Bit)) ? TRUE : FALSE) : TRUE;
+			return NavData ? ((typeid(*NavData) == typeid(CNavBit)) ? TRUE : FALSE) : TRUE;
 		default: return FALSE;	// unknown FreqIndex
 		}
 	case BdsSystem:
@@ -144,6 +145,7 @@ BOOL CSatelliteSignal::GetSatelliteSignal(GNSS_TIME TransmitTime, complex_number
 	const unsigned int *SecondaryCode = GetPilotBits(SatSystem, SatFreq, Svid, SecondaryLength);
 	int Seconds, LeapSecond;
 	int GalileoE1Signal = (SatSystem == GalileoSystem && SatFreq == FREQ_INDEX_GAL_E1) ? 1 : 0;
+	int Param = ((SatSystem == GpsSystem && SatFreq == FREQ_INDEX_GPS_L5) ? 1 : 0) || GalileoE1Signal;	// set to 1 for E1 or L5
 
 	if (Svid < 0)	// attribute not yet set
 		return FALSE;
@@ -168,7 +170,7 @@ BOOL CSatelliteSignal::GetSatelliteSignal(GNSS_TIME TransmitTime, complex_number
 	if (FrameNumber != CurrentFrame)
 	{
 		if (NavData)
-			NavData->GetFrameData(TransmitTime, Svid, GalileoE1Signal, DataBits);
+			NavData->GetFrameData(TransmitTime, Svid, Param, DataBits);
 		CurrentFrame = FrameNumber;
 	}
 

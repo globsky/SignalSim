@@ -153,7 +153,7 @@ INavBit::~INavBit()
 {
 }
 
-// Param is used to distinguish from E1 and E5b (0 for E1)
+// Param is used to distinguish from E1 and E5b (1 for E1)
 int INavBit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits)
 {
 	int i, j, TOW, subframe, page;

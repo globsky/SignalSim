@@ -102,3 +102,10 @@ Change list as below:
 	Add almanac word (word 7~10) to Galileo E1 data stream
 	Add Reed-Solomon encoded ephemeris (word 17~20) to Galileo E1 data stream
 	Bug fixes on E1 ephemeris word and TOW composition
+9/21/2024
+	Add Galileo E5a F/NAV data modulation support
+	Bug fix of group delay and signal modulation phase in B2b signal
+10/1/2024
+	New CNavBit class for CNAV bit stream generation
+	Expand URA index range to support corresponding data field in CNAV
+	L2CM and L5I signal use CNAV data modulation

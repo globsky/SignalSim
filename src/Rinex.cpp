@@ -24,7 +24,7 @@ static void ReadContentsData(char *str, double *data);
 static NavDataType ReadRinex4Iono(char *str, FILE *fp_nav, void *NavData);
 static BOOL DecodeEphParam(NavDataType DataType, char *str, FILE *fp_nav, PGPS_EPHEMERIS Eph);
 static BOOL DecodeEphOrbit(NavDataType DataType, char *str, FILE *fp_nav, PGLONASS_EPHEMERIS Eph);
-static unsigned char GetUraIndex(double data);
+static signed short GetUraIndex(double data);
 static unsigned char GetGalileoUra(double data);
 static void SetField(char *dest, char *src, int length);
 static void PrintTextField(FILE *fp, int enable, char *text, const char *description);
@@ -441,8 +441,9 @@ BOOL DecodeEphParam(NavDataType DataType, char *str, FILE *fp_nav, PGPS_EPHEMERI
 			Eph->week = (int)data[21];      /* week number */
 			Eph->health = (unsigned short)data[24];      /* sv health */
 			Eph->ura = GetUraIndex(data[23]);
+			if (Eph->ura < 0) Eph->ura = 0;	/* clipped to minimize 0 */
 			Eph->flag = (unsigned short)data[20] | ((unsigned short)data[22] << 2) | ((data[28] > 4.0) ? 8 : 0);
-			Eph->tgd = data[25];      /* TGD */
+			Eph->tgd = Eph->tgd_ext[4] = data[25];      /* TGD */
 			Eph->tgd2 = Eph->tgd * TGD_GAMMA_L2;      /* TGD for L2 */
 			Eph->tgd_ext[0] = Eph->tgd_ext[1] = Eph->tgd;	/* TGD for L1Cd and L1Cp */
 			Eph->tgd_ext[2] = Eph->tgd_ext[3] = Eph->tgd * TGD_GAMME_L5;	/* TGD for L5I and L5Q */
@@ -463,6 +464,7 @@ BOOL DecodeEphParam(NavDataType DataType, char *str, FILE *fp_nav, PGPS_EPHEMERI
 			Eph->tgd_ext[0] = Eph->tgd_ext[1] = Eph->tgd;	/* TGD for L1Cd and L1Cp */
 			Eph->tgd_ext[2] = data[25] - data[29];	/* TGD for L5I */
 			Eph->tgd_ext[3] = data[25] - data[30];	/* TGD for L5Q */
+			Eph->tgd_ext[4] = data[25];	/* store TGD for navigation data recovery */
 			Eph->source = EPH_SOURCE_CNAV;
 			break;
 		case NavDataGpsCnav2:
@@ -481,6 +483,7 @@ BOOL DecodeEphParam(NavDataType DataType, char *str, FILE *fp_nav, PGPS_EPHEMERI
 			Eph->tgd_ext[1] = data[25] - data[32];	/* TGD for L1Cp */
 			Eph->tgd_ext[2] = data[25] - data[29];	/* TGD for L5I */
 			Eph->tgd_ext[3] = data[25] - data[30];	/* TGD for L5Q */
+			Eph->tgd_ext[4] = data[25];	/* store TGD for navigation data recovery */
 			Eph->source = EPH_SOURCE_CNV2;
 			break;
 		case NavDataGalileoINav:
@@ -641,40 +644,25 @@ BOOL DecodeEphOrbit(NavDataType DataType, char *str, FILE *fp_nav, PGLONASS_EPHE
 	return -1;
 }
 
-unsigned char GetUraIndex(double data)
+signed short GetUraIndex(double data)
 {
-	if (data < 2.4)
-		return 0;
-	else if (data < 3.4)
-		return 1;
-	else if (data < 4.85)
-		return 2;
-	else if (data < 6.85)
-		return 3;
-	else if (data < 9.65)
-		return 4;
-	else if (data < 13.65)
-		return 5;
-	else if (data < 24.0)
-		return 6;
-	else if (data < 48.0)
-		return 7;
-	else if (data < 96.0)
-		return 8;
-	else if (data < 192.0)
-		return 9;
-	else if (data < 384.0)
-		return 10;
-	else if (data < 768.0)
-		return 11;
-	else if (data < 1536.0)
-		return 12;
-	else if (data < 3072.0)
-		return 13;
-	else if (data < 6144.0)
-		return 14;
-	else
-		return 15;
+	int i, value = (int)(data * 100 + 0.5);	// convert to cm
+	int boundary[21] = { 1, 2, 3, 4, 6, 8, 11, 15, 21, 30, 43, 60, 85, 120, 170, 240, 340, 485, 685, 965, 1365 };
+
+	if (value <= boundary[20])
+	{
+		for (i = 0; i < 21; i ++)
+		{
+			if (value <= boundary[i])
+				return i - 15;
+		}
+	}
+	for (i = 0; i < 9; i ++)
+	{
+		if (value <= (2400 << i))
+			break;
+	}
+	return 15;
 }
 
 unsigned char GetGalileoUra(double data)
