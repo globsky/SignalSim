@@ -112,9 +112,12 @@
         <ConfigParam>
             <ElevationMask>3</ElevationMask>
         </ConfigParam>
-        <SystemSelect system="GPS">true</SystemSelect>
+        <SystemSelect system="GPS" freq="L1">true</SystemSelect>
+        <SystemSelect system="GPS" freq="L2">false</SystemSelect>
         <SystemSelect system="BDS">true</SystemSelect>
+        <SystemSelect system="BDS" freq="B3I">false</SystemSelect>
         <SystemSelect system="Galileo">true</SystemSelect>
+        <SystemSelect system="GLONASS">false</SystemSelect>
     </Output>
     <PowerControl>
         <PowerParam>

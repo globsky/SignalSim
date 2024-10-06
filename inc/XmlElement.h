@@ -88,8 +88,8 @@ public:
 	~CXmlElementTree();
 	void SetRootElement(CXmlElement element);
 	void ClearTree();
-	bool parse(char *filename);
-	bool write(char *filename);
+	bool parse(const char *filename);
+	bool write(const char *filename);
 	CXmlElement *getroot() { return root; }
 
 private:

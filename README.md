@@ -109,3 +109,6 @@ Change list as below:
 	New CNavBit class for CNAV bit stream generation
 	Expand URA index range to support corresponding data field in CNAV
 	L2CM and L5I signal use CNAV data modulation
+10/5/2024
+	CMakeLists.txt added to XmlObsGen folder to guide how to build project using cmake
+	Minor fixes

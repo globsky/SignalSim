@@ -521,7 +521,7 @@ void CXmlElementTree::ClearTree()
 }
 
 // read a file content into XML tree
-bool CXmlElementTree::parse(char *filename)
+bool CXmlElementTree::parse(const char *filename)
 {
 	FILE *fp;
 	char string[512], *content;
@@ -557,7 +557,7 @@ bool CXmlElementTree::parse(char *filename)
 	return true;
 }
 
-bool CXmlElementTree::write(char *filename)
+bool CXmlElementTree::write(const char *filename)
 {
 	FILE *fp = fopen(filename, "w");
 	if (!fp)
