@@ -112,3 +112,6 @@ Change list as below:
 10/5/2024
 	CMakeLists.txt added to XmlObsGen folder to guide how to build project using cmake
 	Minor fixes
+10/20/2024
+	Add JSON format scenario control file to replace XML format
+	Add a JsonObsGen project that has the same output using test_obs2.json (same parameters as test_obs2.xml used in XmlObsGen project)

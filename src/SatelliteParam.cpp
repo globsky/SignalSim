@@ -28,17 +28,17 @@ int GetVisibleSatellite(KINEMATIC_INFO Position, GNSS_TIME time, OUTPUT_PARAM Ou
 			continue;
 		if (system == GpsSystem)
 		{
-			if (OutputParam.GpsMaskOut & (1 << (i-1)))
+			if (OutputParam.GpsMaskOut & (1 << i))
 				continue;
 		}
 		else if (system == BdsSystem)
 		{
-			if (OutputParam.BdsMaskOut & (1LL << (i-1)))
+			if (OutputParam.BdsMaskOut & (1LL << i))
 				continue;
 		}
 		else if (system == GalileoSystem)
 		{
-			if (OutputParam.GalileoMaskOut & (1LL << (i-1)))
+			if (OutputParam.GalileoMaskOut & (1LL << i))
 				continue;
 		}
 		else

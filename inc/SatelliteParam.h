@@ -10,7 +10,6 @@
 #define __SATELLITE_PARAM_H__
 
 #include "BasicTypes.h"
-#include "XmlInterpreter.h"
 #include "PowerControl.h"
 
 // signal index in GroupDelay array

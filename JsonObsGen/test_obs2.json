@@ -1,0 +1,266 @@
+{
+	"version": 1.0,
+	"description": "test file with the same settings as test_obs2.xml",
+	"time": {
+		"type": "UTC",
+    "year": 2021,
+    "month": 6,
+    "day": 19,
+    "hour": 10,
+    "minute": 5,
+    "second": 30
+	},
+  "trajectory": {
+    "name": "test flight",
+    "initPosition": {
+      "type": "LLA",
+      "format": "d",
+      "longitude": -121.915773,
+      "latitude": 37.352721,
+      "altitude": 20
+    },
+    "initVelocity": {
+      "type": "SCU",
+      "speed": 5,
+      "course": 318.91
+    },
+    "trajectoryList": [
+      {
+        "type": "Const",
+        "time": 5
+      },
+      {
+        "type": "Jerk",
+        "time": 3,
+        "acceleration": 3
+      },
+      {
+        "type": "ConstAcc",
+        "time": 20,
+        "acceleration": 3
+      },
+      {
+        "type": "Jerk",
+        "time": 6,
+        "acceleration": 0
+      },
+      {
+        "type": "VerticalAcc",
+        "speed": 20,
+        "acceleration": 2
+      },
+      {
+        "type": "Const",
+        "time": 100
+      },
+      {
+        "type": "VerticalAcc",
+        "speed": 0,
+        "acceleration": 1
+      },
+      {
+        "type": "Const",
+        "time": 30
+      },
+      {
+        "type": "HorizontalTurn",
+        "acceleration": 2,
+        "angle": 225
+      },
+      {
+        "type": "Const",
+        "time": 200
+      },
+      {
+        "type": "HorizontalTurn",
+        "time": 120,
+        "angle": -45
+      },
+      {
+        "type": "VerticalAcc",
+        "speed": 0,
+        "acceleration": 0.1
+      },
+      {
+        "type": "Const",
+        "time": 120
+      },
+      {
+        "type": "HorizontalTurn",
+        "radius": 4676.66,
+        "angle": -180
+      },
+      {
+        "type": "Const",
+        "time": 10
+      },
+      {
+        "type": "VerticalAcc",
+        "speed": -20,
+        "acceleration": -1
+      },
+      {
+        "type": "Const",
+        "time": 19.384785
+      },
+      {
+        "type": "VerticalAcc",
+        "speed": 0,
+        "acceleration": 0.10811
+      },
+      {
+        "type": "VerticalAcc",
+        "speed": 0,
+        "time": 1
+      },
+      {
+        "type": "Const",
+        "time": 2
+      },
+      {
+        "type": "Jerk",
+        "acceleration": -6,
+        "time": 3
+      },
+      {
+        "type": "ConstAcc",
+        "speed": 10,
+        "acceleration": -6
+      },
+      {
+        "type": "Const",
+        "time": 5
+      }
+    ]
+  },
+  "ephemeris": {
+    "type": "RINEX",
+    "name": "EphData\/BRDC00IGS_R_20211700000_01D_MN.rnx"
+  },
+  "output": {
+    "type": "observation",
+    "format": "RINEX",
+    "name": "test2.o",
+    "interval": 1,
+    "config": {
+      "elevationMask": 3,
+      "maskOut": [
+        {
+          "system": "GPS",
+          "svid": [
+            10,
+            20,
+            21
+          ]
+        },
+        {
+          "system": "Galileo",
+          "svid": 3
+        }
+      ]
+    },
+    "systemSelect": [
+      {
+        "system": "GPS",
+        "freq": "L1",
+        "enable": true
+      },
+      {
+        "system": "GPS",
+        "freq": "L2",
+        "enable": false
+      },
+      {
+        "system": "BDS",
+        "enable": true
+      },
+      {
+        "system": "BDS",
+        "freq": "B3I",
+        "enable": false
+      },
+      {
+        "system": "Galileo",
+        "enable": true
+      },
+      {
+        "system": "GLONASS",
+        "enable": false
+      }
+    ]
+  },
+  "power": {
+    "noiseFloor": -172,
+    "initPower": {
+      "unit": "dBHz",
+      "value": 47
+    },
+    "elevationAdjust": false,
+    "signalPower": [
+      {
+        "system": "GPS",
+        "powerValue": {
+          "time": 0,
+          "unit": "dBm",
+          "value": -125
+        }
+      },
+      {
+        "system": "GPS",
+        "svid": 4,
+        "powerValue": [
+          {
+            "time": 10,
+            "unit": "dBHz",
+            "value": 45
+          },
+          {
+            "time": 20,
+            "unit": "dBHz",
+            "value": 40
+          },
+          {
+            "time": 30,
+            "unit": "dBHz",
+            "value": 35
+          },
+          {
+            "time": 40,
+            "unit": "dBHz",
+            "value": 30
+          },
+          {
+            "time": 50,
+            "unit": "dBHz",
+            "value": 28
+          },
+          {
+            "time": 60,
+            "unit": "dBHz",
+            "value": 26
+          },
+          {
+            "time": 70,
+            "unit": "dBHz",
+            "value": 24
+          },
+          {
+            "time": 80,
+            "unit": "dBHz",
+            "value": 22
+          },
+          {
+            "time": 90,
+            "unit": "dBHz",
+            "value": 20
+          },
+          {
+            "time": 100,
+            "unit": "dBHz",
+            "value": -1
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -267,4 +267,27 @@ typedef struct
 	double CN0[MAX_OBS_FREQ];
 } SAT_OBSERVATION, *PSAT_OBSERVATION;
 
+enum OutputType { OutputTypePosition, OutputTypeObservation, OutputTypeBaseband, OutputTypeIfSignal };
+enum OutputFormat { OutputFormatEcef, OutputFormatLla, OutputFormatNmea, OutputFormatKml, OutputFormatRinex };
+
+typedef struct
+{
+	char filename[256];
+	enum OutputType Type;
+	enum OutputFormat Format;
+	unsigned long GpsMaskOut;
+	unsigned long GlonassMaskOut;
+	unsigned long long BdsMaskOut;
+	unsigned long long GalileoMaskOut;
+	double ElevationMask;
+	int Interval;	// in millisecond
+	unsigned int FreqSelect[4];	// Frequency select mask, 0~3 for GPS/BDS/Galileo/GLONASS respectively
+} OUTPUT_PARAM, *POUTPUT_PARAM;
+
+typedef struct
+{
+	double SystemDelay[4];	// system time difference to GPS, 0 for GPS (always 0), 1 for BDS, 2 for Galileo, 3 for GLONASS
+	double ReceiverDelay[4][8];	// receiver RF delay difference for each frequency to primary frequency, [][0] always 0
+} DELAY_CONFIG, *PDELAY_CONFIG;
+
 #endif //__BASIC_TYPE_H__
