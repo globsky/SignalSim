@@ -87,7 +87,7 @@ typedef struct
 #define OBS_CHANNEL_D           (0x0 << 4)
 #define OBS_CHANNEL_P           (0x1 << 4)
 #define OBS_CHANNEL_DP          (0x2 << 4)
-#define OBS_FREQUENCY_GPS_L1    (0x0 << 8)
+/*#define OBS_FREQUENCY_GPS_L1    (0x0 << 8)
 #define OBS_FREQUENCY_GPS_L2    (0x1 << 8)
 #define OBS_FREQUENCY_GPS_L5    (0x2 << 8)
 #define OBS_FREQUENCY_GLO_G1    (0x0 << 8)
@@ -102,7 +102,7 @@ typedef struct
 #define OBS_FREQUENCY_BDS_B2    (0x2 << 8)
 #define OBS_FREQUENCY_BDS_B3    (0x3 << 8)
 #define OBS_FREQUENCY_BDS_B2a   (0x4 << 8)
-#define OBS_FREQUENCY_BDS_B2b   (0x5 << 8)
+#define OBS_FREQUENCY_BDS_B2b   (0x5 << 8)*/
 
 enum NavDataType {
 	NavDataEnd = 0, NavDataUnknown,

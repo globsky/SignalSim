@@ -38,4 +38,24 @@
 #define PZ90_C20AE2		(PZ90_C20 * PZ90_AE2)	// product of PZ90_C20 and PZ90_AE2
 #define PZ90_OMEGDOTE	7.292115e-5				// earth rotate rate
 
+// constant values of signal frequency
+#define FREQ_GPS_L1 1575.42e6
+#define FREQ_GPS_L2 1227.6e6
+#define FREQ_GPS_L5 1176.45e6
+#define FREQ_BDS_B1C 1575.42e6
+#define FREQ_BDS_B1I 1561.098e6
+#define FREQ_BDS_B2I 1207.14e6
+#define FREQ_BDS_B3I 1268.52e6
+#define FREQ_BDS_B2a 1176.45e6
+#define FREQ_BDS_B2b 1207.14e6
+#define FREQ_BDS_B2ab 1191.795e6
+#define FREQ_GAL_E1 1575.42e6
+#define FREQ_GAL_E5a 1176.45e6
+#define FREQ_GAL_E5b 1207.14e6
+#define FREQ_GAL_E5 1191.795e6
+#define FREQ_GAL_E6 1278.75e6
+#define FREQ_GLO_G1 1602e6
+#define FREQ_GLO_G2 1246e6
+#define FREQ_GLO_G3 1202.025e6
+
 #endif //!defined(__CONST_VALUES_H__)

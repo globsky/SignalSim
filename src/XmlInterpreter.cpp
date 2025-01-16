@@ -25,6 +25,32 @@ static BOOL ProcessConfigParam(CXmlElement *Element, OUTPUT_PARAM &OutputParam);
 static BOOL ProcessPowerParam(CXmlElement *Element, CPowerControl &CPowerControl);
 static BOOL ProcessSignalPower(CXmlElement *Element, CPowerControl &CPowerControl);
 
+BOOL AssignParameters(CXmlElement *RootElement, PUTC_TIME UtcTime, PLLA_POSITION StartPos, PLOCAL_SPEED StartVel, CTrajectory *Trajectory, CNavData *NavData, POUTPUT_PARAM OutputParam, CPowerControl *PowerControl, PDELAY_CONFIG DelayConfig)
+{
+	int i = 0;
+	CXmlElement *Element;
+
+	while ((Element = RootElement->GetElement(i ++)) != NULL)
+	{
+		if (strcmp(Element->GetTag(), "Time") == 0 && UtcTime)
+			AssignStartTime(Element, *UtcTime);
+		else if (strcmp(Element->GetTag(), "Trajectory") == 0 && StartPos && StartVel && Trajectory)
+			SetTrajectory(Element, *StartPos, *StartVel, *Trajectory);
+		else if (strcmp(Element->GetTag(), "Ephemeris") == 0 && NavData)
+			NavData->ReadNavFile(Element->GetText());
+		else if (strcmp(Element->GetTag(), "Almanac") == 0)
+			NavData->ReadAlmFile(Element->GetText());
+		else if (strcmp(Element->GetTag(), "Output") == 0 && OutputParam)
+			SetOutputParam(Element, *OutputParam);
+		else if (strcmp(Element->GetTag(), "PowerControl") == 0 && PowerControl)
+			SetPowerControl(Element, *PowerControl);
+		else if (strcmp(Element->GetTag(), "DelayConfig") == 0 && DelayConfig)
+			SetDelayConfig(Element, *DelayConfig);
+	}
+
+	return TRUE;
+}
+
 BOOL AssignStartTime(CXmlElement *Element, UTC_TIME &UtcTime)
 {
 	int i, Type = 0;	// 0 for GPS, 1 for GLONASS, 4 for UTC

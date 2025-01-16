@@ -20,7 +20,7 @@
 #define TOTAL_GLO_SAT 24
 
 void CalcObservation(PSAT_OBSERVATION Obs, PSATELLITE_PARAM SatParam, unsigned int FreqSelect);
-void SetSysObsType(int system, unsigned int ObsType[], unsigned int FreqSelect);
+void SetSysObsType(GnssSystem system, unsigned int ObsType[], unsigned int FreqSelect);
 
 int main()
 {
@@ -126,10 +126,10 @@ int main()
 //		RinexHeader.SysObsTypeGlonass[0] = OBS_TYPE_MASK_ALL; RinexHeader.SysObsTypeGlonass[1] = RinexHeader.SysObsTypeGlonass[2] = 0x0;
 //		RinexHeader.SysObsTypeBds[0] = OBS_TYPE_MASK_ALL | OBS_CHANNEL_P; RinexHeader.SysObsTypeBds[1] = RinexHeader.SysObsTypeBds[2] = 0x0;
 //		RinexHeader.SysObsTypeGalileo[0] = OBS_TYPE_MASK_ALL | OBS_CHANNEL_GAL_E1C; RinexHeader.SysObsTypeGalileo[1] = RinexHeader.SysObsTypeGalileo[2] = 0x0;
-		SetSysObsType(0, RinexHeader.SysObsTypeGps, OutputParam.FreqSelect[0]);
-		SetSysObsType(1, RinexHeader.SysObsTypeBds, OutputParam.FreqSelect[1]);
-		SetSysObsType(2, RinexHeader.SysObsTypeGalileo, OutputParam.FreqSelect[2]);
-		SetSysObsType(3, RinexHeader.SysObsTypeGlonass, OutputParam.FreqSelect[3]);
+		SetSysObsType(GpsSystem, RinexHeader.SysObsTypeGps, OutputParam.FreqSelect[0]);
+		SetSysObsType(BdsSystem, RinexHeader.SysObsTypeBds, OutputParam.FreqSelect[1]);
+		SetSysObsType(GalileoSystem, RinexHeader.SysObsTypeGalileo, OutputParam.FreqSelect[2]);
+		SetSysObsType(GlonassSystem, RinexHeader.SysObsTypeGlonass, OutputParam.FreqSelect[3]);
 		RinexHeader.Interval = OutputParam.Interval / 1000.;
 		for (i = 0; i < 24; i ++)
 			RinexHeader.GlonassFreqNumber[i] = NavData.GetGlonassSlotFreq(i + 1);
@@ -296,7 +296,7 @@ void CalcObservation(PSAT_OBSERVATION Obs, PSATELLITE_PARAM SatParam, unsigned i
 	Obs->system = SatParam->system;
 	Obs->svid = SatParam->svid;
 	Obs->ValidMask = FreqSelect;
-	for (i = 0; i < MAX_OBS_FREQ; i ++)
+	for (i = 0; i < MAX_OBS_NUMBER; i ++)
 	{
 		if ((FreqSelect & (1 << i)) == 0)
 			continue;
@@ -307,9 +307,9 @@ void CalcObservation(PSAT_OBSERVATION Obs, PSATELLITE_PARAM SatParam, unsigned i
 	}
 }
 
-void SetSysObsType(int system, unsigned int ObsType[], unsigned int FreqSelect)
+void SetSysObsType(GnssSystem system, unsigned int ObsType[], unsigned int FreqSelect)
 {
-	int MaxFreqIndex[4] = { 3, 6, 5, 3 };
+	int MaxFreqIndex[4] = { 5, 6, 5, 3 };
 	int MaxFreq = MaxFreqIndex[system];
 	int i, ObsTypeIndex = 0;
 
@@ -326,16 +326,16 @@ void SetSysObsType(int system, unsigned int ObsType[], unsigned int FreqSelect)
 		// set channel code
 		switch (system)
 		{
-		case 0:	// GPS
-			ObsType[ObsTypeIndex] |= (i == 0) ? OBS_CHANNEL_GPS_CA : (i == 1) ? OBS_CHANNEL_GPS_L2CL : OBS_CHANNEL_Q;
+		case GpsSystem:	// GPS
+			ObsType[ObsTypeIndex] |= (i == SIGNAL_INDEX_L1CA) ? OBS_CHANNEL_GPS_CA : (i == SIGNAL_INDEX_L2C) ? OBS_CHANNEL_GPS_L2CL : OBS_CHANNEL_Q;
 			break;
-		case 1:	// BDS
-			ObsType[ObsTypeIndex] |= ((i >= 1) && (i <= 3)) ? OBS_CHANNEL_I : OBS_CHANNEL_P;
+		case BdsSystem:	// BDS
+			ObsType[ObsTypeIndex] |= ((i >= SIGNAL_INDEX_B1I) && (i <= SIGNAL_INDEX_B3I)) ? OBS_CHANNEL_I : OBS_CHANNEL_P;
 			break;
-		case 2:	// GAL
-			ObsType[ObsTypeIndex] |= ((i == 0) || (i == 4)) ? OBS_CHANNEL_GAL_E1C : OBS_CHANNEL_Q;
+		case GalileoSystem:	// GAL
+			ObsType[ObsTypeIndex] |= ((i == SIGNAL_INDEX_E1) || (i == SIGNAL_INDEX_E6)) ? OBS_CHANNEL_GAL_E1C : OBS_CHANNEL_Q;
 			break;
-		case 3:	// GLO
+		case GlonassSystem:	// GLO
 			ObsType[ObsTypeIndex] |= OBS_CHANNEL_GLO_CA;
 			break;
 		}

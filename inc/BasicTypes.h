@@ -17,7 +17,32 @@ typedef int BOOL;
 #define NULL (0)
 #endif
 
-enum GnssSystem { GpsSystem, BdsSystem, GalileoSystem, GlonassSystem };
+typedef enum { GpsSystem, BdsSystem, GalileoSystem, GlonassSystem, SbasSystem, QzssSystem, NavICSystem } GnssSystem;
+
+// signal index for different GNSS system
+#define SIGNAL_INDEX_L1CA			0
+#define SIGNAL_INDEX_L1C			1
+#define SIGNAL_INDEX_L2C			2
+#define SIGNAL_INDEX_L2P			3
+#define SIGNAL_INDEX_L5				4
+
+#define SIGNAL_INDEX_B1C			0
+#define SIGNAL_INDEX_B1I			1
+#define SIGNAL_INDEX_B2I			2
+#define SIGNAL_INDEX_B3I			3
+#define SIGNAL_INDEX_B2a			4
+#define SIGNAL_INDEX_B2b			5
+#define SIGNAL_INDEX_B2ab			6
+#define SIGNAL_INDEX_B1X			7
+
+#define SIGNAL_INDEX_E1				0
+#define SIGNAL_INDEX_E5a			1
+#define SIGNAL_INDEX_E5b			2
+#define SIGNAL_INDEX_E5				3
+#define SIGNAL_INDEX_E6				4
+
+#define SIGNAL_INDEX_G1				0
+#define SIGNAL_INDEX_G2				1
 
 typedef struct
 {
@@ -254,34 +279,35 @@ typedef  struct _PACKED_
 	unsigned long	flag; // bit0: UTC parameter available, bit1: leap second available
 } UTC_PARAM, *PUTC_PARAM;
 
-#define MAX_OBS_FREQ 6
+#define MAX_OBS_NUMBER 6
 
 typedef struct
 {
 	int system;
 	int svid;
 	unsigned int ValidMask;
-	double PseudoRange[MAX_OBS_FREQ];
-	double CarrierPhase[MAX_OBS_FREQ];
-	double Doppler[MAX_OBS_FREQ];
-	double CN0[MAX_OBS_FREQ];
+	double PseudoRange[MAX_OBS_NUMBER];
+	double CarrierPhase[MAX_OBS_NUMBER];
+	double Doppler[MAX_OBS_NUMBER];
+	double CN0[MAX_OBS_NUMBER];
 } SAT_OBSERVATION, *PSAT_OBSERVATION;
 
-enum OutputType { OutputTypePosition, OutputTypeObservation, OutputTypeBaseband, OutputTypeIfSignal };
-enum OutputFormat { OutputFormatEcef, OutputFormatLla, OutputFormatNmea, OutputFormatKml, OutputFormatRinex };
+typedef enum { OutputTypePosition, OutputTypeObservation, OutputTypeIFdata, OutputTypeBaseband } OutputType;
+typedef enum { OutputFormatEcef, OutputFormatLla, OutputFormatNmea, OutputFormatKml, OutputFormatRinex, OutputFormatIQ8, OutputFormatIQ4 } OutputFormat;
 
 typedef struct
 {
 	char filename[256];
-	enum OutputType Type;
-	enum OutputFormat Format;
+	OutputType Type;
+	OutputFormat Format;
 	unsigned long GpsMaskOut;
 	unsigned long GlonassMaskOut;
 	unsigned long long BdsMaskOut;
 	unsigned long long GalileoMaskOut;
 	double ElevationMask;
 	int Interval;	// in millisecond
-	unsigned int FreqSelect[4];	// Frequency select mask, 0~3 for GPS/BDS/Galileo/GLONASS respectively
+	int SampleFreq, CenterFreq;	// in kHz
+	unsigned int FreqSelect[4];	// Frequency select mask, 0~3 for GPS/BDS/Galileo/GLONASS respectively, bit selection uses SIGNAL_INDEX_XXXX
 } OUTPUT_PARAM, *POUTPUT_PARAM;
 
 typedef struct
@@ -289,5 +315,24 @@ typedef struct
 	double SystemDelay[4];	// system time difference to GPS, 0 for GPS (always 0), 1 for BDS, 2 for Galileo, 3 for GLONASS
 	double ReceiverDelay[4][8];	// receiver RF delay difference for each frequency to primary frequency, [][0] always 0
 } DELAY_CONFIG, *PDELAY_CONFIG;
+
+typedef struct
+{
+	GnssSystem system;
+	int svid;
+	int FreqID;	// for GLONASS only
+	int CN0;	// scale factor 0.01
+	int PosTimeTag;
+	KINEMATIC_INFO PosVel;
+	double Acc[3];
+	double TravelTime;	// travel time including corrections except group delay and ionosphere delay in second
+	double IonoDelay;	// ionosphere delay in meter
+	double GroupDelay[8];	// group delay in second, first element for TGD of L1, all followings for ISC using SIGNAL_INDEX_XXXX as index
+	double Elevation;	// satellite elevation in rad
+	double Azimuth;		// satellite azimuth in rad
+	double RelativeSpeed;	// satellite to receiver relative speed in m/s
+	double LosVector[3];	// LOS vecter
+
+} SATELLITE_PARAM, *PSATELLITE_PARAM;
 
 #endif //__BASIC_TYPE_H__

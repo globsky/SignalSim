@@ -11,6 +11,6 @@
 
 #include "BasicTypes.h"
 
-const unsigned int *GetPilotBits(GnssSystem System, int FreqIndex, int svid, int &Length);
+const unsigned int *GetPilotBits(GnssSystem System, int SatSignal, int svid, int &Length);
 
 #endif //!defined(__PILOT_BIT_H__)

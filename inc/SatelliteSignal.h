@@ -31,12 +31,12 @@ public:
 	CSatelliteSignal();
 	~CSatelliteSignal();
 
-	BOOL SetSignalAttribute(GnssSystem System, int FreqIndex, NavBit *pNavData, int svid);
+	BOOL SetSignalAttribute(GnssSystem System, int SignalIndex, NavBit *pNavData, int svid);
 	BOOL GetSatelliteSignal(GNSS_TIME TransmitTime, complex_number &DataSignal, complex_number &PilotSignal);
 
 	// signal attributes
 	GnssSystem SatSystem;
-	int SatFreq;
+	int SatSignal;
 	int Svid;
 	NavBit *NavData;
 	const SignalAttribute* Attribute;

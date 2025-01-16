@@ -114,4 +114,10 @@ Change list as below:
 	Minor fixes
 10/20/2024
 	Add JSON format scenario control file to replace XML format
+	Add JsonParser.cpp/JsonParser.h to read JSON data structure from file
+	Add JsonInterpreter.cpp/JsonInterpreter.h to translate JSON data structure to scenario control
 	Add a JsonObsGen project that has the same output using test_obs2.json (same parameters as test_obs2.xml used in XmlObsGen project)
+1/15/2025
+	Rearrange some definitions and declarations
+	Change FREQ_INDEX_XXX definitions to SIGNAL_INDEX_XXX for better discriminate signals at same frequency
+	Key word extension in JSON for future IF data generation support

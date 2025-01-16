@@ -17,11 +17,11 @@ const char *SpeedUnit[] = { "mps", "kph", "knot", "mph" };
 const char *AngleUnit[] = { "degree", "rad" };
 const char *EphSrc[] = { "file" };
 const char *EphType[] = { "RINEX" };
-const char *OutputType[] = { "position", "observation" };
-const char *OutputFormat[] = { "ECEF", "LLA", "NMEA", "KML", "RINEX" };
+const char *OutputTypeStr[] = { "position", "observation" };
+const char *OutputFormatStr[] = { "ECEF", "LLA", "NMEA", "KML", "RINEX" };
 const char *TimeUnit[] = { "s", "ms" };
 const char *ChannelEnable[] = { "auto", "true" };
-const char *FreqIDs[] = { "L1", "L2", "L5", "", "", "", "", "",
+const char *FreqIDs[] = { "L1CA", "L1C", "L2C", "L2P", "L5", "", "", "",
                     "B1C", "B1I", "B2I", "B3I", "B2a", "B2b", "", "",
 					"E1", "E5a", "E5b", "E5", "E6", "", "", "",
 					"G1", "G2", "G3", "", "", "", "", "", };
@@ -35,8 +35,8 @@ ATTRIBUTE_TYPE SpeedUnitAttr = { "unit", SpeedUnit, sizeof(SpeedUnit) / sizeof(c
 ATTRIBUTE_TYPE CourseUnitAttr = { "unit", AngleUnit, sizeof(AngleUnit) / sizeof(char *), 0 };
 ATTRIBUTE_TYPE EphSrcAttr = { "source", EphSrc, sizeof(EphSrc) / sizeof(char *), 0 };
 ATTRIBUTE_TYPE EphTypeAttr = { "type", EphType, sizeof(EphType) / sizeof(char *), 0 };
-ATTRIBUTE_TYPE OutputTypeAttr = { "type", OutputType, sizeof(OutputType) / sizeof(char *), -1 };
-ATTRIBUTE_TYPE OutputFormatAttr = { "format", OutputFormat, sizeof(OutputFormat) / sizeof(char *), 0 };
+ATTRIBUTE_TYPE OutputTypeAttr = { "type", OutputTypeStr, sizeof(OutputTypeStr) / sizeof(char *), -1 };
+ATTRIBUTE_TYPE OutputFormatAttr = { "format", OutputFormatStr, sizeof(OutputFormatStr) / sizeof(char *), 0 };
 ATTRIBUTE_TYPE IntervalUnitAttr = { "unit", TimeUnit, sizeof(TimeUnit) / sizeof(char *), 0 };
 ATTRIBUTE_TYPE ElevationMaskAttr = { "unit", AngleUnit, sizeof(AngleUnit) / sizeof(char *), 0 };
 ATTRIBUTE_TYPE SystemAttr = { "system", SystemType, sizeof(SystemType) / sizeof(char *), 0 };

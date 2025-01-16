@@ -13,75 +13,78 @@
 #include "ConstVal.h"
 #include "JsonInterpreter.h"
 
-const char *KeyDictionaryListParam[] = {
+static const char *KeyDictionaryListParam[] = {
 //    0          1             2           3         4         5        6
 	"time", "trajectory", "ephemeris", "almanac", "output", "power", "delay",
 };
-const char *KeyDictionaryListTime[] = {
+static const char *KeyDictionaryListTime[] = {
 //     0      1        2          3         4      5        6       7        8
 	"type", "week", "second", "leapYesr", "day", "year", "month", "hour", "minute", 
 };
-const char *KeyDictionaryListTrajectory[] = {
+static const char *KeyDictionaryListTrajectory[] = {
 //     0           1                2                3           4        5          6           7           8        9    10   11
 	"name", "initPosition", "initVelocity", "trajectoryList", "type", "format", "longitude", "latitude", "altitude", "x", "y", "z",
 //     12             13        14        15       16      17      18
 	"speedUnit", "angleUnit", "speed", "course", "east", "north", "up",
 };
-const char *KeyDictionaryListEphAlm[] = {
+static const char *KeyDictionaryListEphAlm[] = {
 //     0       1
 	"type", "name",
 };
-const char *KeyDictionaryListOutput[] = {
-//     0        1        2         3          4            5               6             7          8        9      10       11
-	"type", "format", "name", "interval", "config", "systemSelect", "elevationMask", "maskOut", "system", "svid", "freq", "enable", 
+static const char *KeyDictionaryListOutput[] = {
+//     0        1        2         3          4            5               6             7          8        9       10        11          12            13
+	"type", "format", "name", "interval", "config", "systemSelect", "elevationMask", "maskOut", "system", "svid", "signal", "enable", "sampleFreq", "centerFreq",
 };
-const char *KeyDictionaryListPower[] = {
+static const char *KeyDictionaryListPower[] = {
 //       0             1              2                 3           4       5         6        7         8           9
 	"noiseFloor", "initPower", "elevationAdjust", "signalPower", "unit", "value", "system", "svid", "powerValue", "time",
 };
-const char *DictionaryListSystem[] = {
+static const char *DictionaryListSystem[] = {
 //    0      1      2        3          4
 	"UTC", "GPS", "BDS", "Galileo", "GLONASS",
 };
-const char *DictionaryListCoordinate[] = {
+static const char *DictionaryListCoordinate[] = {
 //    0      1       2      3     4     5     6      7        8       9      10     11      12
 	"LLA", "ECEF", "SCU", "ENU", "d", "dm", "dms", "rad", "degree", "mps", "kph", "knot", "mph",
 };
-const char *KeyDictionaryListTrajectoryList[] = {
+static const char *KeyDictionaryListTrajectoryList[] = {
 //     0       1           2           3        4       5        6        7
 	"type", "time", "acceleration", "speed", "rate", "angle", "rate", "radius",	// "rate" at index 6 reserved for angle rate
 };
-const char *DictionaryListTrajectoryType[] = {
+static const char *DictionaryListTrajectoryType[] = {
 //     0          1            2           3          4
 	"Const", "ConstAcc", "VerticalAcc", "Jerk", "HorizontalTurn",
 };
-const char *DictionaryListOutputType[] = {
-//      0             1             2          3
-	"position", "observation", "baseband", "IfSignal",
+static const char *DictionaryListOutputType[] = {
+//      0             1            2          3
+	"position", "observation", "IFdata", "baseband",
 };
-const char *DictionaryListOutputFormat[] = {
-//     0      1       2      3       4
-	"ECEF", "LLA", "NMEA", "KML", "RINEX"
+static const char *DictionaryListOutputFormat[] = {
+//     0      1       2      3       4       5      6
+	"ECEF", "LLA", "NMEA", "KML", "RINEX", "IQ8", "IQ4",
 };
-const char *DictionaryListFreq[] = {
+static const char *DictionaryListSignal[] = {
 //    0      1      2      3      4      5     6   7
-	"L1",  "L2",  "L5",  "",    "",    "",    "", "",
+	"L1CA","L1C", "L2C", "L2P", "L5",  "",    "", "",
 	"B1C", "B1I", "B2I", "B3I", "B2a", "B2b", "", "",
 	"E1",  "E5a", "E5b", "E5",  "E6",  "",    "", "",
 	"G1",  "G2",  "G3",  "",    "",    "",    "", "",
 };
-const char *DictionaryListPowerUnit[] = {
+static const char *DictionaryListPowerUnit[] = {
 //     0      1      2
 	"dBHz", "dBm", "dBW",
 };
 
 #define PARAMETER(Dictionary) Dictionary,sizeof(Dictionary)/sizeof(char *)
-#define GET_DOUBLE_VALUE(Object) ((Object->Type == JsonObject::ValueTypeIntNumber) ? (double)(Object->number.l_data) : Object->number.d_data)
+#define GET_DOUBLE_VALUE(Object) ((Object->Type == JsonObject::ValueTypeIntNumber) ? (double)(Object->Number.l_data) : Object->Number.d_data)
 
 static int SearchDictionary(const char *Word, const char *DictionaryList[], int Length);
 static BOOL AssignStartTime(JsonObject *Object, UTC_TIME &UtcTime);
 static BOOL SetTrajectory(JsonObject *Object, LLA_POSITION &StartPos, LOCAL_SPEED &StartVel, CTrajectory &Trajectory);
 static BOOL SetEphemeris(JsonObject *Object, CNavData &NavData);
+static BOOL SetEphemerisFile(JsonObject *Object, CNavData &NavData);
+static BOOL SetAlmanac(JsonObject *Object, CNavData &NavData);
+static BOOL SetAlmanacFile(JsonObject *Object, CNavData &NavData);
 static BOOL SetOutputParam(JsonObject *Object, OUTPUT_PARAM &OutputParam);
 static BOOL SetPowerControl(JsonObject *Object, CPowerControl &PowerControl);
 static BOOL SetDelayConfig(JsonObject *Object, DELAY_CONFIG &DelayConfig);
@@ -100,8 +103,6 @@ static double FormatSpeed(double Value, int Format);
 
 BOOL AssignParameters(JsonObject *Object, PUTC_TIME UtcTime, PLLA_POSITION StartPos, PLOCAL_SPEED StartVel, CTrajectory *Trajectory, CNavData *NavData, POUTPUT_PARAM OutputParam, CPowerControl *PowerControl, PDELAY_CONFIG DelayConfig)
 {
-	JsonObject *ObjectArray;
-
 	Object = JsonStream::GetFirstObject(Object);
 	while (Object)
 	{
@@ -115,20 +116,11 @@ BOOL AssignParameters(JsonObject *Object, PUTC_TIME UtcTime, PLLA_POSITION Start
 			break;
 		case 2: // "ephemeris"
 			if (NavData)
-			{
-				if (Object->Type == JsonObject::ValueTypeObject)
-					SetEphemeris(JsonStream::GetFirstObject(Object), *NavData);
-				else if (Object->Type == JsonObject::ValueTypeArray)
-				{
-					ObjectArray = JsonStream::GetFirstObject(Object);
-					while (ObjectArray)
-					{
-						if (ObjectArray->Type == JsonObject::ValueTypeObject)
-					SetEphemeris(JsonStream::GetFirstObject(ObjectArray), *NavData);
-						ObjectArray = JsonStream::GetNextObject(ObjectArray);
-					}
-				}
-			}
+				SetEphemeris(Object, *NavData);
+			break;
+		case 3: // "almanac"
+			if (NavData)
+				SetAlmanac(Object, *NavData);
 			break;
 		case 4:	// "output"
 			if (OutputParam) SetOutputParam(JsonStream::GetFirstObject(Object), *OutputParam); break;
@@ -159,21 +151,21 @@ BOOL AssignStartTime(JsonObject *Object, UTC_TIME &UtcTime)
 				Type = SearchDictionary(Object->String, PARAMETER(DictionaryListSystem));
 			break;
 		case 1:	// "week"
-			Week = (int)(Object->number.l_data); break;
+			Week = (int)(Object->Number.l_data); break;
 		case 2:	// "second"
 			UtcTime.Second = GET_DOUBLE_VALUE(Object); break;
 		case 3:	// "leapYesr"
-			LeapYear = (int)(Object->number.l_data); break;
+			LeapYear = (int)(Object->Number.l_data); break;
 		case 4:	// "day"
-			UtcTime.Day = (int)(Object->number.l_data); break;
+			UtcTime.Day = (int)(Object->Number.l_data); break;
 		case 5:	// "year"
-			UtcTime.Year = (int)(Object->number.l_data); break;
+			UtcTime.Year = (int)(Object->Number.l_data); break;
 		case 6:	// "month"
-			UtcTime.Month = (int)(Object->number.l_data); break;
+			UtcTime.Month = (int)(Object->Number.l_data); break;
 		case 7:	// "hour"
-			UtcTime.Hour = (int)(Object->number.l_data); break;
+			UtcTime.Hour = (int)(Object->Number.l_data); break;
 		case 8:	// "minute"
-			UtcTime.Minute = (int)(Object->number.l_data); break;
+			UtcTime.Minute = (int)(Object->Number.l_data); break;
 		}
 		Object = JsonStream::GetNextObject(Object);
 	}
@@ -245,13 +237,61 @@ BOOL SetTrajectory(JsonObject *Object, LLA_POSITION &StartPos, LOCAL_SPEED &Star
 
 BOOL SetEphemeris(JsonObject *Object, CNavData &NavData)
 {
+	JsonObject *ObjectArray;
+
+	if (Object->Type == JsonObject::ValueTypeObject)
+		SetEphemerisFile(JsonStream::GetFirstObject(Object), NavData);
+	else if (Object->Type == JsonObject::ValueTypeArray)
+	{
+		ObjectArray = JsonStream::GetFirstObject(Object);
+		while (ObjectArray)
+		{
+			if (ObjectArray->Type == JsonObject::ValueTypeObject)
+				SetEphemerisFile(JsonStream::GetFirstObject(ObjectArray), NavData);
+			ObjectArray = JsonStream::GetNextObject(ObjectArray);
+		}
+	}
+	return TRUE;
+}
+
+BOOL SetEphemerisFile(JsonObject *Object, CNavData &NavData)
+{
 	while (Object)
 	{
 		if (strcmp(Object->Key, "name") == 0)
 			NavData.ReadNavFile(Object->String);
 		Object = JsonStream::GetNextObject(Object);
 	}
+	return TRUE;
+}
 
+BOOL SetAlmanac(JsonObject *Object, CNavData &NavData)
+{
+	JsonObject *ObjectArray;
+
+	if (Object->Type == JsonObject::ValueTypeObject)
+		SetAlmanacFile(JsonStream::GetFirstObject(Object), NavData);
+	else if (Object->Type == JsonObject::ValueTypeArray)
+	{
+		ObjectArray = JsonStream::GetFirstObject(Object);
+		while (ObjectArray)
+		{
+			if (ObjectArray->Type == JsonObject::ValueTypeObject)
+				SetAlmanacFile(JsonStream::GetFirstObject(ObjectArray), NavData);
+			ObjectArray = JsonStream::GetNextObject(ObjectArray);
+		}
+	}
+	return TRUE;
+}
+
+BOOL SetAlmanacFile(JsonObject *Object, CNavData &NavData)
+{
+	while (Object)
+	{
+		if (strcmp(Object->Key, "name") == 0)
+			NavData.ReadAlmFile(Object->String);
+		Object = JsonStream::GetNextObject(Object);
+	}
 	return TRUE;
 }
 
@@ -300,6 +340,10 @@ BOOL SetOutputParam(JsonObject *Object, OUTPUT_PARAM &OutputParam)
 				}
 			}
 			break;
+		case 12:	// "sampleFreq"
+			OutputParam.SampleFreq = (int)(GET_DOUBLE_VALUE(Object) * 1000); break;
+		case 13:	// "centerFreq"
+			OutputParam.CenterFreq = (int)(GET_DOUBLE_VALUE(Object) * 1000); break;
 		}
 		Object = JsonStream::GetNextObject(Object);
 	}
@@ -511,14 +555,14 @@ BOOL ProcessMaskOut(JsonObject *Object, OUTPUT_PARAM &OutputParam)
 			break;
 		case 9:	// "svid"
 			if (Object->Type == JsonObject::ValueTypeIntNumber)
-				MaskOutSatellite(system, (int)(Object->number.l_data), OutputParam);
+				MaskOutSatellite(system, (int)(Object->Number.l_data), OutputParam);
 			else if (Object->Type == JsonObject::ValueTypeArray)
 			{
 				MaskOutSv = JsonStream::GetFirstObject(Object);
 				while (MaskOutSv)
 				{
 					if (MaskOutSv->Type == JsonObject::ValueTypeIntNumber)
-						MaskOutSatellite(system, (int)(MaskOutSv->number.l_data), OutputParam);
+						MaskOutSatellite(system, (int)(MaskOutSv->Number.l_data), OutputParam);
 					MaskOutSv = JsonStream::GetNextObject(MaskOutSv);
 				}
 			}
@@ -559,7 +603,7 @@ BOOL MaskOutSatellite(int system, int svid, OUTPUT_PARAM &OutputParam)
 
 BOOL ProcessSystemSelect(JsonObject *Object, OUTPUT_PARAM &OutputParam)
 {
-	int system = GpsSystem, freq = -1;
+	int system = GpsSystem, signal = -1;
 
 	while (Object)
 	{
@@ -569,23 +613,23 @@ BOOL ProcessSystemSelect(JsonObject *Object, OUTPUT_PARAM &OutputParam)
 			if (Object->Type == JsonObject::ValueTypeString)
 				system = (GnssSystem)(SearchDictionary(Object->String, PARAMETER(DictionaryListSystem)) - 1);
 			break;
-		case 10:	// "freq"
+		case 10:	// "signal"
 			if (Object->Type == JsonObject::ValueTypeString)
-				freq = SearchDictionary(Object->String, PARAMETER(DictionaryListFreq));
+				signal = SearchDictionary(Object->String, PARAMETER(DictionaryListSignal));
 			break;
 		case 11:	// "enable"
-			if (freq >= 0 && ((freq / 8) != system))	// freq and system do not match
+			if (signal >= 0 && ((signal / 8) != system))	// freq and system do not match
 				system = -1;
 			if (system >= 0)
 			{
-				if (freq < 0)	// frequency not set, set as primary frequency
-					freq = 0;
+				if (signal < 0)	// frequency not set, set as primary signal
+					signal = 0;
 				else
-					freq %= 8;
+					signal %= 8;
 				if (Object->Type == JsonObject::ValueTypeTrue)
-					OutputParam.FreqSelect[system] |= (1 << freq);
+					OutputParam.FreqSelect[system] |= (1 << signal);
 				else if (Object->Type == JsonObject::ValueTypeFalse)
-					OutputParam.FreqSelect[system] &= ~(1 << freq);
+					OutputParam.FreqSelect[system] &= ~(1 << signal);
 			}
 			break;
 		}
@@ -669,14 +713,14 @@ BOOL ProcessSignalPower(JsonObject *Object, CPowerControl &PowerControl)
 			break;
 		case 7:	// "svid"
 			if (Object->Type == JsonObject::ValueTypeIntNumber)
-				svlist[sv_number++] = (int)(Object->number.l_data);
+				svlist[sv_number++] = (int)(Object->Number.l_data);
 			else if (Object->Type == JsonObject::ValueTypeArray)
 			{
 				ObjectArray = JsonStream::GetFirstObject(Object);
 				while (ObjectArray)
 				{
 					if (ObjectArray->Type == JsonObject::ValueTypeIntNumber)
-						svlist[sv_number++] = (int)(ObjectArray->number.l_data);
+						svlist[sv_number++] = (int)(ObjectArray->Number.l_data);
 					ObjectArray = JsonStream::GetNextObject(ObjectArray);
 				}
 			}

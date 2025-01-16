@@ -1319,7 +1319,7 @@ static const unsigned int SecondaryCodeCS100[100 * 4] = {
 0xb5d08c26, 0x76cdad71, 0x0f56261c, 0x00000008,
 };
 
-const unsigned int *GetPilotBits(GnssSystem System, int FreqIndex, int svid, int &Length)
+const unsigned int *GetPilotBits(GnssSystem System, int SatSignal, int svid, int &Length)
 {
 	Length = 1;	// default value set to 1 to prevent modular by 0
 
@@ -1327,51 +1327,53 @@ const unsigned int *GetPilotBits(GnssSystem System, int FreqIndex, int svid, int
 	switch (System)
 	{
 	case GpsSystem:
-		switch (FreqIndex)
+		switch (SatSignal)
 		{
-		case FREQ_INDEX_GPS_L1: // L1C
+		case SIGNAL_INDEX_L1CA:	// no secondary pilot code
+			return NULL;
+		case SIGNAL_INDEX_L1C: // L1C
 			Length = 1800;
 			return SecondaryCodeL1C + 57 * (svid - 1);;
-		case FREQ_INDEX_GPS_L2:	// no secondary pilot code
+		case SIGNAL_INDEX_L2C:	// no secondary pilot code
 			return NULL;
-		case FREQ_INDEX_GPS_L5:
+		case SIGNAL_INDEX_L5:
 			Length = 20;
 			return SecondaryCodeL5;
-		default: return NULL;	// unknown FreqIndex
+		default: return NULL;	// unknown SatSignal
 		}
 	case BdsSystem:
-		switch (FreqIndex)
+		switch (SatSignal)
 		{
-		case FREQ_INDEX_BDS_B1C: 
+		case SIGNAL_INDEX_B1C: 
 			Length = 1800;
 			return SecondaryCodeB1C + 57 * (svid - 1);
-		case FREQ_INDEX_BDS_B1I:
-		case FREQ_INDEX_BDS_B2I:
-		case FREQ_INDEX_BDS_B3I:
+		case SIGNAL_INDEX_B1I:
+		case SIGNAL_INDEX_B2I:
+		case SIGNAL_INDEX_B3I:
 			return NULL;
-		case FREQ_INDEX_BDS_B2a:
+		case SIGNAL_INDEX_B2a:
 			Length = 100;
 			return SecondaryCodeB2a + 4 * (svid - 1);
-		case FREQ_INDEX_BDS_B2b:
+		case SIGNAL_INDEX_B2b:
 			return NULL;
-		default: return NULL;	// unknown FreqIndex
+		default: return NULL;	// unknown SatSignal
 		}
 	case GalileoSystem:
-		switch (FreqIndex)
+		switch (SatSignal)
 		{
-		case FREQ_INDEX_GAL_E1 :
+		case SIGNAL_INDEX_E1 :
 			Length = 25;
 			return SecondaryCodeE1;
-		case FREQ_INDEX_GAL_E5a:
+		case SIGNAL_INDEX_E5a:
 			Length = 100;
 			return SecondaryCodeCS100 + 4 * (svid - 1);
-		case FREQ_INDEX_GAL_E5b:
+		case SIGNAL_INDEX_E5b:
 			Length = 100;
 			return SecondaryCodeCS100 + 200 + 4 * (svid - 1);
-		case FREQ_INDEX_GAL_E6 :
+		case SIGNAL_INDEX_E6 :
 			Length = 100;
 			return SecondaryCodeCS100 + 4 * (svid - 1);
-		default: return FALSE;	// unknown FreqIndex
+		default: return FALSE;	// unknown SatSignal
 		}
 	case GlonassSystem:
 		return NULL;

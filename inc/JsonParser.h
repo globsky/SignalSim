@@ -20,7 +20,7 @@ typedef union
 {
 	double d_data;
 	long long int l_data;
-} DOUBLE_INT_UNION;
+} JSON_NUMBER_UNION;
 
 //----------------------------------------------------------------------
 // JsonObject is basic unit holding a key/value combination or value only
@@ -32,8 +32,8 @@ typedef union
 // ValueTypeArray: the value is a serial of value only JsonObject putting as
 //    a link list starting at pObjectContent and concatenated with pNextObject
 // ValueTypeString: the value is put in String
-// ValueTypeIntNumber: the long long int type value is put in number.l_data
-// ValueTypeFloatNumber: the double type value is put in number.d_data
+// ValueTypeIntNumber: the long long int type value is put in Number.l_data
+// ValueTypeFloatNumber: the double type value is put in Number.d_data
 // ValueTypeTrue: the value is true
 // ValueTypeFalse: the value is false
 // ValueTypeNull: the value is null
@@ -48,7 +48,7 @@ struct JsonObject
 	ValueType Type;
 	JsonObject *pNextObject;	// pointer to next key/value pair with same parent object or in same array
 	JsonObject *pObjectContent;	// pointer to content if value type is object or array
-	DOUBLE_INT_UNION number;
+	JSON_NUMBER_UNION Number;
 	char String[MAX_STRING_LENGTH+1];
 };
 

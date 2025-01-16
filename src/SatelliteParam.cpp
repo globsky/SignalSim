@@ -157,25 +157,26 @@ void GetSatelliteParam(KINEMATIC_INFO PositionEcef, LLA_POSITION PositionLla, GN
 		switch (system)
 		{
 		case GpsSystem:
-			SatelliteParam->GroupDelay[FREQ_INDEX_GPS_L1] = Eph->tgd;	// L1C/A
-			SatelliteParam->GroupDelay[FREQ_INDEX_GPS_L2] = Eph->tgd2;	// L2C
-			SatelliteParam->GroupDelay[FREQ_INDEX_GPS_L5] = Eph->tgd_ext[3];	// L2C
+			SatelliteParam->GroupDelay[SIGNAL_INDEX_L1CA] = Eph->tgd;	// L1C/A
+			SatelliteParam->GroupDelay[SIGNAL_INDEX_L1C] = Eph->tgd_ext[1];	// L1C
+			SatelliteParam->GroupDelay[SIGNAL_INDEX_L2C] = Eph->tgd2;	// L2C
+			SatelliteParam->GroupDelay[SIGNAL_INDEX_L5] = Eph->tgd_ext[3];	// L5
 			break;
 		case BdsSystem:
-			SatelliteParam->GroupDelay[FREQ_INDEX_BDS_B1C] = Eph->tgd_ext[1];	// B1C
-			SatelliteParam->GroupDelay[FREQ_INDEX_BDS_B1I] = Eph->tgd;	// B1I
-			SatelliteParam->GroupDelay[FREQ_INDEX_BDS_B2I] = Eph->tgd2;	// B2I
-			SatelliteParam->GroupDelay[FREQ_INDEX_BDS_B3I] = 0;	// B3I
-			SatelliteParam->GroupDelay[FREQ_INDEX_BDS_B2a] = Eph->tgd_ext[3];	// B2a
-			SatelliteParam->GroupDelay[FREQ_INDEX_BDS_B2b] = Eph->tgd_ext[4];	// B2b
-			SatelliteParam->GroupDelay[FREQ_INDEX_BDS_B2ab] = (Eph->tgd_ext[3] + Eph->tgd_ext[4]) / 2;	// B2a+B2b
+			SatelliteParam->GroupDelay[SIGNAL_INDEX_B1C] = Eph->tgd_ext[1];	// B1C
+			SatelliteParam->GroupDelay[SIGNAL_INDEX_B1I] = Eph->tgd;	// B1I
+			SatelliteParam->GroupDelay[SIGNAL_INDEX_B2I] = Eph->tgd2;	// B2I
+			SatelliteParam->GroupDelay[SIGNAL_INDEX_B3I] = 0;	// B3I
+			SatelliteParam->GroupDelay[SIGNAL_INDEX_B2a] = Eph->tgd_ext[3];	// B2a
+			SatelliteParam->GroupDelay[SIGNAL_INDEX_B2b] = Eph->tgd_ext[4];	// B2b
+			SatelliteParam->GroupDelay[SIGNAL_INDEX_B2ab] = (Eph->tgd_ext[3] + Eph->tgd_ext[4]) / 2;	// B2a+B2b
 			break;
 		case GalileoSystem:
-			SatelliteParam->GroupDelay[FREQ_INDEX_GAL_E1] = Eph->tgd;	// E1
-			SatelliteParam->GroupDelay[FREQ_INDEX_GAL_E5a] = Eph->tgd_ext[2];	// E5a
-			SatelliteParam->GroupDelay[FREQ_INDEX_GAL_E5b] = Eph->tgd_ext[4];	// E5b
-			SatelliteParam->GroupDelay[FREQ_INDEX_GAL_E5] = (Eph->tgd_ext[2] + Eph->tgd_ext[4]) / 2;	// E5
-			SatelliteParam->GroupDelay[FREQ_INDEX_GAL_E6] = Eph->tgd_ext[4];	// E6
+			SatelliteParam->GroupDelay[SIGNAL_INDEX_E1] = Eph->tgd;	// E1
+			SatelliteParam->GroupDelay[SIGNAL_INDEX_E5a] = Eph->tgd_ext[2];	// E5a
+			SatelliteParam->GroupDelay[SIGNAL_INDEX_E5b] = Eph->tgd_ext[4];	// E5b
+			SatelliteParam->GroupDelay[SIGNAL_INDEX_E5] = (Eph->tgd_ext[2] + Eph->tgd_ext[4]) / 2;	// E5
+			SatelliteParam->GroupDelay[SIGNAL_INDEX_E6] = Eph->tgd_ext[4];	// E6
 			break;
 		}
 	}
@@ -213,103 +214,106 @@ void GetSatelliteCN0(int PowerListCount, SIGNAL_POWER PowerList[], double Defaul
 	}
 }
 
-double GetIonoDelay(double IonoDelayL1, int system, int FreqIndex)
+double GetIonoDelay(double IonoDelayL1, int system, int SignalIndex)
 {
 	switch (system)
 	{
 	case GpsSystem:
-		switch (FreqIndex)
+		switch (SignalIndex)
 		{
-		case FREQ_INDEX_GPS_L1: return IonoDelayL1;
-		case FREQ_INDEX_GPS_L2: return IonoDelayL1 * 1.6469444444444444444444444444444; // (154/120)^2
-		case FREQ_INDEX_GPS_L5: return IonoDelayL1 * 1.7932703213610586011342155009452; // (154/115)^2
+		case SIGNAL_INDEX_L1CA: return IonoDelayL1;
+		case SIGNAL_INDEX_L1C : return IonoDelayL1;
+		case SIGNAL_INDEX_L2C : return IonoDelayL1 * 1.6469444444444444444444444444444; // (154/120)^2
+		case SIGNAL_INDEX_L5  : return IonoDelayL1 * 1.7932703213610586011342155009452; // (154/115)^2
 		default: return IonoDelayL1;
 		}
 	case BdsSystem:
-		switch (FreqIndex)
+		switch (SignalIndex)
 		{
-		case FREQ_INDEX_BDS_B1C: return IonoDelayL1;
-		case FREQ_INDEX_BDS_B1I: return IonoDelayL1 * 1.0184327918525376651796986785624; // (1540/1526)^2
-		case FREQ_INDEX_BDS_B2I:
-		case FREQ_INDEX_BDS_B2b: return IonoDelayL1 * 1.7032461936225222637173226084458; // (154/118)^2
-		case FREQ_INDEX_BDS_B3I: return IonoDelayL1 * 1.5424037460978147762747138397503; // (154/124)^2
-		case FREQ_INDEX_BDS_B2a: return IonoDelayL1 * 1.7932703213610586011342155009452; // (154/115)^2
+		case SIGNAL_INDEX_B1C : return IonoDelayL1;
+		case SIGNAL_INDEX_B1I : return IonoDelayL1 * 1.0184327918525376651796986785624; // (1540/1526)^2
+		case SIGNAL_INDEX_B2I :
+		case SIGNAL_INDEX_B2b : return IonoDelayL1 * 1.7032461936225222637173226084458; // (154/118)^2
+		case SIGNAL_INDEX_B3I : return IonoDelayL1 * 1.5424037460978147762747138397503; // (154/124)^2
+		case SIGNAL_INDEX_B2a : return IonoDelayL1 * 1.7932703213610586011342155009452; // (154/115)^2
+		case SIGNAL_INDEX_B2ab: return IonoDelayL1 * 1.7473889738252684705925693971154; // (154/116.5)^2
 		default: return IonoDelayL1;
 		}
 	case GalileoSystem:
-		switch (FreqIndex)
+		switch (SignalIndex)
 		{
-		case FREQ_INDEX_GAL_E1:  return IonoDelayL1;
-		case FREQ_INDEX_GAL_E5a: return IonoDelayL1 * 1.7932703213610586011342155009452; // (154/115)^2
-		case FREQ_INDEX_GAL_E5b: return IonoDelayL1 * 1.7032461936225222637173226084458; // (154/118)^2
-		case FREQ_INDEX_GAL_E5:  return IonoDelayL1 * 1.7473889738252684705925693971154; // (154/116.5)^2
-		case FREQ_INDEX_GAL_E6:  return IonoDelayL1 * 1.517824; // (154/125)^2
+		case SIGNAL_INDEX_E1 : return IonoDelayL1;
+		case SIGNAL_INDEX_E5a: return IonoDelayL1 * 1.7932703213610586011342155009452; // (154/115)^2
+		case SIGNAL_INDEX_E5b: return IonoDelayL1 * 1.7032461936225222637173226084458; // (154/118)^2
+		case SIGNAL_INDEX_E5 : return IonoDelayL1 * 1.7473889738252684705925693971154; // (154/116.5)^2
+		case SIGNAL_INDEX_E6 : return IonoDelayL1 * 1.517824; // (154/125)^2
 		default: return IonoDelayL1;
 		}
 	default: return IonoDelayL1;
 	}
 }
 
-double GetWaveLength(int system, int FreqIndex, int FreqID)
+double GetWaveLength(int system, int SignalIndex, int FreqID)
 {
 	double Freq;
 
 	switch (system)
 	{
 	case GpsSystem:
-		switch (FreqIndex)
+		switch (SignalIndex)
 		{
-		case FREQ_INDEX_GPS_L1: return LIGHT_SPEED / FREQ_GPS_L1;
-		case FREQ_INDEX_GPS_L2: return LIGHT_SPEED / FREQ_GPS_L2;
-		case FREQ_INDEX_GPS_L5: return LIGHT_SPEED / FREQ_GPS_L5;
+		case SIGNAL_INDEX_L1CA:
+		case SIGNAL_INDEX_L1C : return LIGHT_SPEED / FREQ_GPS_L1;
+		case SIGNAL_INDEX_L2C : return LIGHT_SPEED / FREQ_GPS_L2;
+		case SIGNAL_INDEX_L5  : return LIGHT_SPEED / FREQ_GPS_L5;
 		default: return LIGHT_SPEED / FREQ_GPS_L1;
 		}
 	case BdsSystem:
-		switch (FreqIndex)
+		switch (SignalIndex)
 		{
-		case FREQ_INDEX_BDS_B1C: return LIGHT_SPEED / FREQ_BDS_B1C;
-		case FREQ_INDEX_BDS_B1I: return LIGHT_SPEED / FREQ_BDS_B1I;
-		case FREQ_INDEX_BDS_B2I:
-		case FREQ_INDEX_BDS_B2b: return LIGHT_SPEED / FREQ_BDS_B2b;
-		case FREQ_INDEX_BDS_B3I: return LIGHT_SPEED / FREQ_BDS_B3I;
-		case FREQ_INDEX_BDS_B2a: return LIGHT_SPEED / FREQ_BDS_B2a;
-		case FREQ_INDEX_BDS_B2ab:  return LIGHT_SPEED / FREQ_BDS_B2ab;
+		case SIGNAL_INDEX_B1C : return LIGHT_SPEED / FREQ_BDS_B1C;
+		case SIGNAL_INDEX_B1I : return LIGHT_SPEED / FREQ_BDS_B1I;
+		case SIGNAL_INDEX_B2I :
+		case SIGNAL_INDEX_B2b : return LIGHT_SPEED / FREQ_BDS_B2b;
+		case SIGNAL_INDEX_B3I : return LIGHT_SPEED / FREQ_BDS_B3I;
+		case SIGNAL_INDEX_B2a : return LIGHT_SPEED / FREQ_BDS_B2a;
+		case SIGNAL_INDEX_B2ab: return LIGHT_SPEED / FREQ_BDS_B2ab;
 		default: return LIGHT_SPEED / FREQ_BDS_B1C;
 		}
 	case GalileoSystem:
-		switch (FreqIndex)
+		switch (SignalIndex)
 		{
-		case FREQ_INDEX_GAL_E1:  return LIGHT_SPEED / FREQ_GAL_E1;
-		case FREQ_INDEX_GAL_E5a: return LIGHT_SPEED / FREQ_GAL_E5a;
-		case FREQ_INDEX_GAL_E5b: return LIGHT_SPEED / FREQ_GAL_E5b;
-		case FREQ_INDEX_GAL_E5:  return LIGHT_SPEED / FREQ_GAL_E5;
-		case FREQ_INDEX_GAL_E6:  return LIGHT_SPEED / FREQ_GAL_E6;
+		case SIGNAL_INDEX_E1 : return LIGHT_SPEED / FREQ_GAL_E1;
+		case SIGNAL_INDEX_E5a: return LIGHT_SPEED / FREQ_GAL_E5a;
+		case SIGNAL_INDEX_E5b: return LIGHT_SPEED / FREQ_GAL_E5b;
+		case SIGNAL_INDEX_E5 : return LIGHT_SPEED / FREQ_GAL_E5;
+		case SIGNAL_INDEX_E6 : return LIGHT_SPEED / FREQ_GAL_E6;
 		default: return LIGHT_SPEED / FREQ_GAL_E1;
 		}
 	case GlonassSystem:
-		Freq = (FreqIndex == 0) ? (1602e6 + 562500 * FreqID) : (1246e6 + 437500 * FreqID);
+		Freq = (SignalIndex == SIGNAL_INDEX_G1) ? (1602e6 + 562500 * FreqID) : (1246e6 + 437500 * FreqID);
 		return LIGHT_SPEED / Freq;
 	default: return LIGHT_SPEED / FREQ_GPS_L1;
 	}
 }
 
-double GetTravelTime(PSATELLITE_PARAM SatelliteParam, int FreqIndex)
+double GetTravelTime(PSATELLITE_PARAM SatelliteParam, int SignalIndex)
 {
-	double TravelTime = SatelliteParam->TravelTime + SatelliteParam->GroupDelay[FreqIndex];
-	TravelTime += GetIonoDelay(SatelliteParam->IonoDelay, SatelliteParam->system, FreqIndex) / LIGHT_SPEED;
+	double TravelTime = SatelliteParam->TravelTime + SatelliteParam->GroupDelay[SignalIndex];
+	TravelTime += GetIonoDelay(SatelliteParam->IonoDelay, SatelliteParam->system, SignalIndex) / LIGHT_SPEED;
 	return TravelTime;
 }
 
-double GetCarrierPhase(PSATELLITE_PARAM SatelliteParam, int FreqIndex)
+double GetCarrierPhase(PSATELLITE_PARAM SatelliteParam, int SignalIndex)
 {
-	double TravelTime = SatelliteParam->TravelTime + SatelliteParam->GroupDelay[FreqIndex];
-	TravelTime = TravelTime * LIGHT_SPEED - GetIonoDelay(SatelliteParam->IonoDelay, SatelliteParam->system, FreqIndex);
-	return TravelTime / GetWaveLength(SatelliteParam->system, FreqIndex, SatelliteParam->FreqID);
+	double TravelTime = SatelliteParam->TravelTime + SatelliteParam->GroupDelay[SignalIndex];
+	TravelTime = TravelTime * LIGHT_SPEED - GetIonoDelay(SatelliteParam->IonoDelay, SatelliteParam->system, SignalIndex);
+	return TravelTime / GetWaveLength(SatelliteParam->system, SignalIndex, SatelliteParam->FreqID);
 }
 
-double GetDoppler(PSATELLITE_PARAM SatelliteParam, int FreqIndex)
+double GetDoppler(PSATELLITE_PARAM SatelliteParam, int SignalIndex)
 {
-	return -SatelliteParam->RelativeSpeed / GetWaveLength(SatelliteParam->system, FreqIndex, SatelliteParam->FreqID);
+	return -SatelliteParam->RelativeSpeed / GetWaveLength(SatelliteParam->system, SignalIndex, SatelliteParam->FreqID);
 }
 
 GNSS_TIME GetTransmitTime(GNSS_TIME ReceiverTime, double TravelTime)

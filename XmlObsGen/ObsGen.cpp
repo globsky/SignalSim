@@ -53,26 +53,11 @@ void main(void)
 	memset(&DelayConfig, 0, sizeof(DelayConfig));
 
 	CXmlElementTree XmlTree;
-	CXmlElement *RootElement, *Element;
+	CXmlElement *RootElement;
 
 	XmlTree.parse("test_obs2.xml");
 	RootElement = XmlTree.getroot();
-	i = 0;
-	while ((Element = RootElement->GetElement(i ++)) != NULL)
-	{
-		if (strcmp(Element->GetTag(), "Time") == 0)
-			AssignStartTime(Element, UtcTime);
-		else if (strcmp(Element->GetTag(), "Trajectory") == 0)
-			SetTrajectory(Element, StartPos, StartVel, Trajectory);
-		else if (strcmp(Element->GetTag(), "Ephemeris") == 0)
-			NavData.ReadNavFile(Element->GetText());
-		else if (strcmp(Element->GetTag(), "Output") == 0)
-			SetOutputParam(Element, OutputParam);
-		else if (strcmp(Element->GetTag(), "PowerControl") == 0)
-			SetPowerControl(Element, PowerControl);
-		else if (strcmp(Element->GetTag(), "DelayConfig") == 0)
-			SetDelayConfig(Element, DelayConfig);
-	}
+	AssignParameters(RootElement, &UtcTime, &StartPos, &StartVel, &Trajectory, &NavData, &OutputParam, &PowerControl, NULL);
 
 	Trajectory.ResetTrajectoryTime();
 	PosVel = LlaToEcef(StartPos);
@@ -311,7 +296,7 @@ void CalcObservation(PSAT_OBSERVATION Obs, PSATELLITE_PARAM SatParam, unsigned i
 	Obs->system = SatParam->system;
 	Obs->svid = SatParam->svid;
 	Obs->ValidMask = FreqSelect;
-	for (i = 0; i < MAX_OBS_FREQ; i ++)
+	for (i = 0; i < MAX_OBS_NUMBER; i ++)
 	{
 		if ((FreqSelect & (1 << i)) == 0)
 			continue;

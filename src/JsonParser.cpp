@@ -20,7 +20,8 @@ JsonStream::JsonStream()
 
 JsonStream::~JsonStream()
 {
-	DeleteTree(RootObject);
+	if (RootObject)
+		DeleteTree(RootObject);
 }
 
 void JsonStream::DeleteTree(JsonObject *Object)
@@ -253,7 +254,7 @@ int JsonStream::GetNumber(JsonObject *Object)
 	double fraction = 0.1;
 
 	Object->Type = JsonObject::ValueTypeIntNumber;
-	Object->number.l_data = 0;
+	Object->Number.l_data = 0;
 	if (*p == '-')
 	{
 		sign = 1;
@@ -265,10 +266,10 @@ int JsonStream::GetNumber(JsonObject *Object)
 		{
 		case 0:	// integer part
 			if (*p >= '0' && *p <= '9')
-				Object->number.l_data = Object->number.l_data * 10 + (*p - '0');
+				Object->Number.l_data = Object->Number.l_data * 10 + (*p - '0');
 			else if (*p == '.' || *p == 'e' || *p == 'E')
 			{
-				Object->number.d_data = (double)Object->number.l_data;
+				Object->Number.d_data = (double)Object->Number.l_data;
 				Object->Type = JsonObject::ValueTypeFloatNumber;
 				section = (*p == '.') ? 1 : 2;
 			}
@@ -278,7 +279,7 @@ int JsonStream::GetNumber(JsonObject *Object)
 		case 1:	// fraction part
 			if (*p >= '0' && *p <= '9')
 			{
-				Object->number.d_data += fraction * (*p - '0');
+				Object->Number.d_data += fraction * (*p - '0');
 				fraction *= 0.1;
 			}
 			else if (*p == 'e' || *p == 'E')
@@ -306,12 +307,12 @@ int JsonStream::GetNumber(JsonObject *Object)
 	{
 		if (exp_sign)
 			exp = -exp;
-		Object->number.d_data *= pow(10., (double)exp);
+		Object->Number.d_data *= pow(10., (double)exp);
 		if (sign)
-			Object->number.d_data = -Object->number.d_data;
+			Object->Number.d_data = -Object->Number.d_data;
 	}
 	else if (sign)	// negative integer
-		Object->number.l_data = -Object->number.l_data;
+		Object->Number.l_data = -Object->Number.l_data;
 
 	return 0;
 }
@@ -363,10 +364,10 @@ int JsonStream::OutputKeyValue(FILE *fp, JsonObject *Object, int Depth, int HasK
 		OutputString(fp, Object->String);
 		break;
 	case JsonObject::ValueTypeIntNumber:
-		fprintf(fp, "%lld", Object->number.l_data);
+		fprintf(fp, "%lld", Object->Number.l_data);
 		break;
 	case JsonObject::ValueTypeFloatNumber:
-		fprintf(fp, "%lf", Object->number.d_data);
+		fprintf(fp, "%lf", Object->Number.d_data);
 		break;
 	case JsonObject::ValueTypeTrue:
 		fprintf(fp, "true");

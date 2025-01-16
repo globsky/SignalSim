@@ -162,12 +162,12 @@
     "systemSelect": [
       {
         "system": "GPS",
-        "freq": "L1",
+        "signal": "L1CA",
         "enable": true
       },
       {
         "system": "GPS",
-        "freq": "L2",
+        "signal": "L2C",
         "enable": false
       },
       {
@@ -176,7 +176,7 @@
       },
       {
         "system": "BDS",
-        "freq": "B3I",
+        "signal": "B3I",
         "enable": false
       },
       {

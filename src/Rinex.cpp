@@ -731,13 +731,15 @@ void PrintObsType(FILE *fp, char system, unsigned int mask[3])
 	}
 }
 
-static const char GpsFreqCode[] = {'1', '2', '5', };	// L1/L2/L5
+static const char GpsFreqCode[] = {'1', '1', '2', '2', '5', };	// L1CA/L1C/L2C/L2P/L5
 static const char BdsFreqCode[] = {'1', '2', '7', '6', '5', '7', };	// B1C/B1/B2/B3/B2a/B2b
 static const char GalileoFreqCode[] = {'1', '5', '7', '8', '6', };	// E1/E5a/E5b/E5/E6
 static const char GlonassFreqCode[] = {'1', '2', '3', '4', '6'};	// G1/G2/G3/G1a/G2a
 static const char TypeCode[] = {'C', 'L', 'D', 'S', };
 static const char GpsChannelCode[][16] = {
 	{'C', 'S', 'L', 'X', 'P', 'W', 'Y', 'M', 'N', 'R', },
+	{'C', 'S', 'L', 'X', 'P', 'W', 'Y', 'M', 'N', 'R', },
+	{'C', 'D', 'S', 'L', 'X', 'P', 'W', 'Y', 'M', 'N', 'R', },
 	{'C', 'D', 'S', 'L', 'X', 'P', 'W', 'Y', 'M', 'N', 'R', },
 	{'I', 'Q', 'X', },
 };
@@ -812,7 +814,7 @@ void PrintObservation(FILE *fp, SAT_OBSERVATION obs)
 	int i, obs_number = 0;
 
 	sprintf(str, "%c%02d", "GCER"[obs.system], obs.svid);
-	for (i = 0; i < MAX_OBS_FREQ; i ++)
+	for (i = 0; i < MAX_OBS_NUMBER; i ++)
 	{
 		if ((obs.ValidMask & (1 << i)) == 0)
 			continue;

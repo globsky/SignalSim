@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include "XmlElement.h"
 #include "Trajectory.h"
+#include "NavData.h"
 #include "PowerControl.h"
 #include "Tracking.h"
 
@@ -85,6 +86,7 @@ BOOL SetPowerControl(CXmlElement *Element, CPowerControl &PowerControl);
 BOOL SetDelayConfig(CXmlElement *Element, DELAY_CONFIG &DelayConfig);
 BOOL SetBasebandConfig(CXmlElement *Element, BASEBAND_CONFIG &BasebandConfig);
 BOOL SetSatInitParam(CXmlElement *Element, CHANNEL_INIT_PARAM SatInitParam[]);
+BOOL AssignParameters(CXmlElement *RootElement, PUTC_TIME UtcTime, PLLA_POSITION StartPos, PLOCAL_SPEED StartVel, CTrajectory *Trajectory, CNavData *NavData, POUTPUT_PARAM OutputParam, CPowerControl *PowerControl, PDELAY_CONFIG DelayConfig);
 
 int FindAttribute(char *key, PATTRIBUTE_TYPE *AttributeList);
 int GetAttributeIndex(char *value, PATTRIBUTE_TYPE Attribute);
