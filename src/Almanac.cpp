@@ -12,6 +12,7 @@
 #include "ConstVal.h"
 #include "BasicTypes.h"
 #include "GnssTime.h"
+#include "Coordinate.h"
 #include "Almanac.h"
 
 #define SQRT_A0 5440.588203494177338011974948823
@@ -21,8 +22,9 @@ int GetAlmanacGps(FILE *fp, PGPS_ALMANAC Alm);
 int GetAlmanacBds(FILE *fp, PGPS_ALMANAC Alm);
 int GetAlmanacGalileo(FILE *fp, PGPS_ALMANAC Alm, int RefWeek);
 int GetAlmanacGlonass(FILE *fp, PGLONASS_ALMANAC Alm);
-GPS_ALMANAC GetAlmanacFromEphemeris(PGPS_EPHEMERIS Eph);
-GLONASS_ALMANAC GetAlmanacFromEphemeris(PGLONASS_EPHEMERIS Eph);
+double NormAngle(double angle);
+bool ConvertAlmanacFromEphemeris(PGPS_ALMANAC Alm, PGPS_EPHEMERIS Eph, int week, int toa);
+bool ConvertAlmanacFromEphemerisGeo(PGPS_ALMANAC Alm, PGPS_EPHEMERIS Eph, int week, int toa);
 
 AlmanacType CheckAlmnanacType(FILE *fp)
 {
@@ -307,10 +309,16 @@ int GetAlmanacGlonass(FILE *fp, PGLONASS_ALMANAC Alm)
 	return slot;
 }
 
+double NormAngle(double angle)
+{
+	while (angle < -PI) angle += PI2;
+	while (angle >= PI) angle -= PI2;
+	return angle;
+}
+
 GPS_ALMANAC GetAlmanacFromEphemeris(PGPS_EPHEMERIS Eph, int week, int toa)
 {
 	GPS_ALMANAC Alm;
-	int dt;
 
 	Alm.flag = Eph->valid & 1;
 	Alm.health = (unsigned char)Eph->health;
@@ -319,36 +327,230 @@ GPS_ALMANAC GetAlmanacFromEphemeris(PGPS_EPHEMERIS Eph, int week, int toa)
 
 	if (Alm.flag == 0)
 		return Alm;
-
-	// calculate time difference between toe and toa
-	Alm.toa = toa;
-	Alm.week = week;
-	dt = (week - Eph->week) * 604800 + (toa - Eph->toe);
-
 	if (Eph->sqrtA > 6000 && Eph->i0 < 0.5)	// this is GEO satellite
-	{
-		Alm.flag = 0;	// temporarily disable
-		return Alm;
-	}
-	// parameters of non-time-varying
-	Alm.week = Eph->week;
-	Alm.ecc = Eph->ecc;
-	Alm.sqrtA = Eph->sqrtA;
-	Alm.w = Eph->w;
-	Alm.omega_dot = Eph->omega_dot;
-	Alm.af1 = Eph->af1;
-	// parameters adjusted with reference time change
-	Alm.M0= Eph->M0 + Eph->n * dt;
-	Alm.omega0 = Eph->omega0 + Eph->omega_dot * dt;
-	Alm.i0 = Eph->i0 + Eph->idot * dt;
-	Alm.af0 = Eph->af0 + Eph->af1 * dt;
+		ConvertAlmanacFromEphemerisGeo(&Alm, Eph, week, toa);
+	else
+		ConvertAlmanacFromEphemeris(&Alm, Eph, week, toa);
 
 	return Alm;
 }
 
-GLONASS_ALMANAC GetAlmanacFromEphemeris(PGLONASS_EPHEMERIS Eph)
+#define INCLINATION_FACTOR 0.94651548789182584209669573761592
+GLONASS_ALMANAC GetAlmanacFromEphemeris(PGLONASS_EPHEMERIS Eph, int day, int leap_year)
 {
 	GLONASS_ALMANAC Alm;
+	KINEMATIC_INFO PosVel;
+	double t = Eph->tb - Eph->z / Eph->vz;
+	int iter = 5;
+	double h[3], h2, p, r, v2, rv, a, E, root_ecc, c20;
 
+	// first calculate time of ascending
+	do
+	{
+		GlonassSatPosSpeedEph(t, Eph, &PosVel, NULL);
+		t -= PosVel.z / PosVel.vz;
+	} while (fabs(PosVel.z) > 1e-3 && (iter --) > 0);
+	// time and longitude of first ascending node
+	Alm.t = t;
+	Alm.lambda = atan2(PosVel.y, PosVel.x) / PI;
+	// do velocity compensation from ECEF coordinate to inertial coordinate
+	PosVel.vx -= PosVel.y * PZ90_OMEGDOTE;
+	PosVel.vy += PosVel.x * PZ90_OMEGDOTE;
+	// calculate areal velocity vector
+	h[0] = PosVel.y * PosVel.vz - PosVel.z * PosVel.vy;
+	h[1] = PosVel.z * PosVel.vx - PosVel.x * PosVel.vz;
+	h[2] = PosVel.x * PosVel.vy - PosVel.y * PosVel.vx;
+	// inclination and longitude of ascending node
+	p = sqrt(h[0] * h[0] + h[1] * h[1]);
+	Alm.di = atan(p/h[2]) / PI - 0.35;
+	// calculate major-axis and ccentricity
+	h2 = h[0] * h[0] + h[1] * h[1] + h[2] * h[2];
+	p = h2 / PZ90_GM;
+	r = sqrt(PosVel.x * PosVel.x + PosVel.y * PosVel.y + PosVel.z * PosVel.z);
+	v2 = PosVel.vx * PosVel.vx + PosVel.vy * PosVel.vy + PosVel.vz * PosVel.vz;
+	rv = PosVel.x * PosVel.vx + PosVel.y * PosVel.vy + PosVel.z * PosVel.vz;
+	a = 1 / (2 / r -  v2 / PZ90_GM);
+	t = PI2 / sqrt(PZ90_GM / (a * a * a));	// period from major-axis
+	c20 = -PZ90_C20 * 1.5 * PZ90_AE2 / (p * p);
+	t *= (1 + c20 * INCLINATION_FACTOR);	// correction to orbital period
+	Alm.dt = t - 43200;
+	Alm.ecc = (a > p) ? sqrt(1 - p / a) : 0.0;
+	if (Alm.t >= t)	// seccond ascending node
+	{
+		Alm.t -= t;	// previous ascending node
+		Alm.lambda += (PZ90_OMEGDOTE / PI) * t;// + c20 * 2;
+		if (Alm.lambda > 1)
+			Alm.lambda -= 2;
+	}
+	// calculate argument of perigee
+	E = atan2(rv, (1 - r / a) * sqrt(a * PZ90_GM));	// n = sqrt(GM/a^3) -> na^2 = sqrt(GM*a)
+	root_ecc = sqrt(p / a);
+	Alm.w = -atan2(root_ecc * sin(E), cos(E) - Alm.ecc) / PI;
+	Alm.clock_error = Eph->tn;
+
+	Alm.flag = 1;
+	Alm.freq = Eph->freq;
+	Alm.leap_year = leap_year;
+	Alm.day = day;
 	return Alm;
 }
+
+//void SatPosSpeedAlm(int WeekNumber, int TransmitTime, PGPS_ALMANAC pAlm, PKINEMATIC_INFO pPosVel);
+
+bool ConvertAlmanacFromEphemeris(PGPS_ALMANAC Alm, PGPS_EPHEMERIS Eph, int week, int toa)
+{
+	int dt;
+
+	// calculate time difference between toe and toa
+	Alm->toa = toa;
+	Alm->week = week;
+	dt = (week - Eph->week) * 604800 + (toa - Eph->toe);
+
+	// parameters of non-time-varying
+	Alm->ecc = Eph->ecc;
+	Alm->sqrtA = Eph->sqrtA;
+	Alm->w = Eph->w;
+	Alm->omega_dot = Eph->omega_dot;
+	Alm->af1 = Eph->af1;
+	// parameters adjusted with reference time change
+	Alm->M0 = NormAngle(Eph->M0 + Eph->n * dt);
+	Alm->omega0 = NormAngle(Eph->omega0 + Eph->omega_dot * dt);
+	Alm->i0 = Eph->i0 + Eph->idot * dt;
+	Alm->af0 = Eph->af0 + Eph->af1 * dt;
+
+	// check almanac
+/*	KINEMATIC_INFO PosVelAlm;
+	GpsSatPosSpeedEph(BdsSystem, Eph->toe, Eph, &PosVelAlm, NULL);
+	SatPosSpeedAlm(Eph->week, Eph->toe, Alm, &PosVelAlm);*/
+
+	return true;
+}
+
+bool ConvertAlmanacFromEphemerisGeo(PGPS_ALMANAC Alm, PGPS_EPHEMERIS Eph, int week, int toa)
+{
+	KINEMATIC_INFO PosVel;
+	double h[3], h2, p, r, v2, rv, a, E, root_ecc, u, w;
+	int dt;
+
+	// first calculate satellite position and velocity at toe
+	GpsSatPosSpeedEph(BdsSystem, Eph->toe, Eph, &PosVel, NULL);
+	// do velocity compensation from ECEF coordinate to inertial coordinate
+	PosVel.vx -= PosVel.y * CGCS2000_OMEGDOTE;
+	PosVel.vy += PosVel.x * CGCS2000_OMEGDOTE;
+	// calculate areal velocity vector
+	h[0] = PosVel.y * PosVel.vz - PosVel.z * PosVel.vy;
+	h[1] = PosVel.z * PosVel.vx - PosVel.x * PosVel.vz;
+	h[2] = PosVel.x * PosVel.vy - PosVel.y * PosVel.vx;
+	// inclination and longitude of ascending node
+	p = sqrt(h[0] * h[0] + h[1] * h[1]);
+	Alm->i0 = atan(p/h[2]);
+	Alm->omega0 = atan2(h[0], -h[1]) + Eph->toe * CGCS2000_OMEGDOTE;
+	// calculate major-axis and ccentricity
+	h2 = h[0] * h[0] + h[1] * h[1] + h[2] * h[2];
+	p = h2 / (CGCS2000_SQRT_GM * CGCS2000_SQRT_GM);
+	r = sqrt(PosVel.x * PosVel.x + PosVel.y * PosVel.y + PosVel.z * PosVel.z);
+	v2 = PosVel.vx * PosVel.vx + PosVel.vy * PosVel.vy + PosVel.vz * PosVel.vz;
+	rv = PosVel.x * PosVel.vx + PosVel.y * PosVel.vy + PosVel.z * PosVel.vz;
+	a = 1 / (2 / r -  v2 / (CGCS2000_SQRT_GM * CGCS2000_SQRT_GM));
+	Alm->sqrtA = sqrt(a);
+	Alm->ecc = (a > p) ? sqrt(1 - p / a) : 0.0;
+	// calculate mean anomaly at reference time
+	E = atan2(rv, (1 - r / a) * Alm->sqrtA * CGCS2000_SQRT_GM);	// n = sqrt(GM/a^3) -> na^2 = sqrt(GM*a)
+	Alm->M0 = E - Alm->ecc * sin(E);
+	// calculate true anomaly
+	root_ecc = sqrt(p / a);
+	u = atan2(PosVel.z * sqrt(h2), PosVel.y * h[0] - PosVel.x * h[1]);
+	w = u - atan2(root_ecc * sin(E), cos(E) - Alm->ecc);
+	Alm->w = NormAngle(w);
+
+	// here Alm holds the parameters using reference time at Eph toe and week
+	Alm->toa = toa;
+	Alm->week = week;
+	Alm->omega_dot = Eph->omega_dot;
+	Alm->af1 = Eph->af1;
+	dt = (week - Eph->week) * 604800 + (toa - Eph->toe);
+	// parameters adjusted with reference time change
+	Alm->M0 = NormAngle(Alm->M0 + Eph->n * dt);
+	Alm->omega0 = NormAngle(Alm->omega0 + Eph->omega_dot * dt);
+	Alm->af0 = Eph->af0 + Eph->af1 * dt;
+
+	// check almanac
+/*	KINEMATIC_INFO PosVelAlm;
+	SatPosSpeedAlm(Eph->week, Eph->toe, Alm, &PosVelAlm);*/
+
+	return true;
+}
+
+/*void SatPosSpeedAlm(int WeekNumber, int TransmitTime, PGPS_ALMANAC pAlm, PKINEMATIC_INFO pPosVel)
+{
+	int i;
+	int delta_t;
+	double axis, n, root_ecc, omega_t, omega_delta;
+	double Mk, Ek, Ek1;
+	double phi;
+	double uk, rk, ik;
+	double uk_dot, rk_dot;
+	double xp, yp, omega;
+	double xp_dot, yp_dot;
+	double sin_temp, cos_temp;
+
+	// calculate derived variables
+	axis = pAlm->sqrtA * pAlm->sqrtA;
+	n = WGS_SQRT_GM / (pAlm->sqrtA * axis);
+	root_ecc = sqrt(1.0 - pAlm->ecc * pAlm->ecc);
+	omega_t = pAlm->omega0 - WGS_OMEGDOTE * (pAlm->toa);
+	omega_delta = pAlm->omega_dot - WGS_OMEGDOTE;
+
+	// calculate time difference with week number considered
+	delta_t = TransmitTime - pAlm->toa;
+	delta_t += (WeekNumber - pAlm->week) * 604800;
+
+	// get Ek from Mk with recursive algorithm
+	// here pAlm->M0 and pAlm->n with unit of cycle/second
+	Mk = pAlm->M0 + (n * delta_t);
+	Ek1 = Ek = Mk;
+	for (i = 0; i < 10; i ++)
+	{
+		Ek = Mk + pAlm->ecc * sin(Ek);
+		if (fabs(Ek - Ek1) < 1e-14)
+			break;
+		Ek1 = Ek;
+	}
+
+	// assign Ek1 as 1-e*cos(Ek)
+	Ek1 = 1.0 - (pAlm->ecc * cos(Ek));
+
+	// get u(k), r(k) and i(k)
+	phi = atan2(root_ecc * sin(Ek), cos(Ek) - pAlm->ecc) + pAlm->w;
+	uk = phi;
+	rk = axis * Ek1;
+	ik = pAlm->i0;
+	rk_dot = axis * pAlm->ecc * sin(Ek) * n / Ek1;
+	uk_dot = n * root_ecc / (Ek1 * Ek1);
+
+	// calculate Xp and Yp and corresponding derivatives
+	sin_temp = sin(uk);
+	cos_temp = cos(uk);
+	xp = rk * cos_temp;
+	yp = rk * sin_temp;
+	xp_dot = rk_dot * cos_temp - yp * uk_dot;
+	yp_dot = rk_dot * sin_temp + xp * uk_dot;
+
+	// get omega, pAlm->omega_t in cycle and pAlm->omega_delta in cycle/second
+	omega = omega_t + omega_delta * delta_t;
+	sin_temp = sin(omega);
+	cos_temp = cos(omega);
+	// get final position and speed in ECEF coordinate
+	ik = cos(pAlm->i0);
+	pPosVel->x = xp * cos_temp - yp * ik * sin_temp;
+	pPosVel->y = xp * sin_temp + yp * ik * cos_temp;
+	pPosVel->vx = xp_dot * cos_temp - ik * yp_dot * sin_temp;
+	pPosVel->vy = xp_dot * sin_temp + ik * yp_dot * cos_temp;
+	sin_temp *= omega_delta;
+	cos_temp *= omega_delta;
+	pPosVel->vx -= xp * sin_temp + ik * yp * cos_temp;
+	pPosVel->vy += xp * cos_temp - ik * yp * sin_temp;
+	ik = sin(pAlm->i0);
+	pPosVel->z = yp * ik;
+	pPosVel->vz = yp_dot * ik;
+}*/

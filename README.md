@@ -121,3 +121,10 @@ Change list as below:
 	Rearrange some definitions and declarations
 	Change FREQ_INDEX_XXX definitions to SIGNAL_INDEX_XXX for better discriminate signals at same frequency
 	Key word extension in JSON for future IF data generation support
+1/28/2025
+	Following bug fix and improvements on almanac data stream composition
+	Fix bug on possible incorrect week number in data stream of I/NAV and F/NAV if almanac of some satellite missing
+	Fix bug on incorrect week number set in data stream
+	Second parameter of function CompleteAlmanac() uses UTC time
+	Add BDS GEO satellite ephemeris to almanac conversion
+	Add GLONASS satellite ephemeris to almanac conversion

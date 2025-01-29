@@ -219,10 +219,10 @@ typedef struct
 	signed char freq;	// frequency number of satellite
 	short leap_year;	// reference leap year of almanac
 	short day;			// reference day of almanac
-	double t;			// reference time of almanac
+	double t;			// time of first ascending node
 	double lambda;		// longitude of ascending node of orbit
 	double di;			// inclination correction
-	double ecc;			// eccentricity, actually stored sqrt((1-e)/(1+e))
+	double ecc;			// eccentricity
 	double w;			// Argument of Perigee
 	double dt;			// correction to the mean value of Draconian period
 	double dt_dot;		// rate of change of orbital period

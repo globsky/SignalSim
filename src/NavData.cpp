@@ -7,7 +7,9 @@
 //----------------------------------------------------------------------
 #include <malloc.h>
 #include <string.h>
+#include <math.h>
 
+#include "ConstVal.h"
 #include "NavData.h"
 #include "Almanac.h"
 #include "GnssTime.h"
@@ -299,27 +301,38 @@ void CNavData::ReadAlmFile(char *filename)
 	}
 }
 
-void CNavData::CompleteAlmanac(GnssSystem system, GNSS_TIME time)
+void CNavData::CompleteAlmanac(GnssSystem system, UTC_TIME time)
 {
 	PGPS_ALMANAC Almanac;
 	PGPS_EPHEMERIS Eph = NULL;
 	int AlmanacNumber;
+	GNSS_TIME gnss_time;
+	GLONASS_TIME glonass_time;
 	int i, toa = -1, week;
 
 	if (system == GpsSystem)
 	{
 		Almanac = GpsAlmanac;
 		AlmanacNumber = GpsSatNumber;
+		gnss_time = UtcToGpsTime(time);
 	}
 	else if (system == BdsSystem)
 	{
 		Almanac = BdsAlmanac;
 		AlmanacNumber = BdsSatNumber;
+		gnss_time = UtcToBdsTime(time);
 	}
 	else if (system == GalileoSystem)
 	{
 		Almanac = GalileoAlmanac;
 		AlmanacNumber = GalileoSatNumber;
+		gnss_time = UtcToGpsTime(time);
+	}
+	else if (system == GlonassSystem)
+	{
+		glonass_time = UtcToGlonassTime(time);
+		CompleteGlonassAlmanac(glonass_time);
+		return;
 	}
 	else
 		return;
@@ -335,8 +348,8 @@ void CNavData::CompleteAlmanac(GnssSystem system, GNSS_TIME time)
 	// else assign toa with given system time
 	if (toa < 0)
 	{
-		toa = (time.MilliSeconds + 2048000) / 4096000 * 4096;	// round to nearest 2^12
-		week = time.Week;
+		toa = (gnss_time.MilliSeconds + 2048000) / 4096000 * 4096;	// round to nearest 2^12
+		week = gnss_time.Week;
 	}
 
 	// for any almanac not valid, find whether there is valid ephemeris
@@ -344,8 +357,63 @@ void CNavData::CompleteAlmanac(GnssSystem system, GNSS_TIME time)
 	{
 		if (Almanac[i].flag)
 			continue;
-		if ((Eph = FindEphemeris(system, time, i + 1, 1)) == NULL)
+		if ((Eph = FindEphemeris(system, gnss_time, i + 1, 1)) == NULL)
 			continue;
 		Almanac[i] = GetAlmanacFromEphemeris(Eph, week, toa);
+	}
+}
+
+#define GLONASS_PERIOD 40544
+void CNavData::CompleteGlonassAlmanac(GLONASS_TIME time)
+{
+	int i, j;
+	int day = -1, leap_year;
+	PGLONASS_EPHEMERIS Eph;
+	double t;
+
+	// if there is valid almanac, use day number of valid almanac as first priority
+	for (i = 0; i < GlonassSatNumber; i ++)
+		if (GlonassAlmanac[i].flag)
+		{
+			day = GlonassAlmanac[i].day;
+			leap_year = GlonassAlmanac[i].leap_year;
+			break;
+		}
+	// else assign day with given system time
+	if (day < 0)
+	{
+		day = time.Day;
+		leap_year = time.LeapYear;
+	}
+
+	// for any almanac not valid, find whether there is valid ephemeris
+	for (i = 0; i < GlonassSatNumber; i ++)
+	{
+		if (GlonassAlmanac[i].flag)
+			continue;
+		// find first ephemeris within target date to estimate time of ascending
+		Eph = NULL;
+		for (j = 0; j < GlonassEphemerisNumber; j ++)
+		{
+			if ((int)GlonassEphmerisPool[j].n != i + 1)
+				continue;
+			if (GlonassEphmerisPool[j].day == day)
+			{
+				Eph = &GlonassEphmerisPool[j];
+				break;
+			}
+		}
+		if (Eph == NULL)	// not found
+			continue;
+		t = atan2(-Eph->z, Eph->vz * GLONASS_PERIOD / PI2) * GLONASS_PERIOD / PI2;
+		if (t < 0) t += GLONASS_PERIOD;
+		t += Eph->tb;
+		time.MilliSeconds = (int)(t * 1000);
+		if ((Eph = FindGloEphemeris(time, i + 1)) == NULL)
+			continue;
+		GlonassAlmanac[i] = GetAlmanacFromEphemeris(Eph, day, leap_year);
+/*		printf("%02d\t%10.4f\t%10.4f\t%8.6f\t%9.6f\t%11.6f\t%11.6f\t%e\t%2d\n",
+			i + 1, GlonassAlmanac[i].t, GlonassAlmanac[i].dt + 43200, GlonassAlmanac[i].ecc, GlonassAlmanac[i].di * 180 + 63,
+			GlonassAlmanac[i].lambda * 180, GlonassAlmanac[i].w * 180, GlonassAlmanac[i].clock_error, GlonassAlmanac[i].freq);*/
 	}
 }

@@ -45,7 +45,7 @@ private:
 	static const unsigned char Power2Oct[510];	// two round of 255 element
 
 	int ComposeEphWords(PGPS_EPHEMERIS Ephemeris, unsigned int *EphData);
-	int ComposeAlmWords(GPS_ALMANAC Almanac[], unsigned int *AlmData);
+	int ComposeAlmWords(GPS_ALMANAC Almanac[], unsigned int *AlmData, int week);
 	unsigned int *GetWordData(int svid, int Word, int subframe);
 	unsigned char GalConvolutionEncode(unsigned char &ConvEncodeBits, unsigned int &EncodeWord);
 	unsigned char GF8IntMul(unsigned char a, unsigned char b);

@@ -20,5 +20,6 @@ int ReadAlmanacBds(FILE *fp, GPS_ALMANAC Almanac[]);
 int ReadAlmanacGalileo(FILE *fp, GPS_ALMANAC Almanac[]);
 int ReadAlmanacGlonass(FILE *fp, GLONASS_ALMANAC Almanac[]);
 GPS_ALMANAC GetAlmanacFromEphemeris(PGPS_EPHEMERIS Eph, int week, int toa);
+GLONASS_ALMANAC GetAlmanacFromEphemeris(PGLONASS_EPHEMERIS Eph, int day, int leap_year);
 
 #endif // __RINEX_H__

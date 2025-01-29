@@ -31,7 +31,7 @@ private:
 	static const int SyncPattern[12];
 
 	int ComposeEphWords(PGPS_EPHEMERIS Ephemeris, unsigned int EphData[4][7]);
-	int ComposeAlmWords(GPS_ALMANAC Almanac[], unsigned int AlmData[2][7]);
+	int ComposeAlmWords(GPS_ALMANAC Almanac[], unsigned int AlmData[2][7], int week);
 	void GetPageData(int svid, int page, int subframe, unsigned int GST, unsigned int Data[7]);
 	unsigned char GalConvolutionEncode(unsigned char &ConvEncodeBits, unsigned int &EncodeWord);
 };

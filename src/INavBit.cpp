@@ -182,11 +182,11 @@ int INavBit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits
 	Data = GetWordData(svid, Word, subframe);
 	// add WN/TOW for Word 0/5/6
 	if (Word == 0)
-		Data[3] = (StartTime.Week << 20) + TOW;
+		Data[3] = ((StartTime.Week - 1024) << 20) + TOW;
 	else if (Word == 5)
 	{
 		Data[2] &= 0xff800000;	// clear 23LSB
-		Data[2] |= ((StartTime.Week & 0xfff) << 11) + (TOW >> 9);
+		Data[2] |= (((StartTime.Week - 1024) & 0xfff) << 11) + (TOW >> 9);
 		Data[3] = TOW << 23;
 	}
 	else if (Word == 6)
@@ -269,10 +269,16 @@ int INavBit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
 
 int INavBit::SetAlmanac(GPS_ALMANAC Alm[])
 {
-	int i;
+	int i, week = 0;
 
+	for (i = 0; i < 36; i ++)
+		if (Alm[i].flag == 1)
+		{
+			week = Alm[i].week;
+			break;
+		}
 	for (i = 0; i < 12; i ++)
-		ComposeAlmWords(Alm + i * 3, GalAlmData[i]);
+		ComposeAlmWords(Alm + i * 3, GalAlmData[i], week);
 	return 0;
 }
 
@@ -405,13 +411,14 @@ int INavBit::ComposeEphWords(PGPS_EPHEMERIS Ephemeris, unsigned int *EphData)
 	return 0;
 }
 
-int INavBit::ComposeAlmWords(GPS_ALMANAC Almanac[], unsigned int *AlmData)
+int INavBit::ComposeAlmWords(GPS_ALMANAC Almanac[], unsigned int *AlmData, int week)
 {
 	signed int IntValue;
 	unsigned int UintValue;
+	int toa = Almanac[0].flag ? Almanac[0].toa : Almanac[1].flag ? Almanac[1].toa : Almanac[2].flag ? Almanac[2].toa : 0;
 
 	// Word 7
-	AlmData[0] = 0x1d000000 | COMPOSE_BITS(Almanac[0].week, 20, 2) | COMPOSE_BITS((Almanac[0].toa / 600), 10, 10) | COMPOSE_BITS(Almanac[0].svid, 4, 6);	// Type=8, IODa=4
+	AlmData[0] = 0x1d000000 | COMPOSE_BITS(week, 20, 2) | COMPOSE_BITS((toa / 600), 10, 10) | COMPOSE_BITS(Almanac[0].svid, 4, 6);	// Type=8, IODa=4
 	IntValue = UnscaleInt(Almanac[0].sqrtA - SQRT_A0, -9);	// SVID1 starts here
 	AlmData[0] |= COMPOSE_BITS(IntValue >> 9, 0, 4);
 	AlmData[1] = COMPOSE_BITS(IntValue, 23, 9);
@@ -455,7 +462,7 @@ int INavBit::ComposeAlmWords(GPS_ALMANAC Almanac[], unsigned int *AlmData)
 	AlmData[7] |= COMPOSE_BITS(IntValue, 1, 11);
 
 	// Word 9
-	AlmData[8] = 0x25000000 | COMPOSE_BITS(Almanac[1].week, 20, 2) | COMPOSE_BITS((Almanac[1].toa / 600), 10, 10);	// Type=9, IODa=4
+	AlmData[8] = 0x25000000 | COMPOSE_BITS(week, 20, 2) | COMPOSE_BITS((toa / 600), 10, 10);	// Type=9, IODa=4
 	IntValue = UnscaleInt(Almanac[1].M0 / PI, -15);
 	AlmData[8] |= COMPOSE_BITS(IntValue >> 6, 0, 10);
 	AlmData[9] = COMPOSE_BITS(IntValue, 26, 6);

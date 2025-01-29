@@ -29,18 +29,18 @@ FNavBit::~FNavBit()
 {
 }
 
-// Param is used to distinguish from E1 and E5b (0 for E1)
 int FNavBit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits)
 {
 	int i, j, TOW, subframe, page, BitCount;
 	unsigned int EncodeData[7], GST, CrcResult, EncodeWord;	// 214bit to be encoded by CRC
 	unsigned char EncodeMessage[61], ConvEncodeBits;	// EncodeMessage contains 8x61 bits
 
+	Param;	// not used
 	// first determine the current TOW and subframe number
 	StartTime.Week += StartTime.MilliSeconds / 604800000;
 	StartTime.MilliSeconds %= 604800000;
 	TOW = StartTime.MilliSeconds / 1000;
-	GST = ((StartTime.Week & 0xfff) << 20) + TOW;
+	GST = (((StartTime.Week - 1024) & 0xfff) << 20) + TOW;
 	subframe = (TOW % 1200) / 50;	// two round of 600s frame (24 subframes) to hold 36 almanacs
 	page = (TOW % 50) / 10;
 	GetPageData(svid, page, subframe, GST, EncodeData);
@@ -84,10 +84,16 @@ int FNavBit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
 
 int FNavBit::SetAlmanac(GPS_ALMANAC Alm[])
 {
-	int i;
+	int i, week = 0;
 
+	for (i = 0; i < 36; i ++)
+		if (Alm[i].flag == 1)
+		{
+			week = Alm[i].week;
+			break;
+		}
 	for (i = 0; i < 12; i ++)
-		ComposeAlmWords(Alm + i * 3, GalAlmData[i]);
+		ComposeAlmWords(Alm + i * 3, GalAlmData[i], week);
 	return 0;
 }
 
@@ -208,13 +214,14 @@ int FNavBit::ComposeEphWords(PGPS_EPHEMERIS Ephemeris, unsigned int EphData[4][7
 	return 0;
 }
 
-int FNavBit::ComposeAlmWords(GPS_ALMANAC Almanac[], unsigned int AlmData[2][7])
+int FNavBit::ComposeAlmWords(GPS_ALMANAC Almanac[], unsigned int AlmData[2][7], int week)
 {
 	signed int IntValue;
 	unsigned int UintValue;
+	int toa = Almanac[0].flag ? Almanac[0].toa : Almanac[1].flag ? Almanac[1].toa : Almanac[2].flag ? Almanac[2].toa : 0;
 
 	// PageType 5
-	AlmData[0][0] = (5 << 16) | (4 << 12) | COMPOSE_BITS(Almanac[0].week, 10, 2) | COMPOSE_BITS((Almanac[0].toa / 600), 0, 10);	// IODa=4
+	AlmData[0][0] = (5 << 16) | (4 << 12) | COMPOSE_BITS(week, 10, 2) | COMPOSE_BITS((toa / 600), 0, 10);	// IODa=4
 	AlmData[0][1] = COMPOSE_BITS(Almanac[0].svid, 26, 6);	// SVID1 starts here
 	IntValue = UnscaleInt(Almanac[0].sqrtA - SQRT_A0, -9);
 	AlmData[0][1] |= COMPOSE_BITS(IntValue, 13, 13);
