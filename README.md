@@ -128,3 +128,8 @@ Change list as below:
 	Second parameter of function CompleteAlmanac() uses UTC time
 	Add BDS GEO satellite ephemeris to almanac conversion
 	Add GLONASS satellite ephemeris to almanac conversion
+3/11/2025
+	Demo program to generate IF signal is added with sample .json config file
+	Most common signals are supported but with only limited verification
+	Following signals will be only available with commercial license: L1P/L2P, E5 AltBOC, TMBOC, ACEBOC, QMBOX, LEX CSK
+	Multi-thread version which runs dozen time faster only available with commercial license

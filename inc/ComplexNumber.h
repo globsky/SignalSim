@@ -15,7 +15,7 @@ public:
 	double real;
 	double imag;
 
-	complex_number() {};
+	complex_number() { real = imag = 0.; };
 	complex_number(double real_part, double imag_part);
 	complex_number operator + (const complex_number data) const;
 	void operator += (const complex_number data);
