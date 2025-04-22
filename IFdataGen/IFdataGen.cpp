@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <memory.h>
 #include <math.h>
+#include <iostream>
+#include <cstring>
 
 #include "SignalSim.h"
 #include "SatIfSignal.h"
@@ -50,7 +52,7 @@ const char *SignalName[][8] = {
 	{ "G1", "G2", },
 };
 
-int main()
+int main(int argc, char* argv[])
 {
 	int i, j;
 	JsonStream JsonTree;
@@ -73,8 +75,27 @@ int main()
 	FILE* IfFile;
 
 	// read JSON file and assign parameters
-    JsonTree.ReadFile("IfGenTest.json");
-	Object = JsonTree.GetRootObject();
+    const char* jsonFile = "IfGenTest.json"; // Default JSON file
+
+    // Check if a command-line argument is provided
+    if (argc > 1)
+    {
+        if (std::strcmp(argv[1], "--help") == 0)
+        {
+            std::cout << "Usage: " << argv[0] << " [optional JSON file path]\n";
+            return 0;
+        }
+        jsonFile = argv[1]; // Use the provided JSON file
+    }
+
+    // Read the JSON file
+    if (JsonTree.ReadFile(jsonFile) != 0)
+    {
+        std::cerr << "Error: Unable to read JSON file: " << jsonFile << "\n";
+        return 1;
+    }
+    Object = JsonTree.GetRootObject();
+
 	AssignParameters(Object, &UtcTime, &StartPos, &StartVel, &Trajectory, &NavData, &OutputParam, &PowerControl, NULL);
 
 	// initial variables
@@ -221,6 +242,10 @@ int main()
 	memset(SatIfSignal, 0, sizeof(SatIfSignal));
 	TotalChannelNumber = 0;
 	printf("Generate IF data with following satellite signals:\n");
+	printf("GPS visible SVs %d.\n", GpsSatNumber);
+	printf("BDS visible SVs %d.\n", BdsSatNumber);
+	printf("Galileo visible SVs %d.\n", GalSatNumber);
+	printf("Glonass visible SVs %d.\n\n", GloSatNumber);
 	for (SignalIndex = SIGNAL_INDEX_L1CA; SignalIndex <= SIGNAL_INDEX_L5; SignalIndex++)
 	{
 		if (!(OutputParam.FreqSelect[GpsSystem] & (1 << SignalIndex)))
@@ -250,7 +275,7 @@ int main()
 			SatIfSignal[TotalChannelNumber] = new CSatIfSignal(OutputParam.SampleFreq, IfFreq, BdsSystem, SignalIndex, BdsEphVisible[i]->svid);
 			SatIfSignal[TotalChannelNumber]->InitState(CurTime, &BdsSatParam[BdsEphVisible[i]->svid - 1], GetNavData(BdsSystem, SignalIndex, NavBitArray));
 			TotalChannelNumber++;
-			printf("\tSV%02d with Doppler %dHz\n", GpsEphVisible[i]->svid, (int)GetDoppler(&GpsSatParam[GpsEphVisible[i]->svid-1], SignalIndex));
+			printf("\tSV%02d with Doppler %dHz\n", BdsEphVisible[i]->svid, (int)GetDoppler(&BdsSatParam[BdsEphVisible[i]->svid-1], SignalIndex));
 		}
 	}
 	for (SignalIndex = SIGNAL_INDEX_E1; SignalIndex <= SIGNAL_INDEX_E6; SignalIndex++)
@@ -266,16 +291,16 @@ int main()
 			SatIfSignal[TotalChannelNumber] = new CSatIfSignal(OutputParam.SampleFreq, IfFreq, GalileoSystem, SignalIndex, GalEphVisible[i]->svid);
 			SatIfSignal[TotalChannelNumber]->InitState(CurTime, &GalSatParam[GalEphVisible[i]->svid - 1], GetNavData(GalileoSystem, SignalIndex, NavBitArray));
 			TotalChannelNumber++;
-			printf("\tSV%02d with Doppler %dHz\n", GpsEphVisible[i]->svid, (int)GetDoppler(&GpsSatParam[GpsEphVisible[i]->svid-1], SignalIndex));
+			printf("\tSV%02d with Doppler %dHz\n", GalEphVisible[i]->svid, (int)GetDoppler(&GalSatParam[GalEphVisible[i]->svid-1], SignalIndex));
 		}
 	}
 	for (SignalIndex = SIGNAL_INDEX_G1; SignalIndex <= SIGNAL_INDEX_G2; SignalIndex++)
 	{
-		if (!(OutputParam.FreqSelect[GalileoSystem] & (1 << SignalIndex)))
+		if (!(OutputParam.FreqSelect[GlonassSystem] & (1 << SignalIndex)))
 			continue;
 		IfFreq = SignalCenterFreq[3][SignalIndex] - OutputParam.CenterFreq * 1000;
 		printf("GLONASS %s with IF %dkHz\n", SignalName[3][SignalIndex], IfFreq / 1000);
-		for (i = 0; i < GlonassSystem; i++)
+		for (i = 0; i < GloSatNumber; i++)
 		{
 			if (TotalChannelNumber >= TOTAL_SAT_CHANNEL)
 				break;
@@ -283,7 +308,7 @@ int main()
 			SatIfSignal[TotalChannelNumber] = new CSatIfSignal(OutputParam.SampleFreq, IfFreq + FdmaOffset, GlonassSystem, SignalIndex, GloEphVisible[i]->n);
 			SatIfSignal[TotalChannelNumber]->InitState(CurTime, &GloSatParam[GloEphVisible[i]->n - 1], GetNavData(GlonassSystem, SignalIndex, NavBitArray));
 			TotalChannelNumber++;
-			printf("\tSV%02d with Doppler %dHz\n", GpsEphVisible[i]->svid, (int)GetDoppler(&GpsSatParam[GpsEphVisible[i]->svid-1], SignalIndex));
+			printf("\tSV%02d with Doppler %dHz\n", GloEphVisible[i]->n, (int)GetDoppler(&GloSatParam[GloEphVisible[i]->n-1], SignalIndex));
 		}
 	}
 
