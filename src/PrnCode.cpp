@@ -148,7 +148,7 @@ const PrnAttribute PrnCode::PrnAttributes[] = {
 	{  2046,       1,         1,                 0 },	// index  5 for B1I/B2I
 	{ 10230,       1,         1,                 0 },	// index  6 for B3I
 	{ 10230,       1,         1,                 0 },	// index  7 for B2b
-	{  1023,       4,         4, PRN_ATTRIBUTE_BOC },	// index  8 for E1
+	{  2046,       4,         4, PRN_ATTRIBUTE_BOC },	// index  8 for E1
 	{  5115,       1,         1,                 0 },	// index  9 for E6
 	{   511,       1,         1,                 0 },	// index 10 for G1/G2
 };
