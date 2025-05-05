@@ -28,55 +28,38 @@
 			{
 				"type": "Const",
 				"time": 0.2
-			},
-			{
-				"type": "Jerk",
-				"time": 0.2,
-				"acceleration": 0.2
-			},
-			{
-				"type": "ConstAcc",
-				"time": 0.1,
-				"acceleration": 0.2
 			}
+			
 		]
 	},
 	"ephemeris": {
 		"type": "RINEX",
-		"name": "D:/SignalSim/IFdataGen/EphData/BRDC00IGS_R_20211700000_01D_MN.rnx"
+		"name": "D:\/SignalSim\/XmlObsGen\/EphData\/BRDC00IGS_R_20211700000_01D_MN.rnx"
 	},
 	"output": {
 		"type": "IFdata",
 		"format": "IQ8",
-		"sampleFreq": 25,
-		"centerFreq": 1580,
-		"name": "IfGenTest8.bin",
+		"sampleFreq": 24,
+		"centerFreq": 1176.45,
+		"name": "GPS_BDS_GAL_L5_B2a_E5a_8.bin",
 		"config": {
 			"elevationMask": 3
-		},
+		},	
 		"systemSelect": [
 			{
 				"system": "GPS",
-				"signal": "L1CA",
+				"signal": "L5",
+				"enable": true
+			},			
+			{
+				"system": "BDS",
+				"signal": "B2a",
 				"enable": true
 			},
 			{
-				"system": "BDS",
-				"signal": "B1C",
-				"enable": false
-			},
-			{
-				"system": "BDS",
-				"signal": "B1I",
-				"enable": false
-			},
-			{
 				"system": "Galileo",
-				"enable": false
-			},
-			{
-				"system": "GLONASS",
-				"enable": false
+				"signal": "E5a",
+				"enable": true
 			}
 		]
 	},
