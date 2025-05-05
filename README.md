@@ -25,7 +25,7 @@ SignalSim provides comprehensive support for multi-constellation GNSS simulation
 
 ### Technical Specifications
 
-- **Channels**: 128 parallel satellite channels for simultaneous signal simulation
+- **Constellation**: Support GPS, BDS, GLONASS and Galileo, QZSS/IRNSS interface reserved for future expansion
 - **Multiple frequency bands**: Support for L1/L2/L5, B1/B2/B3, E1/E5/E6, G1/G2
 - **Data formats**: RINEX 2/3/4 support for observation and navigation data
 - **Configuration**: JSON-based scenario configuration
@@ -36,49 +36,6 @@ SignalSim is designed for both educational and professional use, with commercial
 ## Signal Support and Testing Status
 
 The following table shows the current testing status of various GNSS signals in SignalSim:
-
-### Single-Constallations
-
-| Constellation | Frequency Band | Implementation | Testing Status  | Notes |
-|---------------|---------------|----------------|------------------|-------|
-| GPS           | L1CA          | 🟢             | 🟢             | Default signal, fully tested |
-|               | L1C           | 🟢             | 🔴             | Program Crash |
-|               | L2C (L2CM)    | 🟢             | 🟡             | To Be Tested |
-|               | L5            | 🟢             | 🟡             | To Be Tested |
-|               | L1P/L2P       | 🟢             | 🟡             | Commercial license only |
-| BDS           | B1I           | 🟢             | 🔴             | Program Crash |
-|               | B1C           | 🟢             | 🔴             | Program Crash |
-|               | B2I           | 🟢             | 🔴             | Program Crash |
-|               | B2a           | 🟢             | 🔴             | Program Crash |
-|               | B2b           | 🟢             | 🔴             | Program Crash |
-|               | B3I           | 🟢             | 🔴             | Program Crash |
-| Galileo       | E1            | 🟢             | 🟢             | I/NAV data modulation |
-|               | E5a           | 🟢             | 🟡             | F/NAV data modulation |
-|               | E5b           | 🟢             | 🟡             | I/NAV data modulation |
-|               | E5 AltBOC     | 🟢             | 🟡             | Commercial license only |
-|               | E6            | 🟡             | 🟡             | Under development |
-| GLONASS       | G1            | 🟢             | 🟡             | FDMA implementation |
-|               | G2            | 🟢             | 🟡             | FDMA implementation |
-
-### Multi-Constallations
-
-| Constellation | Frequency Band        |  Testing Status  | Notes            |
-|---------------|-----------------------|------------------|------------------|
-| GPS + Galileo | L1CA + E1             | 🟢               | Tested and works |
-|               | L1CA + E5a            | 🟡               | To Be Tested     |
-|               | L1CA + E5b            | 🟡               | To Be Tested     |
-|               | L1CA + E5 AltBOC      | 🟡               | To Be Tested     |
-|               | L1CA + E6             | 🟡               | To Be Tested     |
-
-> **Legend**:
->
-> - 🟢 Working / Complete: Feature has been fully implemented and verified
-> - 🟡 Limited / Partial: Feature has partial implementation or limited verification
-> - 🔴 Not Working: Feature is not implemented or not functioning correctly
-
-### Note
-
-> The `"Testing Status"` indicates that the signals for the respective frequency bands have been successfully generated. However, the detailed evaluation of their characteristics—such as spectral purity, phase noise, modulation accuracy, and overall signal integrity—has not yet been performed.​
 
 ## Key Components
 

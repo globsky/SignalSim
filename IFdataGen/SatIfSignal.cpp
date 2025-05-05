@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdio.h>
 
 #include "SatIfSignal.h"
 
@@ -78,14 +79,21 @@ complex_number CSatIfSignal::GetPrnValue(double& CurChip, double CodeStep)
 	int ChipCount = (int)CurChip;
 	int DataChip, PilotChip;
 	complex_number PrnValue;
+	int IsBoc = (PrnSequence->Attribute->Attribute) & PRN_ATTRIBUTE_BOC;
 
 	DataChip = ChipCount % DataLength;
+	if (IsBoc)
+		DataChip /= 2;
 	PrnValue = DataSignal * (PrnSequence->DataPrn[DataChip] ? -1 : 1);
 	if (PrnSequence->PilotPrn)
 	{
 		PilotChip = ChipCount % PilotLength;
+		if (IsBoc)
+			PilotChip /= 2;
 		PrnValue += PilotSignal * (PrnSequence->PilotPrn[PilotChip] ? -1 : 1);
 	}
+	if (IsBoc && (ChipCount & 1))	// second half of BOC code
+		PrnValue *= -1;
 	CurChip += CodeStep;
 	// check whether go beyond next code period (pilot code period multiple of data code period, so only check data period)
 	if ((((int)CurChip) % DataLength) < DataChip)
