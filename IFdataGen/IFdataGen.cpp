@@ -5,7 +5,6 @@
 #include <cstring>
 
 #include "SignalSim.h"
-#include "SatIfSignal.h"
 
 #define TOTAL_GPS_SAT 32
 #define TOTAL_BDS_SAT 63

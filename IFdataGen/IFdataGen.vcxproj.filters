@@ -99,7 +99,10 @@
     <ClInclude Include="..\inc\Coordinate.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SatIfSignal.h">
+    <ClInclude Include="..\inc\SatelliteSignal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\SatIfSignal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -179,13 +182,13 @@
     <ClCompile Include="IFdataGen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SatIfSignal.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\PrnCode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\SatelliteSignal.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\SatIfSignal.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

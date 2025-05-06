@@ -63,6 +63,10 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 
 ### 2025
 
+- **5/6/2025**
+  - Relocate shared RINEX data files from '/XmlObsGen' to root
+  - Relocate SatIfSignal.h and SatIfSignal.cpp from 'IFdataGen/' to 'inc/' and 'src/'
+
 - **4/22/2025**
   - Enhanced documentation with updated main `README.md`
   - Added `CMakeLists.txt` to support `IFdataGen` builds

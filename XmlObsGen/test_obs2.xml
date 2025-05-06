@@ -105,7 +105,7 @@
             </Const>
         </TrajectoryList>
     </Trajectory>
-    <Ephemeris source="file" type="RINEX">EphData/BRDC00IGS_R_20211700000_01D_MN.rnx</Ephemeris>
+    <Ephemeris source="file" type="RINEX">../EphData/BRDC00IGS_R_20211700000_01D_MN.rnx</Ephemeris>
     <Output type="observation" format="RINEX">
         <Interval unit="s">1</Interval>
         <Name>test2.o</Name>

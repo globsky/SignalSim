@@ -155,9 +155,10 @@
     <ClInclude Include="..\inc\PrnCode.h" />
     <ClInclude Include="..\inc\Rinex.h" />
     <ClInclude Include="..\inc\SatelliteParam.h" />
+    <ClInclude Include="..\inc\SatelliteSignal.h" />
+    <ClInclude Include="..\inc\SatIfSignal.h" />
     <ClInclude Include="..\inc\SignalSim.h" />
     <ClInclude Include="..\inc\Trajectory.h" />
-    <ClInclude Include="SatIfSignal.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\Almanac.cpp" />
@@ -185,9 +186,9 @@
     <ClCompile Include="..\src\Rinex.cpp" />
     <ClCompile Include="..\src\SatelliteParam.cpp" />
     <ClCompile Include="..\src\SatelliteSignal.cpp" />
+    <ClCompile Include="..\src\SatIfSignal.cpp" />
     <ClCompile Include="..\src\Trajectory.cpp" />
     <ClCompile Include="IFdataGen.cpp" />
-    <ClCompile Include="SatIfSignal.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\src\MemoryCode.dat" />

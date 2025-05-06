@@ -30,6 +30,7 @@
 #include "JsonInterpreter.h"
 #include "SatelliteParam.h"
 #include "SatelliteSignal.h"
+#include "SatIfSignal.h"
 #include "Coordinate.h"
 
 #endif // __SIGNAL_SIM_H__
