@@ -87,7 +87,7 @@ int FNavBit::SetAlmanac(GPS_ALMANAC Alm[])
 	int i, week = 0;
 
 	for (i = 0; i < 36; i ++)
-		if (Alm[i].flag == 1)
+		if (Alm[i].valid & 1)
 		{
 			week = Alm[i].week;
 			break;
@@ -218,7 +218,7 @@ int FNavBit::ComposeAlmWords(GPS_ALMANAC Almanac[], unsigned int AlmData[2][7], 
 {
 	signed int IntValue;
 	unsigned int UintValue;
-	int toa = Almanac[0].flag ? Almanac[0].toa : Almanac[1].flag ? Almanac[1].toa : Almanac[2].flag ? Almanac[2].toa : 0;
+	int toa = (Almanac[0].valid & 1) ? Almanac[0].toa : (Almanac[1].valid & 1) ? Almanac[1].toa : (Almanac[2].valid & 1) ? Almanac[2].toa : 0;
 
 	// PageType 5
 	AlmData[0][0] = (5 << 16) | (4 << 12) | COMPOSE_BITS(week, 10, 2) | COMPOSE_BITS((toa / 600), 0, 10);	// IODa=4
@@ -245,7 +245,7 @@ int FNavBit::ComposeAlmWords(GPS_ALMANAC Almanac[], unsigned int AlmData[2][7], 
 	IntValue = UnscaleInt(Almanac[0].af1, -38);
 	AlmData[0][4] |= COMPOSE_BITS(IntValue >> 1, 0, 12);
 	AlmData[0][5] = COMPOSE_BITS(IntValue, 31, 1);
-	AlmData[0][5] |= COMPOSE_BITS(Almanac[0].flag ? 0 : 1, 29, 2);
+	AlmData[0][5] |= COMPOSE_BITS((Almanac[1].valid & 1) ? 0 : 1, 29, 2);
 	AlmData[0][5] = COMPOSE_BITS(Almanac[1].svid, 23, 6);	// SVID2 starts here
 	IntValue = UnscaleInt(Almanac[1].sqrtA - SQRT_A0, -9);
 	AlmData[0][5] |= COMPOSE_BITS(IntValue, 10, 13);
@@ -271,7 +271,7 @@ int FNavBit::ComposeAlmWords(GPS_ALMANAC Almanac[], unsigned int AlmData[2][7], 
 	AlmData[1][2] = COMPOSE_BITS(IntValue, 21, 11);
 	IntValue = UnscaleInt(Almanac[1].af1, -38);
 	AlmData[1][2] |= COMPOSE_BITS(IntValue, 8, 13);
-	AlmData[1][2] |= COMPOSE_BITS(Almanac[1].flag ? 0 : 1, 6, 2);
+	AlmData[1][2] |= COMPOSE_BITS((Almanac[1].valid & 1) ? 0 : 1, 6, 2);
 	AlmData[1][2] |= COMPOSE_BITS(Almanac[2].svid, 0, 6);	// SVID3 starts here
 	IntValue = UnscaleInt(Almanac[2].sqrtA - SQRT_A0, -9);
 	AlmData[1][3] = COMPOSE_BITS(IntValue, 19, 13);
@@ -294,7 +294,7 @@ int FNavBit::ComposeAlmWords(GPS_ALMANAC Almanac[], unsigned int AlmData[2][7], 
 	AlmData[1][6] = COMPOSE_BITS(IntValue, 18, 14);
 	IntValue = UnscaleInt(Almanac[2].af1, -38);
 	AlmData[1][6] |= COMPOSE_BITS(IntValue, 5, 13);
-	AlmData[1][6] |= COMPOSE_BITS(Almanac[2].flag ? 0 : 1, 3, 2);
+	AlmData[1][6] |= COMPOSE_BITS((Almanac[2].valid & 1) ? 0 : 1, 3, 2);
 
 	return 0;
 }

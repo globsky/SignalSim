@@ -6,7 +6,7 @@
 CSatIfSignal::CSatIfSignal(int MsSampleNumber, int SatIfFreq, GnssSystem SatSystem, int SatSignalIndex, unsigned char SatId) : SampleNumber(MsSampleNumber), IfFreq(SatIfFreq), System(SatSystem), SignalIndex(SatSignalIndex), Svid((int)SatId)
 {
 	SampleArray = new complex_number[SampleNumber];
-	PrnSequence = new PrnCode(System, SignalIndex, Svid);
+	PrnSequence = new PrnGenerate(System, SignalIndex, Svid);
 	SatParam = NULL;
 	DataLength = PrnSequence->Attribute->DataPeriod * PrnSequence->Attribute->ChipRate;
 	PilotLength = PrnSequence->Attribute->PilotPeriod * PrnSequence->Attribute->ChipRate;

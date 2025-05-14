@@ -103,7 +103,7 @@ int CNavBit::SetAlmanac(GPS_ALMANAC Alm[])
 	for (i = 0; i < 32; i ++)
 	{
 		ComposeAlmWords(&Alm[i], ReducedAlm[i], MidiAlm[i]);
-		if (Alm[i].flag && TOA == INVALID_TOA)
+		if ((Alm[i].valid & 1) && TOA == INVALID_TOA)
 			TOA = (Alm[i].week << 8) + (Alm[i].toa >> 12);
 	}
 	return 0;
@@ -276,8 +276,8 @@ int CNavBit::ComposeAlmWords(GPS_ALMANAC Almanac[], unsigned int &ReducedAlmData
 	unsigned int UintValue;
 	double DoubleValue;
 
-	MidiAlmData[0] = COMPOSE_BITS(Almanac->flag ? Almanac->svid : 0, 26, 6);
-	MidiAlmData[0] |= COMPOSE_BITS(Almanac->flag ? 0 : 7, 23, 3);
+	MidiAlmData[0] = COMPOSE_BITS(Almanac->valid ? Almanac->svid : 0, 26, 6);
+	MidiAlmData[0] |= COMPOSE_BITS(Almanac->valid ? 0 : 7, 23, 3);
 	UintValue = UnscaleUint(Almanac->ecc, -16);
 	MidiAlmData[0] |= COMPOSE_BITS(UintValue, 12, 11);
 	IntValue = UnscaleInt((Almanac->i0 - NORMINAL_I0) / PI, -14);
@@ -300,7 +300,7 @@ int CNavBit::ComposeAlmWords(GPS_ALMANAC Almanac[], unsigned int &ReducedAlmData
 	IntValue = UnscaleInt(Almanac->af0, -37);
 	MidiAlmData[3] |= COMPOSE_BITS(IntValue, 0, 10);
 
-	ReducedAlmData = (Almanac->flag ? Almanac->svid : 0) << 25;
+	ReducedAlmData = (Almanac->valid ? Almanac->svid : 0) << 25;
 	DoubleValue = Almanac->sqrtA * Almanac->sqrtA - A_REF;
 	IntValue = (int)(DoubleValue / 512 + 0.5);
 	ReducedAlmData |= COMPOSE_BITS(IntValue, 17, 8);
@@ -308,7 +308,7 @@ int CNavBit::ComposeAlmWords(GPS_ALMANAC Almanac[], unsigned int &ReducedAlmData
 	ReducedAlmData |= COMPOSE_BITS(IntValue, 10, 7);
 	IntValue = UnscaleInt((Almanac->M0 + Almanac->w) / PI, -6);
 	ReducedAlmData |= COMPOSE_BITS(IntValue, 3, 7);
-	ReducedAlmData |= Almanac->flag ? 0 : 7;
+	ReducedAlmData |= Almanac->valid ? 0 : 7;
 	return 0;
 }
 

@@ -70,7 +70,7 @@ int ReadAlmanacGps(FILE *fp, GPS_ALMANAC Almanac[])
 			if ((svid = GetAlmanacGps(fp, &Alm)) > 0)
 			{
 				AlmCount ++;
-				if ((Almanac[svid-1].flag & 1) == 0 || Alm.week > Almanac[svid-1].week)		// not a valid almanac or has newer one
+				if ((Almanac[svid-1].valid & 1) == 0 || Alm.week > Almanac[svid-1].week)		// not a valid almanac or has newer one
 					Almanac[svid-1] = Alm;
 			}
 		}
@@ -128,7 +128,7 @@ int GetAlmanacGps(FILE *fp, PGPS_ALMANAC Alm)
 	sscanf(str+27, "%d", &data);
 	Alm->week = data;
 	Alm->health = 0;
-	Alm->flag = 1;
+	Alm->valid = 1;
 
 	return (svid <= 0 || svid > 32) ? 0 : svid;
 }
@@ -142,7 +142,7 @@ int ReadAlmanacBds(FILE *fp, GPS_ALMANAC Almanac[])
 	while ((svid = GetAlmanacBds(fp, &Alm)) > 0)
 	{
 		AlmCount ++;
-		if ((Almanac[svid-1].flag & 1) == 0 || Alm.week > Almanac[svid-1].week)		// not a valid almanac or has newer one
+		if ((Almanac[svid-1].valid & 1) == 0 || Alm.week > Almanac[svid-1].week)		// not a valid almanac or has newer one
 			Almanac[svid-1] = Alm;
 	}
 
@@ -162,7 +162,8 @@ int GetAlmanacBds(FILE *fp, PGPS_ALMANAC Alm)
 		return 0;
 	Alm->svid = svid;
 	Alm->health = 0;
-	Alm->flag = 1;
+	Alm->flag = (Alm->sqrtA > 6000.0) ? ((Alm->i0 > 0.5) ? 2 : 1) : 3;
+	Alm->valid = 1;
 
 	return svid;
 }
@@ -198,7 +199,7 @@ int ReadAlmanacGalileo(FILE *fp, GPS_ALMANAC Almanac[])
 			if ((svid = GetAlmanacGalileo(fp, &Alm, Time.Week)) > 0)
 			{
 				AlmCount ++;
-				if ((Almanac[svid-1].flag & 1) == 0 || Alm.week > Almanac[svid-1].week)		// not a valid almanac or has newer one
+				if ((Almanac[svid-1].valid & 1) == 0 || Alm.week > Almanac[svid-1].week)		// not a valid almanac or has newer one
 					Almanac[svid-1] = Alm;
 			}
 		}
@@ -255,9 +256,9 @@ int GetAlmanacGalileo(FILE *fp, PGPS_ALMANAC Alm, int RefWeek)
 	Alm->M0 *= PI;
 	Alm->week = RefWeek;
 	Alm->svid = svid;
-	Alm->dummy = (unsigned char)data;
+	Alm->flag = (unsigned char)data;
 	Alm->health = 0;
-	Alm->flag = 1;
+	Alm->valid = 1;
 
 	return svid;
 }
@@ -320,17 +321,17 @@ GPS_ALMANAC GetAlmanacFromEphemeris(PGPS_EPHEMERIS Eph, int week, int toa)
 {
 	GPS_ALMANAC Alm;
 
-	Alm.flag = Eph->valid & 1;
+	Alm.valid = Eph->valid & 1;
 	Alm.health = (unsigned char)Eph->health;
-	Alm.dummy = (unsigned char)Eph->iodc;
 	Alm.svid = Eph->svid;
 
-	if (Alm.flag == 0)
+	if (Alm.valid == 0)
 		return Alm;
 	if (Eph->sqrtA > 6000 && Eph->i0 < 0.5)	// this is GEO satellite
 		ConvertAlmanacFromEphemerisGeo(&Alm, Eph, week, toa);
 	else
 		ConvertAlmanacFromEphemeris(&Alm, Eph, week, toa);
+	Alm.flag = (Eph->sqrtA > 6000.0) ? ((Eph->i0 > 0.5) ? 2 : 1) : 3;
 
 	return Alm;
 }

@@ -326,7 +326,9 @@ NavDataType ReadRinex4Iono(char *str, FILE *fp_nav, void *NavData)
 	NavDataType DataType;
 	UTC_TIME time;
 	double data[11];
+	int prn;
 
+	sscanf(str + 7, "%2d", &prn);
 	if (str[6] == 'E')	// NEQUICK-G model
 	{
 		fgets(str, 128, fp_nav);
@@ -348,6 +350,7 @@ NavDataType ReadRinex4Iono(char *str, FILE *fp_nav, void *NavData)
 		IonoBds->alpha1 = data[0]; IonoBds->alpha2 = data[1]; IonoBds->alpha3 = data[2];
 		IonoBds->alpha4 = data[3]; IonoBds->alpha5 = data[4]; IonoBds->alpha6 = data[5];
 		IonoBds->alpha7 = data[6]; IonoBds->alpha8 = data[7]; IonoBds->alpha9 = data[8];
+		IonoBds->flag = 1 | (prn << 8);
 		DataType = NavDataIonBdgim;
 	}
 	else	// Klobuchar model
@@ -461,7 +464,7 @@ BOOL DecodeEphParam(NavDataType DataType, char *str, FILE *fp_nav, PGPS_EPHEMERI
 			Eph->flag = 0;	// put URA_NED later
 			Eph->tgd = data[25] - data[27];      /* TGD - ISC_L1CA */
 			Eph->tgd2 = data[25] - data[28];      /* TGD - ISC_L2C */
-			Eph->tgd_ext[0] = Eph->tgd_ext[1] = Eph->tgd;	/* TGD for L1Cd and L1Cp */
+			Eph->tgd_ext[0] = Eph->tgd_ext[1] = Eph->tgd - data[27];	/* TGD for L1Cd and L1Cp */
 			Eph->tgd_ext[2] = data[25] - data[29];	/* TGD for L5I */
 			Eph->tgd_ext[3] = data[25] - data[30];	/* TGD for L5Q */
 			Eph->tgd_ext[4] = data[25];	/* store TGD for navigation data recovery */
@@ -510,7 +513,8 @@ BOOL DecodeEphParam(NavDataType DataType, char *str, FILE *fp_nav, PGPS_EPHEMERI
 			Eph->week = (int)data[21];      /* week number */
 			Eph->health = (data[24] != 0) ? 0x80 : 0;      /* sv health */
 			Eph->ura = GetUraIndex(data[23]);
-			Eph->flag = (unsigned short)data[20] | ((unsigned short)data[22] << 2) | ((data[28] > 4.0) ? 8 : 0);
+			Eph->flag = (Eph->sqrtA > 6000.0) ? ((Eph->i0 > 0.5) ? 2 : 1) : 3;
+//			Eph->flag = (unsigned short)data[20] | ((unsigned short)data[22] << 2) | ((data[28] > 4.0) ? 8 : 0);
 			Eph->tgd = data[25];      /* TGD */
 			Eph->tgd2 = data[26];      /* TGD for B2I */
 			Eph->tgd_ext[0] = Eph->tgd_ext[1] = Eph->tgd;	/* TGD for B1Cd and B1Cp */
@@ -529,7 +533,7 @@ BOOL DecodeEphParam(NavDataType DataType, char *str, FILE *fp_nav, PGPS_EPHEMERI
 			Eph->flag = (unsigned short)data[21] | ((unsigned short)data[33] << 2) | ((unsigned short)data[31] << 11);
 			Eph->tgd = data[29];      /* TGD for B1I */
 			Eph->tgd2 = data[29] * TGD_GAMMA_E5b;      /* TGD for B2I */
-			Eph->tgd_ext[0] = data[29] - data[27];	/* TGD for L1Cd */
+			Eph->tgd_ext[0] = data[29] + data[27];	/* TGD for L1Cd */
 			Eph->tgd_ext[1] = data[29];	/* TGD for L1Cp */
 			Eph->tgd_ext[2] = Eph->tgd_ext[3] = data[30];	/* TGD for B2ad and B2ap */
 			Eph->tgd_ext[4] = data[29] * TGD_GAMMA_E5b;      /* TGD for B2bI */
@@ -547,7 +551,7 @@ BOOL DecodeEphParam(NavDataType DataType, char *str, FILE *fp_nav, PGPS_EPHEMERI
 			Eph->tgd = data[29];      /* TGD for B1I */
 			Eph->tgd2 = data[29] * TGD_GAMMA_E5b;      /* TGD for B2I */
 			Eph->tgd_ext[0] = Eph->tgd_ext[1] = data[29];	/* TGD for B1Cd and B1Cp */
-			Eph->tgd_ext[2] = data[30] - data[28];	/* TGD for B2ad */
+			Eph->tgd_ext[2] = data[30] + data[28];	/* TGD for B2ad */
 			Eph->tgd_ext[3] = data[30];	/* TGD forB2ap */
 			Eph->tgd_ext[4] = data[29] * TGD_GAMMA_E5b;      /* TGD for B2bI */
 			Eph->source = EPH_SOURCE_CNV2;

@@ -104,191 +104,54 @@ int BCNav2Bit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBi
 	return 0;
 }
 
-// place data into Ephemeris1/Ephemeris2/ClockParam/IntegrityFlags
-// data place with MSB first and least index first order
-// to compatible with single integer variables, bits in array less than multiple of 32bit
-// will fill zeros at first (MSBs in index 0)
-int BCNav2Bit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
-{
-	unsigned int *Data;
-	signed int IntValue;
-	unsigned int UintValue;
-	long long int LongValue;
-	unsigned long long int ULongValue;
-
-	if (svid < 1 || svid > 63 || !Eph || !Eph->valid)
-		return 0;
-
-	// fill in Ephemeris1 (with 13 zeros)
-	Data = Ephemeris1[svid-1];
-	Data[0] = COMPOSE_BITS(Eph->iode, 11, 8);
-	UintValue = Eph->toe / 300;	// toe
-	Data[0] |= COMPOSE_BITS(UintValue, 0, 11);
-	UintValue = Eph->flag;	// SatType
-	Data[1] = COMPOSE_BITS(UintValue, 30, 2);
-	IntValue = UnscaleInt(Eph->axis - ((UintValue == 3) ? 27906100.0 : 42162200.0), -9);	// deltaA
-	Data[1] |= COMPOSE_BITS(IntValue, 4, 26);
-	IntValue = UnscaleInt(Eph->axis_dot, -21);	// Adot
-	Data[1] |= COMPOSE_BITS(IntValue >> 21, 0, 4);
-	Data[2] = COMPOSE_BITS(IntValue, 11, 21);
-	IntValue = UnscaleInt(Eph->delta_n / PI, -44);	// delta_n
-	Data[2] |= COMPOSE_BITS(IntValue >> 6, 0, 11);
-	Data[3] = COMPOSE_BITS(IntValue, 26, 6);
-	IntValue = UnscaleInt(Eph->delta_n_dot, -57);	// delta n dot
-	Data[3] |= COMPOSE_BITS(IntValue, 3, 23);
-	LongValue = UnscaleLong(Eph->M0 / PI, -32);
-	IntValue = (LongValue & 0x100000000LL) ? 1 : 0;
-	UintValue = (unsigned int)LongValue;
-	Data[3] |= COMPOSE_BITS(IntValue, 2, 1);
-	Data[3] |= COMPOSE_BITS(UintValue >> 30, 0, 2);
-	Data[4] = COMPOSE_BITS(UintValue, 2, 30);
-	ULongValue = UnscaleULong(Eph->ecc, -34);
-	IntValue = (ULongValue & 0x100000000LL) ? 1 : 0;
-	UintValue = (unsigned int)ULongValue;
-	Data[4] |= COMPOSE_BITS(IntValue, 1, 1);
-	Data[4] |= COMPOSE_BITS(UintValue >> 31, 0, 1);
-	Data[5] = COMPOSE_BITS(UintValue, 1, 31);
-	LongValue = UnscaleLong(Eph->w / PI, -32);
-	IntValue = (LongValue & 0x100000000LL) ? 1 : 0;
-	UintValue = (unsigned int)LongValue;
-	Data[5] |= COMPOSE_BITS(IntValue, 0, 1);
-	Data[6] = UintValue;
-
-	// fill in Ephemeris2 (with 2 zeros)
-	Data = Ephemeris2[svid-1];
-	LongValue = UnscaleLong(Eph->omega0 / PI, -32);
-	IntValue = (LongValue & 0x100000000LL) ? 1 : 0;
-	UintValue = (unsigned int)LongValue;
-	Data[0] = COMPOSE_BITS(IntValue, 29, 1);
-	Data[0] |= COMPOSE_BITS(UintValue >> 3, 0, 29);
-	Data[1] = COMPOSE_BITS(UintValue, 29, 3);
-	LongValue = UnscaleLong(Eph->i0 / PI, -32);
-	IntValue = (LongValue & 0x100000000LL) ? 1 : 0;
-	UintValue = (unsigned int)LongValue;
-	Data[1] |= COMPOSE_BITS(IntValue, 28, 1);
-	Data[1] |= COMPOSE_BITS(UintValue >> 4, 0, 28);
-	Data[2] = COMPOSE_BITS(UintValue, 28, 4);
-	IntValue = UnscaleInt(Eph->omega_dot / PI, -44);	// omega dot
-	Data[2] |= COMPOSE_BITS(IntValue, 9, 19);
-	IntValue = UnscaleInt(Eph->idot / PI, -44);	// i dot
-	Data[2] |= COMPOSE_BITS(IntValue >> 6, 0, 9);
-	Data[3] = COMPOSE_BITS(IntValue, 26, 6);
-	IntValue = UnscaleInt(Eph->cis, -30);	// cis
-	Data[3] |= COMPOSE_BITS(IntValue, 10, 16);
-	IntValue = UnscaleInt(Eph->cic, -30);	// cic
-	Data[3] |= COMPOSE_BITS(IntValue >> 6, 0, 10);
-	Data[4] = COMPOSE_BITS(IntValue, 26, 6);
-	IntValue = UnscaleInt(Eph->crs, -8);	// crs
-	Data[4] |= COMPOSE_BITS(IntValue, 2, 24);
-	IntValue = UnscaleInt(Eph->crc, -8);	// crc
-	Data[4] |= COMPOSE_BITS(IntValue >> 22, 0, 2);
-	Data[5] = COMPOSE_BITS(IntValue, 10, 22);
-	IntValue = UnscaleInt(Eph->cus, -30);	// cus
-	Data[5] |= COMPOSE_BITS(IntValue >> 11, 0, 10);
-	Data[6] = COMPOSE_BITS(IntValue, 21, 11);
-	IntValue = UnscaleInt(Eph->cuc, -30);	// cuc
-	Data[6] |= COMPOSE_BITS(IntValue, 0, 21);
-
-	// fill in ClockParam (with 17 zeros)
-	Data = ClockParam[svid-1];
-	UintValue = Eph->toc / 300;	// toc
-	Data[0] |= COMPOSE_BITS(UintValue, 4, 11);
-	IntValue = UnscaleInt(Eph->af0, -34);	// af0
-	Data[0] |= COMPOSE_BITS(IntValue >> 21, 0, 4);
-	Data[1] = COMPOSE_BITS(IntValue, 11, 20);
-	IntValue = UnscaleInt(Eph->af1, -50);	// af1
-	Data[1] |= COMPOSE_BITS(IntValue >> 11, 0, 11);
-	Data[2] = COMPOSE_BITS(IntValue, 21, 11);
-	IntValue = UnscaleInt(Eph->af2, -66);	// af2
-	Data[2] |= COMPOSE_BITS(IntValue, 10, 11);
-	Data[2] |= COMPOSE_BITS(Eph->iodc, 0, 10);
-
-	// fill in IntegrityFlags
-	UintValue = COMPOSE_BITS(Eph->flag >> 5, 7, 3);
-	UintValue |= COMPOSE_BITS(Eph->flag >> 2, 0, 3);
-	UintValue |= COMPOSE_BITS(Eph->flag >> 11, 3, 4);
-	IntegrityFlags[svid-1] = UintValue;
-
-	return svid;
-}
-
 // 288 bits subframe information divided int 12 WORDs
 // each WORD has 24bits in 24LSB of unsigned int data in FrameData[]
 // bit order is MSB first (from bit23) and least index first
 // each 24bits divided into four 6bit symbols in LDPC encode
 void BCNav2Bit::ComposeMessage(int MessageType, int week, int sow, int svid, unsigned int FrameData[])
 {
-	unsigned int *Data;
-
 	// first fill in PRN/MesType/SOW
 	FrameData[0] = COMPOSE_BITS(svid, 18, 6);
 	FrameData[0] |= COMPOSE_BITS(MessageType, 12, 6);
 	FrameData[0] |= COMPOSE_BITS(sow >> 6, 0, 12);
 	FrameData[1] = COMPOSE_BITS(sow, 18, 6);
+
 	switch (MessageType)
 	{
 	case 10:
 		FrameData[1] |= COMPOSE_BITS(week, 5, 13);
-		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 5, 0, 5);
-		FrameData[2] = COMPOSE_BITS(IntegrityFlags[svid-1], 19, 5);
-		Data = Ephemeris1[svid-1];
-		FrameData[2] |= COMPOSE_BITS(Data[0], 0, 19);
-		FrameData[3] = COMPOSE_BITS(Data[1] >> 8, 0, 24);
-		FrameData[4] = COMPOSE_BITS(Data[1], 16, 8);
-		FrameData[4] |= COMPOSE_BITS(Data[2] >> 16, 0, 16);
-		FrameData[5] = COMPOSE_BITS(Data[2], 8, 16);
-		FrameData[5] |= COMPOSE_BITS(Data[3] >> 24, 0, 8);
-		FrameData[6] = COMPOSE_BITS(Data[3], 0, 24);
-		FrameData[7] = COMPOSE_BITS(Data[4] >> 8, 0, 24);
-		FrameData[8] = COMPOSE_BITS(Data[4], 16, 8);
-		FrameData[8] |= COMPOSE_BITS(Data[5] >> 16, 0, 16);
-		FrameData[9] = COMPOSE_BITS(Data[5], 8, 16);
-		FrameData[9] |= COMPOSE_BITS(Data[6] >> 24, 0, 8);
-		FrameData[10] = COMPOSE_BITS(Data[6], 0, 24);
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 5, 2, 3);	// B2a DIF/SIF/AIF
+		FrameData[2] = COMPOSE_BITS(IntegrityFlags[svid-1] >> 13, 0, 2);	// SISMAI
+		FrameData[2] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 11, 22, 2);	// SISMAI
+		FrameData[2] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 2, 19, 3);	// B1C DIF/SIF/AIF
+		AppendWord(&FrameData[2], 5, Ephemeris1[svid-1], 211);
 		break;
 	case 11:
-		// HS left with 2 zeros
-		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1], 6, 10);
-		Data = Ephemeris2[svid-1];
-		FrameData[2] = COMPOSE_BITS(Data[0] >> 24, 0, 6);
-		FrameData[2] |= COMPOSE_BITS(Data[0], 0, 24);
-		FrameData[3] = COMPOSE_BITS(Data[1] >> 8, 0, 24);
-		FrameData[4] = COMPOSE_BITS(Data[1], 16, 8);
-		FrameData[4] |= COMPOSE_BITS(Data[2] >> 16, 0, 16);
-		FrameData[5] = COMPOSE_BITS(Data[2], 8, 16);
-		FrameData[5] |= COMPOSE_BITS(Data[3] >> 24, 0, 8);
-		FrameData[6] = COMPOSE_BITS(Data[3], 0, 24);
-		FrameData[7] = COMPOSE_BITS(Data[4] >> 8, 0, 24);
-		FrameData[8] = COMPOSE_BITS(Data[4], 16, 8);
-		FrameData[8] |= COMPOSE_BITS(Data[5] >> 16, 0, 16);
-		FrameData[9] = COMPOSE_BITS(Data[5], 8, 16);
-		FrameData[9] |= COMPOSE_BITS(Data[6] >> 24, 0, 8);
-		FrameData[10] = COMPOSE_BITS(Data[6], 0, 24);
+		// HS filled with 2 zeros
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 5, 13, 3);	// B2a DIF/SIF/AIF
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 11, 9, 4);	// SISMAI
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 2, 6, 3);	// B1C DIF/SIF/AIF
+		AppendWord(&FrameData[1], 18, Ephemeris2[svid-1], 222);
 		break;
 	case 30:
-		// HS left with 2 zeros
-		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1], 6, 10);
-		Data = ClockParam[svid-1];
-		FrameData[1] |= COMPOSE_BITS(Data[0] >> 9, 0, 6);
-		FrameData[2] = COMPOSE_BITS(Data[0], 15, 9);
-		FrameData[2] |= COMPOSE_BITS(Data[1] >> 17, 0, 15);
-		FrameData[3] = COMPOSE_BITS(Data[1], 7, 17);
-		FrameData[3] |= COMPOSE_BITS(Data[2] >> 25, 0, 7);
-		FrameData[4] = COMPOSE_BITS(Data[2] >> 1, 0, 24);
-		FrameData[5] = COMPOSE_BITS(Data[2], 23, 1);
+		// HS filled with 2 zeros
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 5, 13, 3);	// B2a DIF/SIF/AIF
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 11, 9, 4);	// SISMAI
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 2, 6, 3);	// B1C DIF/SIF/AIF
+		AppendWord(&FrameData[1], 18, ClockParam[svid-1], 69);
+		FrameData[4] |= COMPOSE_BITS(ClockParam[svid-1][3] >> 1, 0, 9);	// IODC
+		FrameData[5] = COMPOSE_BITS(ClockParam[svid-1][3], 23, 1);	// IODC
 		FrameData[6] = FrameData[7] = FrameData[8] = FrameData[9] = FrameData[10] = 0;	// fill rest of 143bits with 0
 		break;
 	case 34:
-		// HS left with 2 zeros
-		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1], 6, 10);
-		// SISAI left with 22 zeros
-		Data = ClockParam[svid-1];
-		FrameData[2] = COMPOSE_BITS(Data[0] >> 7, 0, 8);
-		FrameData[3] = COMPOSE_BITS(Data[0], 17, 7);
-		FrameData[3] |= COMPOSE_BITS(Data[1] >> 15, 0, 17);
-		FrameData[4] = COMPOSE_BITS(Data[1], 9, 15);
-		FrameData[4] |= COMPOSE_BITS(Data[2] >> 23, 0, 9);
-		FrameData[5] = COMPOSE_BITS(Data[2], 1, 23);
+		// HS filled with 2 zeros
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 5, 13, 3);	// B2a DIF/SIF/AIF
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 11, 9, 4);	// SISMAI
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 2, 6, 3);	// B1C DIF/SIF/AIF
+		// SISAI filled with 22 zeros
+		FrameData[2] = 0;
+		AppendWord(&FrameData[2], 16, ClockParam[svid-1], 69);
+		FrameData[4] |= COMPOSE_BITS(ClockParam[svid-1][3], 1, 10);	// IODC
 		FrameData[6] = FrameData[7] = FrameData[8] = FrameData[9] = FrameData[10] = 0;	// fill rest of 121bits with 0
 		break;
 	}

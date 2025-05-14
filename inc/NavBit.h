@@ -11,7 +11,7 @@
 
 #include "BasicTypes.h"
 
-#define COMPOSE_BITS(data, start, width) (((data) & ((1UL << width) - 1)) << start)
+#define COMPOSE_BITS(data, start, width) (((data) & ((1UL << (width)) - 1)) << (start))
 
 typedef union
 {
@@ -22,6 +22,8 @@ typedef union
 class NavBit
 {
 public:
+	enum NavParamType { ParamTypeSTO, ParamTypeEOP, ParamTypeIonKModel, ParamTypeIonGModel, ParamTypeIonBModel };
+
 	NavBit();
 	~NavBit();
 
@@ -29,6 +31,7 @@ public:
 	virtual int SetEphemeris(int svid, PGPS_EPHEMERIS Eph) = 0;
 	virtual int SetAlmanac(GPS_ALMANAC Alm[]) = 0;
 	virtual int SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam) = 0;
+	virtual int SetNavParam(NavParamType ParamType, void *Param) { return 0; }
 	int roundi(double data);
 	int roundu(double data);
 	double UnscaleDouble(double value, int scale);

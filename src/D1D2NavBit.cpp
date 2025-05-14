@@ -173,7 +173,7 @@ int D1D2NavBit::SetAlmanac(GPS_ALMANAC Alm[])
 	for (i = 0; i < 63; i ++)
 	{
 		FillBdsAlmanacPage(&Alm[i], BdsStreamAlm[i]);
-		if (Alm[i].flag == 1)
+		if (Alm[i].valid & 1)
 		{
 			toa = Alm[i].toa >> 12;
 			week = Alm[i].week & 0xff;
@@ -515,7 +515,7 @@ int D1D2NavBit::FillBdsAlmanacPage(PGPS_ALMANAC Almanac, unsigned int Stream[9])
 	signed int IntValue;
 	unsigned int UintValue;
 
-	if (Almanac->flag == 0)
+	if (Almanac->valid == 0)
 		return 0;
 	Value = UnscaleDouble(Almanac->sqrtA, -11);
 	UintValue = roundu(Value);
@@ -565,7 +565,7 @@ int D1D2NavBit::FillBdsHealthPage(PGPS_ALMANAC Almanac, int Length, unsigned int
 
 	for (i = 0; i < Length; i ++)
 	{
-		health = (Almanac[i].flag == 1) ? 0 : (0x1ff + Almanac[i].health);
+		health = (Almanac[i].valid == 1) ? 0 : (0x1ff + Almanac[i].health);
 		index0 = i * 9 + 20;	// first bit position
 		index1 = index0 + 8;	// last bit position
 		if ((index0 / 22) == (index1 / 22))	// in same WORD

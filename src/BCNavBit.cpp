@@ -65,10 +65,188 @@ const unsigned int BCNavBit::v2e_table[64] = {
 
 BCNavBit::BCNavBit()
 {
+	memset(Ephemeris1, 0, sizeof(Ephemeris1));
+	memset(Ephemeris2, 0, sizeof(Ephemeris2));
+	memset(ClockParam, 0, sizeof(ClockParam));
+	memset(IntegrityFlags, 0, sizeof(IntegrityFlags));
+	memset(ReducedAlmanac, 0, sizeof(ReducedAlmanac));
+	memset(MidiAlmanac, 0, sizeof(MidiAlmanac));
+	memset(BdGimIono, 0, sizeof(BdGimIono));
+	memset(BdtUtcParam, 0, sizeof(BdtUtcParam));
+	memset(EopParam, 0, sizeof(EopParam));
+	memset(BgtoParam, 0, sizeof(BgtoParam));
 }
 
 BCNavBit::~BCNavBit()
 {
+}
+
+int BCNavBit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
+{
+	unsigned int *Data;
+	signed int IntValue;
+	unsigned int UintValue;
+	long long int LongValue;
+	unsigned long long int ULongValue;
+
+	if (svid < 1 || svid > 63 || !Eph || !Eph->valid)
+		return 0;
+	if ((Eph->toe % 300) != 0)	// BCNAV ephemeris requires toe be multiple of 300
+		return 0;
+
+	// fill in Ephemeris1
+	Data = Ephemeris1[svid-1];
+	Data[0] = COMPOSE_BITS(Eph->iode, 16, 8);
+	UintValue = Eph->toe / 300;	// toe
+	Data[0] |= COMPOSE_BITS(UintValue, 5, 11);
+	UintValue = Eph->flag;	// SatType
+	Data[0] |= COMPOSE_BITS(UintValue, 3, 2);
+	IntValue = UnscaleInt(Eph->axis - ((UintValue == 3) ? 27906100.0 : 42162200.0), -9);	// deltaA
+	Data[0] |= COMPOSE_BITS(IntValue >> 23, 0, 3);
+	Data[1] = COMPOSE_BITS(IntValue, 1, 23);
+	IntValue = UnscaleInt(Eph->axis_dot, -21);	// Adot
+	Data[1] |= COMPOSE_BITS(IntValue >> 24, 0, 1);
+	Data[2] = COMPOSE_BITS(IntValue, 0, 24);
+	IntValue = UnscaleInt(Eph->delta_n / PI, -44);	// delta_n
+	Data[3] = COMPOSE_BITS(IntValue, 7, 17);
+	IntValue = UnscaleInt(Eph->delta_n_dot, -57);	// delta n dot
+	Data[3] |= COMPOSE_BITS(IntValue >> 16, 0, 7);
+	Data[4] = COMPOSE_BITS(IntValue, 8, 16);
+	LongValue = UnscaleLong(Eph->M0 / PI, -32);
+	IntValue = (LongValue & 0x100000000LL) ? 1 : 0;
+	UintValue = (unsigned int)LongValue;
+	Data[4] |= COMPOSE_BITS(IntValue, 7, 1);
+	Data[4] |= COMPOSE_BITS(UintValue >> 25, 0, 7);
+	Data[5] = COMPOSE_BITS(UintValue >> 1, 0, 24);
+	Data[6] = COMPOSE_BITS(UintValue, 23, 1);
+	ULongValue = UnscaleULong(Eph->ecc, -34);
+	IntValue = (ULongValue & 0x100000000LL) ? 1 : 0;
+	UintValue = (unsigned int)ULongValue;
+	Data[6] |= COMPOSE_BITS(IntValue, 22, 1);
+	Data[6] |= COMPOSE_BITS(UintValue >> 10, 0, 22);
+	Data[7] = COMPOSE_BITS(UintValue, 14, 10);
+	LongValue = UnscaleLong(Eph->w / PI, -32);
+	IntValue = (LongValue & 0x100000000LL) ? 1 : 0;
+	UintValue = (unsigned int)LongValue;
+	Data[7] |= COMPOSE_BITS(IntValue, 13, 1);
+	Data[7] |= COMPOSE_BITS(UintValue >> 19, 0, 13);
+	Data[8] = COMPOSE_BITS(UintValue, 5, 19);
+
+	// fill in Ephemeris2
+	Data = Ephemeris2[svid-1];
+	LongValue = UnscaleLong(Eph->omega0 / PI, -32);
+	IntValue = (LongValue & 0x100000000LL) ? 1 : 0;
+	UintValue = (unsigned int)LongValue;
+	Data[0] = COMPOSE_BITS(IntValue, 23, 1);
+	Data[0] |= COMPOSE_BITS(UintValue >> 9, 0, 23);
+	Data[1] = COMPOSE_BITS(UintValue, 15, 9);
+	LongValue = UnscaleLong(Eph->i0 / PI, -32);
+	IntValue = (LongValue & 0x100000000LL) ? 1 : 0;
+	UintValue = (unsigned int)LongValue;
+	Data[1] |= COMPOSE_BITS(IntValue, 14, 1);
+	Data[1] |= COMPOSE_BITS(UintValue >> 18, 0, 14);
+	Data[2] = COMPOSE_BITS(UintValue, 6, 18);
+	IntValue = UnscaleInt(Eph->omega_dot / PI, -44);	// omega dot
+	Data[2] |= COMPOSE_BITS(IntValue >> 13, 0, 6);
+	Data[3] = COMPOSE_BITS(IntValue, 11, 13);
+	IntValue = UnscaleInt(Eph->idot / PI, -44);	// i dot
+	Data[3] |= COMPOSE_BITS(IntValue >> 4, 0, 11);
+	Data[4] = COMPOSE_BITS(IntValue, 20, 4);
+	IntValue = UnscaleInt(Eph->cis, -30);	// cis
+	Data[4] |= COMPOSE_BITS(IntValue, 4, 16);
+	IntValue = UnscaleInt(Eph->cic, -30);	// cic
+	Data[4] |= COMPOSE_BITS(IntValue >> 12, 0, 4);
+	Data[5] = COMPOSE_BITS(IntValue, 12, 12);
+	IntValue = UnscaleInt(Eph->crs, -8);	// crs
+	Data[5] |= COMPOSE_BITS(IntValue >> 12, 0, 12);
+	Data[6] = COMPOSE_BITS(IntValue, 12, 12);
+	IntValue = UnscaleInt(Eph->crc, -8);	// crc
+	Data[6] |= COMPOSE_BITS(IntValue >> 12, 0, 12);
+	Data[7] = COMPOSE_BITS(IntValue, 12, 12);
+	IntValue = UnscaleInt(Eph->cus, -30);	// cus
+	Data[7] |= COMPOSE_BITS(IntValue >> 9, 0, 12);
+	Data[8] = COMPOSE_BITS(IntValue, 15, 9);
+	IntValue = UnscaleInt(Eph->cuc, -30);	// cuc
+	Data[8] |= COMPOSE_BITS(IntValue >> 6, 0, 15);
+	Data[9] = COMPOSE_BITS(IntValue, 18, 6);
+
+	// fill in ClockParam (with 17 zeros)
+	Data = ClockParam[svid-1];
+	UintValue = Eph->toc / 300;	// toc
+	Data[0] = COMPOSE_BITS(UintValue, 13, 11);
+	IntValue = UnscaleInt(Eph->af0, -34);	// af0
+	Data[0] |= COMPOSE_BITS(IntValue >> 12, 0, 13);
+	Data[1] = COMPOSE_BITS(IntValue, 12, 12);
+	IntValue = UnscaleInt(Eph->af1, -50);	// af1
+	Data[1] |= COMPOSE_BITS(IntValue >> 10, 0, 12);
+	Data[2] = COMPOSE_BITS(IntValue, 14, 10);
+	IntValue = UnscaleInt(Eph->af2, -66);	// af2
+	Data[2] |= COMPOSE_BITS(IntValue, 3, 11);
+	Data[3] |= COMPOSE_BITS(Eph->iodc, 0, 10);
+
+	// fill in IntegrityFlags
+	IntegrityFlags[svid-1] = Eph->flag >> 2;
+
+	// fill in TGD and ISC
+	Data = TgsIscParam[svid-1];
+	IntValue = UnscaleInt(Eph->tgd_ext[0] - Eph->tgd_ext[1], -34);	// ISC_B1C
+	Data[0] = COMPOSE_BITS(IntValue, 12, 12);
+	IntValue = UnscaleInt(Eph->tgd_ext[1], -34);	// TGD_B1C
+	Data[0] |= COMPOSE_BITS(IntValue, 0, 12);
+	IntValue = UnscaleInt(Eph->tgd_ext[2] - Eph->tgd_ext[3], -34);	// ISC_B2a
+	Data[1] = COMPOSE_BITS(IntValue, 12, 12);
+	IntValue = UnscaleInt(Eph->tgd_ext[1], -34);	// TGD_B2a
+	Data[1] |= COMPOSE_BITS(IntValue, 0, 12);
+	IntValue = UnscaleInt(Eph->tgd_ext[4], -34);	// TGD_B2b
+	Data[2] = COMPOSE_BITS(IntValue, 0, 12);
+
+	return svid;
+}
+
+int BCNavBit::SetAlmanac(GPS_ALMANAC Alm[])
+{
+	int i, toa = 0, week = 0;
+
+	// fill in almanac page
+	for (i = 0; i < 63; i ++)
+	{
+		FillBdsAlmanacPage(&Alm[i], MidiAlmanac[i], ReducedAlmanac[i]);
+		if (Alm[i].valid & 1)
+		{
+			toa = Alm[i].toa >> 12;
+			week = Alm[i].week & 0xff;
+		}
+	}
+
+	return 0;
+}
+
+// put Length bits in 24bit WORD Src into 24bit WORD Dest starting from StartBit with MSB to LSB order
+int BCNavBit::AppendWord(unsigned int *Dest, int StartBit, unsigned int *Src, int Length)
+{
+	int RemainBits = 24;
+	int FillBits;
+
+	while (Length > 0)
+	{
+		FillBits = 24 - StartBit;
+		FillBits = (FillBits <= RemainBits) ? FillBits : RemainBits;
+		FillBits = (FillBits <= Length) ? FillBits : Length;
+		*Dest = ((StartBit == 0) ? 0 : (*Dest)) | COMPOSE_BITS(*Src >> (RemainBits - FillBits), (24 - StartBit - FillBits), FillBits);
+		if ((StartBit += FillBits) >= 24)
+		{
+			StartBit = 0;
+			Dest ++;
+		}
+		if ((RemainBits -= FillBits) <= 0)
+		{
+			RemainBits = 24;
+			Src ++;
+		}
+		Length -= FillBits;
+	}
+
+	return StartBit;
 }
 
 // put bit in Data from MSB ot LSB into BitStream, bit order from bit(BitNumber-1) to bit(0) of Data
@@ -136,4 +314,9 @@ int BCNavBit::GF6IntMul(int a, int b)
 		return e2v_table[v2e_table[a] + v2e_table[b]];
 	else
 		return 0;
+}
+
+int BCNavBit::FillBdsAlmanacPage(PGPS_ALMANAC Almanac, unsigned int MidiAlm[8], unsigned int ReducedAlm[2])
+{
+	return 0;
 }

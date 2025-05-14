@@ -20,17 +20,11 @@ public:
 	~BCNav3Bit();
 
 	int GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits);
-	int SetEphemeris(int svid, PGPS_EPHEMERIS Eph);
-	int SetAlmanac(GPS_ALMANAC Alm[]) { return 0; };
-	int SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam) { return 0; };
 
 private:
-	unsigned int Ephemeris1[63][7];	// ephemeris I (203 bits)
-	unsigned int Ephemeris2[63][7];	// ephemeris II (222 bits)
-	unsigned int ClockParam[63][3];	// clock + IODC (79 bits)
-	unsigned int IntegrityFlags[63];	// B2a DIF/SIF/AIF + SISMAI + B1C DIF/SIF/AIF (10 bits)
 
 	static const char B2bMatrixGen[B2b_SYMBOL_LENGTH*B2b_SYMBOL_LENGTH+1];
+	static const int MessageOrder[6];
 
 	void ComposeMessage(int MessageType, int week, int sow, int svid, unsigned int FrameData[]);
 };

@@ -166,8 +166,8 @@ typedef struct // GPS ephemeris, also used by BDS, Galileo, QZSS and NavIC
 
 typedef struct        			
 {
-	unsigned char	flag;
-	unsigned char	dummy;	// IOD in Galileo
+	unsigned char   valid;	// bit0 means almanac valid
+	unsigned char	flag;	// IOD for Galileo, 2LSB as SatType for BDS
 	unsigned char	health;	// for Galileo, bit5/4 E5aHS, bit3/2 E5bHS, bit1/0 E1BHS
 	unsigned char	svid;
 

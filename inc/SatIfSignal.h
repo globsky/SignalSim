@@ -1,6 +1,6 @@
 #include "BasicTypes.h"
 #include "ComplexNumber.h"
-#include "PrnCode.h"
+#include "PrnGenerate.h"
 #include "NavBit.h"
 #include "SatelliteSignal.h"
 
@@ -19,7 +19,7 @@ private:
 	GnssSystem System;
 	int SignalIndex;
 	int Svid;
-	PrnCode* PrnSequence;
+	PrnGenerate* PrnSequence;
 	int DataLength, PilotLength;
 	CSatelliteSignal SatelliteSignal;
 	PSATELLITE_PARAM SatParam;

@@ -1,13 +1,13 @@
 //----------------------------------------------------------------------
-// PrnCode.h:
+// PrnGenerate.h:
 //   Declaration of PRN code generation class
 //
 //          Copyright (C) 2020-2029 by Jun Mo, All rights reserved.
 //
 //----------------------------------------------------------------------
 
-#ifndef __PRN_CODE_H__
-#define __PRN_CODE_H__
+#ifndef __PRN_GENERATE_H__
+#define __PRN_GENERATE_H__
 
 #include "BasicTypes.h"
 
@@ -36,11 +36,11 @@ struct PrnAttribute
 #define PRN_ATTRIBUTE_BOC 1
 #define PRN_ATTRIBUTE_TMD 2
 
-class PrnCode
+class PrnGenerate
 {
 public:
-	PrnCode(GnssSystem System, int SignalIndex, int Svid);
-	~PrnCode();
+	PrnGenerate(GnssSystem System, int SignalIndex, int Svid);
+	~PrnGenerate();
 
 	int *DataPrn, *PilotPrn;
 	const PrnAttribute* Attribute;
@@ -79,4 +79,4 @@ private:
 	static const PrnAttribute PrnAttributes[];
 };
 
-#endif // __PRN_CODE_H__
+#endif // __PRN_GENERATE_H__

@@ -215,6 +215,7 @@ BCNav1Bit::~BCNav1Bit()
 int BCNav1Bit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits)
 {
 	int i, j, page, soh, how;
+	unsigned int Frame2Data[25];
 	int Symbol2[200], Symbol3[88];
 	int bits2[1200], bits3[528];
 	unsigned int *data, value;
@@ -229,20 +230,16 @@ int BCNav1Bit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBi
 	// assume subframe 3 broadcast page 1 to 4 cyclically
 	page %= 4;
 
-	data = BdsSubframe2[svid-1];
-	// insert WN and HOW for Subframe2
-	data[0] &= 0x7;
-	data[0] |= COMPOSE_BITS(StartTime.Week - 1356, 11, 13);
-	data[0] |= COMPOSE_BITS(how, 3, 8);
+	ComposeSubframe2(StartTime.Week - 1356, how, svid, Frame2Data);
 	// generate CRC for subframe2
-	AppendCRC(data, 25);
+	AppendCRC(Frame2Data, 25);
 	// assign each 6bit into Symbol2 array
 	for (i = 0; i < 25; i ++)
 	{
-		Symbol2[i*4+0] = (data[i] >> 18) & 0x3f;
-		Symbol2[i*4+1] = (data[i] >> 12) & 0x3f;
-		Symbol2[i*4+2] = (data[i] >> 6) & 0x3f;
-		Symbol2[i*4+3] = data[i] & 0x3f;
+		Symbol2[i*4+0] = (Frame2Data[i] >> 18) & 0x3f;
+		Symbol2[i*4+1] = (Frame2Data[i] >> 12) & 0x3f;
+		Symbol2[i*4+2] = (Frame2Data[i] >> 6) & 0x3f;
+		Symbol2[i*4+3] = Frame2Data[i] & 0x3f;
 	}
 	LDPCEncode(Symbol2, B1C_SUBFRAME2_SYMBOL_LENGTH, B1CMatrixGen2);		// do LDPC encode
 	for (i = 0; i < 200; i ++)
@@ -296,122 +293,17 @@ int BCNav1Bit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBi
 	return 0;
 }
 
-int BCNav1Bit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
+void BCNav1Bit::ComposeSubframe2(int week, int how, int svid, unsigned int Frame2Data[25])
 {
-	if (svid < 1 || svid > 63 || !Eph || !Eph->valid)
-		return 0;
-	ComposeSubframe2(Eph, BdsSubframe2[svid-1]);
-	return svid;
-}
-
-// 600 bits subframe information divided int 25 WORDs
-// each WORD has 24bits in 24LSB of unsigned int data in Subframe2[]
-// bit order is MSB first (from bit23) and least index first
-// each 24bits divided into four 6bit symbols in LDPC encode
-void BCNav1Bit::ComposeSubframe2(PGPS_EPHEMERIS Eph, unsigned int Subframe2[25])
-{
-	signed int IntValue;
-	unsigned int UintValue;
-	long long int LongValue;
-	unsigned long long int ULongValue;
-
-	// IODC and IODE in WORD0 ~ WORD1(15MSB)
-	Subframe2[0] = COMPOSE_BITS(Eph->iodc >> 7, 0, 3);
-	Subframe2[1] = COMPOSE_BITS(Eph->iodc, 17, 7);
-	Subframe2[1] |= COMPOSE_BITS(Eph->iode, 9, 8);
-
-	// ephemeris1 203bits in WORD1 ~ WORD10(2MSB)
-	UintValue = Eph->toe / 300;	// toe
-	Subframe2[1] |= COMPOSE_BITS(UintValue >> 2, 0, 9);
-	Subframe2[2] = COMPOSE_BITS(UintValue, 22, 2);
-	UintValue = Eph->flag;	// SatType
-	Subframe2[2] |= COMPOSE_BITS(UintValue, 20, 2);
-	IntValue = UnscaleInt(Eph->axis - ((UintValue == 3) ? 27906100.0 : 42162200.0), -9);	// deltaA
-	Subframe2[2] |= COMPOSE_BITS(IntValue >> 6, 0, 20);
-	Subframe2[3] = COMPOSE_BITS(IntValue, 18, 6);
-	IntValue = UnscaleInt(Eph->axis_dot, -21);	// Adot
-	Subframe2[3] |= COMPOSE_BITS(IntValue >> 7, 0, 18);
-	Subframe2[4] = COMPOSE_BITS(IntValue, 17, 7);
-	IntValue = UnscaleInt(Eph->delta_n / PI, -44);	// delta_n
-	Subframe2[4] |= COMPOSE_BITS(IntValue, 0, 17);
-	IntValue = UnscaleInt(Eph->delta_n_dot, -57);	// delta n dot
-	Subframe2[5] = COMPOSE_BITS(IntValue, 1, 23);
-	LongValue = UnscaleLong(Eph->M0 / PI, -32);
-	IntValue = (LongValue & 0x100000000LL) ? 1 : 0;
-	UintValue = (unsigned int)LongValue;
-	Subframe2[5] |= COMPOSE_BITS(IntValue, 0, 1);
-	Subframe2[6] = COMPOSE_BITS(UintValue >> 8, 0, 24);
-	Subframe2[7] = COMPOSE_BITS(UintValue, 16, 8);
-	ULongValue = UnscaleULong(Eph->ecc, -34);
-	IntValue = (ULongValue & 0x100000000LL) ? 1 : 0;
-	UintValue = (unsigned int)ULongValue;
-	Subframe2[7] |= COMPOSE_BITS(IntValue, 15, 1);
-	Subframe2[7] |= COMPOSE_BITS(UintValue >> 17, 0, 15);
-	Subframe2[8] = COMPOSE_BITS(UintValue, 7, 17);
-	LongValue = UnscaleLong(Eph->w / PI, -32);
-	IntValue = (LongValue & 0x100000000LL) ? 1 : 0;
-	UintValue = (unsigned int)LongValue;
-	Subframe2[8] |= COMPOSE_BITS(IntValue, 6, 1);
-	Subframe2[8] |= COMPOSE_BITS(UintValue >> 26, 0, 6);
-	Subframe2[9] = COMPOSE_BITS(UintValue >> 2, 0, 24);
-	Subframe2[10] = COMPOSE_BITS(UintValue, 22, 2);
-
-	// ephemeris2 222bits in WORD10 ~ WORD19(8MSB)
-	LongValue = UnscaleLong(Eph->omega0 / PI, -32);
-	IntValue = (LongValue & 0x100000000LL) ? 1 : 0;
-	UintValue = (unsigned int)LongValue;
-	Subframe2[10] |= COMPOSE_BITS(IntValue, 21, 1);
-	Subframe2[10] |= COMPOSE_BITS(UintValue >> 11, 0, 21);
-	Subframe2[11] = COMPOSE_BITS(UintValue, 13, 11);
-	LongValue = UnscaleLong(Eph->i0 / PI, -32);
-	IntValue = (LongValue & 0x100000000LL) ? 1 : 0;
-	UintValue = (unsigned int)LongValue;
-	Subframe2[11] |= COMPOSE_BITS(IntValue, 12, 1);
-	Subframe2[11] |= COMPOSE_BITS(UintValue >> 20, 0, 12);
-	Subframe2[12] = COMPOSE_BITS(UintValue, 4, 20);
-	IntValue = UnscaleInt(Eph->omega_dot / PI, -44);	// omega dot
-	Subframe2[12] |= COMPOSE_BITS(IntValue >> 15, 0, 4);
-	Subframe2[13] = COMPOSE_BITS(IntValue, 9, 15);
-	IntValue = UnscaleInt(Eph->idot / PI, -44);	// i dot
-	Subframe2[13] |= COMPOSE_BITS(IntValue >> 6, 0, 9);
-	Subframe2[14] = COMPOSE_BITS(IntValue, 18, 6);
-	IntValue = UnscaleInt(Eph->cis, -30);	// cis
-	Subframe2[14] |= COMPOSE_BITS(IntValue, 2, 16);
-	IntValue = UnscaleInt(Eph->cic, -30);	// cic
-	Subframe2[14] |= COMPOSE_BITS(IntValue >> 14, 0, 2);
-	Subframe2[15] = COMPOSE_BITS(IntValue, 10, 14);
-	IntValue = UnscaleInt(Eph->crs, -8);	// crs
-	Subframe2[15] |= COMPOSE_BITS(IntValue >> 14, 0, 10);
-	Subframe2[16] = COMPOSE_BITS(IntValue, 10, 14);
-	IntValue = UnscaleInt(Eph->crc, -8);	// crc
-	Subframe2[16] |= COMPOSE_BITS(IntValue >> 14, 0, 10);
-	Subframe2[17] = COMPOSE_BITS(IntValue, 10, 14);
-	IntValue = UnscaleInt(Eph->cus, -30);	// cus
-	Subframe2[17] |= COMPOSE_BITS(IntValue >> 11, 0, 10);
-	Subframe2[18] = COMPOSE_BITS(IntValue, 13, 11);
-	IntValue = UnscaleInt(Eph->cuc, -30);	// cuc
-	Subframe2[18] |= COMPOSE_BITS(IntValue >> 8, 0, 13);
-	Subframe2[19] = COMPOSE_BITS(IntValue, 16, 8);
-
-	// clock error 69bits in WORD19 ~ WORD22(5MSB)
-	UintValue = Eph->toc / 300;	// toc
-	Subframe2[19] |= COMPOSE_BITS(UintValue, 5, 11);
-	IntValue = UnscaleInt(Eph->af0, -34);	// af0
-	Subframe2[19] |= COMPOSE_BITS(IntValue >> 20, 0, 5);
-	Subframe2[20] = COMPOSE_BITS(IntValue, 4, 20);
-	IntValue = UnscaleInt(Eph->af1, -50);	// af1
-	Subframe2[20] |= COMPOSE_BITS(IntValue >> 18, 0, 4);
-	Subframe2[21] = COMPOSE_BITS(IntValue, 6, 18);
-	IntValue = UnscaleInt(Eph->af2, -66);	// af2
-	Subframe2[21] |= COMPOSE_BITS(IntValue >> 5, 0, 6);
-	Subframe2[22] = COMPOSE_BITS(IntValue, 19, 5);
-
-	// TGD 36bits in WORD22 ~ WORD23(17MSB)
-	IntValue = UnscaleInt(Eph->tgd2, -34);	// TGD B2a
-	Subframe2[22] |= COMPOSE_BITS(IntValue, 7, 12);
-	IntValue = 0;//UnscaleInt(Eph->???, -34);	// ISC B1C
-	Subframe2[22] |= COMPOSE_BITS(IntValue >> 5, 0, 7);
-	Subframe2[23] = COMPOSE_BITS(IntValue, 19, 5);
-	IntValue = UnscaleInt(Eph->tgd, -34);	// TGD B1C
-	Subframe2[23] |= COMPOSE_BITS(IntValue, 7, 12);
+	// insert WN and HOW for Subframe2
+	Frame2Data[0] = COMPOSE_BITS(week, 11, 13);
+	Frame2Data[0] |= COMPOSE_BITS(how, 3, 8);
+	Frame2Data[0] |= COMPOSE_BITS(ClockParam[svid-1][3] >> 7, 0, 3);
+	Frame2Data[1] = COMPOSE_BITS(ClockParam[svid-1][3], 17, 7);
+	AppendWord(&Frame2Data[1], 7, Ephemeris1[svid-1], 211);
+	AppendWord(&Frame2Data[10], 2, Ephemeris2[svid-1], 222);
+	AppendWord(&Frame2Data[19], 8, ClockParam[svid-1], 69);
+	Frame2Data[22] |= COMPOSE_BITS(TgsIscParam[svid-1][1], 7, 12);
+	Frame2Data[22] |= COMPOSE_BITS(TgsIscParam[svid-1][0] >> 17, 0, 7);
+	Frame2Data[23] = COMPOSE_BITS(TgsIscParam[svid-1][0], 7, 17);
 }

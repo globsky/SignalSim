@@ -242,7 +242,7 @@ int LNavBit::FillGpsAlmanacPage(PGPS_ALMANAC Almanac, unsigned int Stream[8])
 	signed int IntValue;
 	unsigned int UintValue;
 
-	if (Almanac->flag == 0)
+	if ((Almanac->valid & 1) == 0)
 		return 0;
 	Stream[0] = COMPOSE_BITS(Almanac->svid + 0x40, 16, 8);
 	UintValue = UnscaleUint(Almanac->ecc, -21);
@@ -276,7 +276,7 @@ int LNavBit::FillGpsHealthPage(GPS_ALMANAC Almanac[], unsigned int Stream4[8], u
 	int toa, week;
 
 	for (i = 0; i < 32; i ++)
-		if (Almanac[i].flag == 1)
+		if (Almanac[i].valid & 1)
 			break;
 	if (i < 32)	// has valid almanac, get toa and week number
 	{
@@ -292,10 +292,10 @@ int LNavBit::FillGpsHealthPage(GPS_ALMANAC Almanac[], unsigned int Stream4[8], u
 	Stream5[0] |= COMPOSE_BITS(week, 0, 8);
 	for (i = 0; i < 24; i += 4)
 	{
-		Stream5[i/4+1] = COMPOSE_BITS((Almanac[i].flag ? 0 : 0x3f), 18, 6);
-		Stream5[i/4+1] |= COMPOSE_BITS((Almanac[i+1].flag ? 0 : 0x3f), 12, 6);
-		Stream5[i/4+1] |= COMPOSE_BITS((Almanac[i+2].flag ? 0 : 0x3f), 6, 6);
-		Stream5[i/4+1] |= COMPOSE_BITS((Almanac[i+3].flag ? 0 : 0x3f), 0, 6);
+		Stream5[i/4+1] = COMPOSE_BITS(((Almanac[i].valid & 1) ? 0 : 0x3f), 18, 6);
+		Stream5[i/4+1] |= COMPOSE_BITS(((Almanac[i+1].valid & 1) ? 0 : 0x3f), 12, 6);
+		Stream5[i/4+1] |= COMPOSE_BITS(((Almanac[i+2].valid & 1) ? 0 : 0x3f), 6, 6);
+		Stream5[i/4+1] |= COMPOSE_BITS(((Almanac[i+3].valid & 1) ? 0 : 0x3f), 0, 6);
 	}
 
 	// subframe 4 page 25
@@ -304,14 +304,14 @@ int LNavBit::FillGpsHealthPage(GPS_ALMANAC Almanac[], unsigned int Stream4[8], u
 	Stream4[0] |= 0xcccc;
 	for (i = 1; i < 5; i ++)
 		Stream4[i] = 0xcccccc;
-	Stream4[5] = 0xcccc00 + (Almanac[24].flag ? 0 : 0x3f);	// SV25 health
-	Stream5[6] = COMPOSE_BITS((Almanac[25].flag ? 0 : 0x3f), 18, 6);
-	Stream5[6] |= COMPOSE_BITS((Almanac[26].flag ? 0 : 0x3f), 12, 6);
-	Stream5[6] |= COMPOSE_BITS((Almanac[27].flag ? 0 : 0x3f), 6, 6);
-	Stream5[6] = COMPOSE_BITS((Almanac[28].flag ? 0 : 0x3f), 0, 6);
-	Stream5[7] = COMPOSE_BITS((Almanac[29].flag ? 0 : 0x3f), 18, 6);
-	Stream5[7] |= COMPOSE_BITS((Almanac[30].flag ? 0 : 0x3f), 12, 6);
-	Stream5[7] |= COMPOSE_BITS((Almanac[31].flag ? 0 : 0x3f), 6, 6);
+	Stream4[5] = 0xcccc00 + ((Almanac[24].valid & 1) ? 0 : 0x3f);	// SV25 health
+	Stream5[6] = COMPOSE_BITS(((Almanac[25].valid & 1) ? 0 : 0x3f), 18, 6);
+	Stream5[6] |= COMPOSE_BITS(((Almanac[26].valid & 1) ? 0 : 0x3f), 12, 6);
+	Stream5[6] |= COMPOSE_BITS(((Almanac[27].valid & 1) ? 0 : 0x3f), 6, 6);
+	Stream5[6] = COMPOSE_BITS(((Almanac[28].valid & 1) ? 0 : 0x3f), 0, 6);
+	Stream5[7] = COMPOSE_BITS(((Almanac[29].valid & 1) ? 0 : 0x3f), 18, 6);
+	Stream5[7] |= COMPOSE_BITS(((Almanac[30].valid & 1) ? 0 : 0x3f), 12, 6);
+	Stream5[7] |= COMPOSE_BITS(((Almanac[31].valid & 1) ? 0 : 0x3f), 6, 6);
 
 	return 0;
 }

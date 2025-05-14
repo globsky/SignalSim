@@ -63,9 +63,14 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 
 ### 2025
 
+- **5/14/2025**
+  - Rewrite BCNAV1/2/3 navigation data stream generation method (ephemeris generation completed, almanac in next release)
+  - Rename `PrnCode` to `PrnGenerate`
+  - Add variable valid in struct GPS_ALMANAC and redefine contents of variable flag
+
 - **5/6/2025**
-  - Relocate shared RINEX data files from '/XmlObsGen' to root
-  - Relocate SatIfSignal.h and SatIfSignal.cpp from 'IFdataGen/' to 'inc/' and 'src/'
+  - Relocate shared RINEX data files from `/XmlObsGen` to root
+  - Relocate SatIfSignal.h and SatIfSignal.cpp from `IFdataGen/` to `inc/` and `src/`
 
 - **4/22/2025**
   - Enhanced documentation with updated main `README.md`
