@@ -1,0 +1,91 @@
+{
+	"version": 1.0,
+	"description": "test file for IF data generation",
+	"time": {
+		"type": "UTC",
+		"year": 2021,
+		"month": 6,
+		"day": 19,
+		"hour": 10,
+		"minute": 5,
+		"second": 30
+	},
+	"trajectory": {
+		"name": "test scenario",
+		"initPosition": {
+			"type": "LLA",
+			"format": "d",
+			"longitude": -121.915773,
+			"latitude": 37.352721,
+			"altitude": 20
+		},
+		"initVelocity": {
+			"type": "SCU",
+			"speed": 5,
+			"course": 318.91
+		},
+		"trajectoryList": [
+			{
+				"type": "Const",
+				"time": 0.2
+			},
+			{
+				"type": "Jerk",
+				"time": 0.2,
+				"acceleration": 0.2
+			},
+			{
+				"type": "ConstAcc",
+				"time": 0.1,
+				"acceleration": 0.2
+			}
+		]
+	},
+	"ephemeris": {
+		"type": "RINEX",
+		"name": "..\/..\/..\/..\/EphData\/BRDC00IGS_R_20211700000_01D_MN.rnx"
+	},
+	"output": {
+		"type": "IFdata",
+		"format": "IQ8",
+		"sampleFreq": 25,
+		"centerFreq": 1580,
+		"name": "IfGenTest8.bin",
+		"config": {
+			"elevationMask": 3
+		},
+		"systemSelect": [
+			{
+				"system": "GPS",
+				"signal": "L1CA",
+				"enable": true
+			},
+			{
+				"system": "BDS",
+				"signal": "B1C",
+				"enable": false
+			},
+			{
+				"system": "BDS",
+				"signal": "B1I",
+				"enable": false
+			},
+			{
+				"system": "Galileo",
+				"enable": false
+			},
+			{
+				"system": "GLONASS",
+				"enable": false
+			}
+		]
+	},
+	"power": {
+		"noiseFloor": -172,
+		"initPower": {
+			"unit": "dBHz",
+			"value": 47
+		},
+		"elevationAdjust": false
+	}
+}
