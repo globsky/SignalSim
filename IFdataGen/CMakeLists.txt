@@ -38,7 +38,7 @@ add_executable (IFdataGen
     "../src/NavData.cpp"
     "../src/PilotBit.cpp"
     "../src/PowerControl.cpp"
-    "../src/PrnCode.cpp"
+    "../src/PrnGenerate.cpp"
     "../src/Rinex.cpp"
     "../src/SatelliteParam.cpp"
     "../src/SatelliteSignal.cpp"
