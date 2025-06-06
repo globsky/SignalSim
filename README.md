@@ -63,6 +63,12 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 
 ### 2025
 
+- **6/6/2025**
+  - Add `configs` folder with examples `.json` files for multiple constellations.
+  - Explain how to set center frequency and bandwidth for each constellation in the [IFdataGen GNSS_Signal_Calculations](./IFdataGen/GNSS_Signal_Calculations.md).
+  - Expand unit and integration tests for signal generation and update the test matrix accordingly.
+  - Update  [IFdataGen README](./IFdataGen/README.md) with new examples and configuration guidance.
+
 - **5/14/2025**
   - Rewrite BCNAV1/2/3 navigation data stream generation method (ephemeris generation completed, almanac in next release)
   - Rename `PrnCode` to `PrnGenerate`

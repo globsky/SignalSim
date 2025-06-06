@@ -34,7 +34,7 @@
 	},
 	"ephemeris": {
 		"type": "RINEX",
-		"name": "D:\/SignalSim\/XmlObsGen\/EphData\/BRDC00IGS_R_20211700000_01D_MN.rnx"
+		"name": "D:\/SignalSim\/EphData\/BRDC00IGS_R_20211700000_01D_MN.rnx"
 	},
 	"output": {
 		"type": "IFdata",

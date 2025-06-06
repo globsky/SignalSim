@@ -43,11 +43,7 @@
 	},
 	"ephemeris": {
 		"type": "RINEX",
-<<<<<<< HEAD:IFdataGen/IfGenTest.json
 		"name": "..\/EphData\/BRDC00IGS_R_20211700000_01D_MN.rnx"
-=======
-      "name": "D:\/SignalSim\/EphData\/BRDC00IGS_R_20211700000_01D_MN.rnx"
->>>>>>> a07358327927c915920ca36bcd3f4198e9bd7aaf:IFdataGen/configs/IfGenTest.json
 	},
 	"output": {
 		"type": "IFdata",

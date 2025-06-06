@@ -16,7 +16,7 @@ include_directories(../inc)
 # Add source files to the project
 add_executable (IFdataGen
     "IFdataGen.cpp"
-    "SatIfSignal.cpp"
+    "../src/SatIfSignal.cpp"
     "../src/Almanac.cpp"
     "../src/BCNav1Bit.cpp"
     "../src/BCNav2Bit.cpp"
