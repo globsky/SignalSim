@@ -152,7 +152,7 @@ Or download the ZIP archive and extract it.
   ```json
   "ephemeris": {
       "type": "RINEX",
-      "name": "D:\/SignalSim\/XmlObsGen\/EphData\/BRDC00IGS_R_20211700000_01D_MN.rnx"
+      "name": "..\/..\/..\/..\/EphData\/BRDC00IGS_R_20211700000_01D_MN.rnx"
   }
   ```
 
