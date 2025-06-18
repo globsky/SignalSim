@@ -281,7 +281,7 @@ int BCNav1Bit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBi
 	{
 		*p1 = bits2[22*48+j]; p1 += 36;
 		*p2 = bits2[23*48+j]; p2 += 36;
-		*p3 = bits3[24*48+j]; p3 += 36;
+		*p3 = bits2[24*48+j]; p3 += 36;
 	}
 
 	// add subframe 1

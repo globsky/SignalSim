@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{8939f7f4-c8f3-4867-9cb4-1f896402cfd0}</ProjectGuid>
-    <RootNamespace>IFdataGen</RootNamespace>
+    <ProjectGuid>{72adf956-46c6-4b05-872d-29d1f21b16da}</ProjectGuid>
+    <RootNamespace>JsonObsGen</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -129,69 +129,31 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\inc\Almanac.h" />
-    <ClInclude Include="..\inc\BasicTypes.h" />
-    <ClInclude Include="..\inc\BCNav1Bit.h" />
-    <ClInclude Include="..\inc\BCNav2Bit.h" />
-    <ClInclude Include="..\inc\BCNav3Bit.h" />
-    <ClInclude Include="..\inc\BCNavBit.h" />
-    <ClInclude Include="..\inc\CNav2Bit.h" />
-    <ClInclude Include="..\inc\CNavBit.h" />
-    <ClInclude Include="..\inc\ComplexNumber.h" />
-    <ClInclude Include="..\inc\ConstVal.h" />
-    <ClInclude Include="..\inc\Coordinate.h" />
-    <ClInclude Include="..\inc\D1D2NavBit.h" />
-    <ClInclude Include="..\inc\FNavBit.h" />
-    <ClInclude Include="..\inc\GNavBit.h" />
-    <ClInclude Include="..\inc\GnssTime.h" />
-    <ClInclude Include="..\inc\INavBit.h" />
-    <ClInclude Include="..\inc\JsonInterpreter.h" />
-    <ClInclude Include="..\inc\JsonParser.h" />
-    <ClInclude Include="..\inc\LNavBit.h" />
-    <ClInclude Include="..\inc\NavBit.h" />
-    <ClInclude Include="..\inc\NavData.h" />
-    <ClInclude Include="..\inc\PilotBit.h" />
-    <ClInclude Include="..\inc\PowerControl.h" />
-    <ClInclude Include="..\inc\PrnGenerate.h" />
-    <ClInclude Include="..\inc\Rinex.h" />
-    <ClInclude Include="..\inc\SatelliteParam.h" />
-    <ClInclude Include="..\inc\SatelliteSignal.h" />
-    <ClInclude Include="..\inc\SatIfSignal.h" />
-    <ClInclude Include="..\inc\SignalSim.h" />
-    <ClInclude Include="..\inc\Trajectory.h" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="..\src\Almanac.cpp" />
-    <ClCompile Include="..\src\BCNav1Bit.cpp" />
-    <ClCompile Include="..\src\BCNav2Bit.cpp" />
-    <ClCompile Include="..\src\BCNav3Bit.cpp" />
-    <ClCompile Include="..\src\BCNavBit.cpp" />
-    <ClCompile Include="..\src\CNav2Bit.cpp" />
-    <ClCompile Include="..\src\CNavBit.cpp" />
-    <ClCompile Include="..\src\ComplexNumber.cpp" />
     <ClCompile Include="..\src\Coordinate.cpp" />
-    <ClCompile Include="..\src\D1D2NavBit.cpp" />
-    <ClCompile Include="..\src\FNavBit.cpp" />
-    <ClCompile Include="..\src\GNavBit.cpp" />
     <ClCompile Include="..\src\GnssTime.cpp" />
-    <ClCompile Include="..\src\INavBit.cpp" />
     <ClCompile Include="..\src\JsonInterpreter.cpp" />
     <ClCompile Include="..\src\JsonParser.cpp" />
-    <ClCompile Include="..\src\LNavBit.cpp" />
-    <ClCompile Include="..\src\NavBit.cpp" />
     <ClCompile Include="..\src\NavData.cpp" />
-    <ClCompile Include="..\src\PilotBit.cpp" />
     <ClCompile Include="..\src\PowerControl.cpp" />
-    <ClCompile Include="..\src\PrnGenerate.cpp" />
     <ClCompile Include="..\src\Rinex.cpp" />
     <ClCompile Include="..\src\SatelliteParam.cpp" />
-    <ClCompile Include="..\src\SatelliteSignal.cpp" />
-    <ClCompile Include="..\src\SatIfSignal.cpp" />
     <ClCompile Include="..\src\Trajectory.cpp" />
-    <ClCompile Include="IFdataGen.cpp" />
+    <ClCompile Include="JsonObsGen.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\src\MemoryCode.dat" />
+    <ClInclude Include="..\inc\Almanac.h" />
+    <ClInclude Include="..\inc\BasicTypes.h" />
+    <ClInclude Include="..\inc\ConstVal.h" />
+    <ClInclude Include="..\inc\Coordinate.h" />
+    <ClInclude Include="..\inc\GnssTime.h" />
+    <ClInclude Include="..\inc\JsonInterpreter.h" />
+    <ClInclude Include="..\inc\JsonParser.h" />
+    <ClInclude Include="..\inc\NavData.h" />
+    <ClInclude Include="..\inc\PowerControl.h" />
+    <ClInclude Include="..\inc\Rinex.h" />
+    <ClInclude Include="..\inc\SatelliteParam.h" />
+    <ClInclude Include="..\inc\Trajectory.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

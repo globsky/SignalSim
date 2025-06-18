@@ -63,6 +63,11 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 
 ### 2025
 
+- **6/18/2025**
+  - Fix bug of access out of array boundary in BCNAV1 data stream compose
+  - Update `IFdataGen` VS2022 project file
+  - Add VS2022 project file to `JsonObsGen`
+
 - **6/6/2025**
   - Add `configs` folder with examples `.json` files for multiple constellations.
   - Explain how to set center frequency and bandwidth for each constellation in the [IFdataGen GNSS_Signal_Calculations](./IFdataGen/GNSS_Signal_Calculations.md).
