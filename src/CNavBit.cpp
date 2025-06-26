@@ -48,6 +48,14 @@ int CNavBit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits
 	unsigned int EncodeData[9], CrcResult, EncodeWord;	// 276bit to be encoded by CRC
 	unsigned char EncodeMessage[75], ConvEncodeBits;	// EncodeMessage contains 8x75 bits
 
+	// validate svid to prevent out-of-bounds array access
+	if (svid < 1 || svid > 32)
+	{
+		// fill NavBits with zeros for invalid svid
+		memset(NavBits, 0, sizeof(int) * 600);
+		return -1;
+	}
+
 	// first determine the current TOW and subframe number
 	StartTime.Week += StartTime.MilliSeconds / 604800000;
 	StartTime.MilliSeconds %= 604800000;
@@ -316,6 +324,14 @@ void CNavBit::GetMessageData(int svid, int message, int TOW, unsigned int Data[9
 {
 	int message_order[6] = {30, 33, 31, 37, 31, 37}, message_id;
 	int frame = message / 4, alm_index;
+
+	// validate svid to prevent out-of-bounds array access
+	if (svid < 1 || svid > 32)
+	{
+		// initialize Data with zeros for invalid svid
+		memset(Data, 0, sizeof(unsigned int) * 9);
+		return;
+	}
 
 // frame index   1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
 // msg index 0  10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10

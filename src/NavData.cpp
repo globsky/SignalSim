@@ -5,6 +5,8 @@
 //          Copyright (C) 2020-2029 by Jun Mo, All rights reserved.
 //
 //----------------------------------------------------------------------
+#include <stdio.h>
+#include <stdlib.h>
 #include <malloc.h>
 #include <string.h>
 #include <math.h>
@@ -262,7 +264,11 @@ void CNavData::ReadNavFile(char *filename)
 	PGLONASS_EPHEMERIS pEph = (PGLONASS_EPHEMERIS)(&NavData);
 
 	if ((fp = fopen(filename, "r")) == NULL)
-		return;
+	{
+		fprintf(stderr, "Error: Unable to open ephemeris file: %s\n", filename);
+		fprintf(stderr, "Cannot continue without ephemeris data. Exiting.\n");
+		exit(1);
+	}
 
 	while ((DataType = LoadNavFileHeader(fp, (void *)&NavData)) != NavDataEnd)
 	{
@@ -285,7 +291,10 @@ void CNavData::ReadAlmFile(char *filename)
 	AlmanacType Type;
 
 	if ((fp = fopen(filename, "r")) == NULL)
+	{
+		fprintf(stderr, "Error: Unable to open almanac file: %s\n", filename);
 		return;
+	}
 	Type = CheckAlmnanacType(fp);
 	switch (Type)
 	{

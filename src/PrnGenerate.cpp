@@ -189,6 +189,13 @@ PrnGenerate::PrnGenerate(GnssSystem System, int SignalIndex, int Svid)
 	switch (System)
 	{
 	case GpsSystem:
+		// validate GPS SVID range
+		if (Svid < 1 || Svid > 32)
+		{
+			DataPrn = NULL; PilotPrn = NULL;
+			Attribute = NULL;
+			break;
+		}
 		switch (SignalIndex)
 		{
 		case SIGNAL_INDEX_L1CA:

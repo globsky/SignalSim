@@ -171,7 +171,7 @@ BOOL CSatelliteSignal::GetSatelliteSignal(GNSS_TIME TransmitTime, complex_number
 
 	if (FrameNumber != CurrentFrame)
 	{
-		if (NavData)
+		if (NavData && Svid > 0 && Svid <= 32)
 			NavData->GetFrameData(TransmitTime, Svid, Param, DataBits);
 		CurrentFrame = FrameNumber;
 	}
