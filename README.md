@@ -63,6 +63,15 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 
 ### 2025
 
+- **6/27/2025**
+  - Added OpenMP parallelization for signal generation
+  - Implemented FastMath class with lookup tables for trigonometric functions
+  - Optimized noise generation using Marsaglia Polar method
+  - Added Makefile with optimization flags
+  - Added clipping counter for quantization monitoring
+  - Add SVID boundary check and protection
+  - Correction on L2C time-multiplex signal generation
+
 - **6/18/2025**
   - Fix bug of access out of array boundary in BCNAV1 data stream compose
   - Update `IFdataGen` VS2022 project file

@@ -262,7 +262,10 @@ void CNavData::ReadNavFile(char *filename)
 	PGLONASS_EPHEMERIS pEph = (PGLONASS_EPHEMERIS)(&NavData);
 
 	if ((fp = fopen(filename, "r")) == NULL)
+	{
+		fprintf(stderr, "Error: Unable to open ephemeris file: %s\n", filename);	// change to call-back error message output message later
 		return;
+	}
 
 	while ((DataType = LoadNavFileHeader(fp, (void *)&NavData)) != NavDataEnd)
 	{
@@ -285,7 +288,10 @@ void CNavData::ReadAlmFile(char *filename)
 	AlmanacType Type;
 
 	if ((fp = fopen(filename, "r")) == NULL)
+	{
+		fprintf(stderr, "Error: Unable to open almanac file: %s\n", filename);	// change to call-back error message output message later
 		return;
+	}
 	Type = CheckAlmnanacType(fp);
 	switch (Type)
 	{

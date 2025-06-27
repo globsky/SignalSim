@@ -3,6 +3,9 @@
 #include <math.h>
 #include <iostream>
 #include <cstring>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 #include "SignalSim.h"
 
@@ -24,8 +27,8 @@ void UpdateSatParamList(GNSS_TIME CurTime, KINEMATIC_INFO CurPos, int ListCount,
 int StepToNextMs();
 complex_number GenerateNoise(double Sigma);
 NavBit* GetNavData(GnssSystem SatSystem, int SatSignalIndex, NavBit* NavBitArray[]);
-void QuantSamplesIQ4(complex_number Samples[], int Length, unsigned char QuantSamples[]);
-void QuantSamplesIQ8(complex_number Samples[], int Length, unsigned char QuantSamples[]);
+int QuantSamplesIQ4(complex_number Samples[], int Length, unsigned char QuantSamples[], double GainScale);
+int QuantSamplesIQ8(complex_number Samples[], int Length, unsigned char QuantSamples[], double GainScale);
 
 CTrajectory Trajectory;
 CPowerControl PowerControl;
@@ -206,6 +209,7 @@ int main(int argc, char* argv[])
 	{
 		BdsEph[i-1] = NavData.FindEphemeris(BdsSystem, BdsTime, i);
 		NavBitArray[DataBitD1D2]->SetEphemeris(i, BdsEph[i - 1]);
+		NavBitArray[DataBitBCNav1]->SetEphemeris(i, BdsEph[i - 1]);
 		NavBitArray[DataBitBCNav2]->SetEphemeris(i, BdsEph[i - 1]);
 		NavBitArray[DataBitBCNav3]->SetEphemeris(i, BdsEph[i - 1]);
 	}
@@ -225,6 +229,9 @@ int main(int argc, char* argv[])
 	NavBitArray[DataBitCNav]->SetAlmanac(NavData.GetGpsAlmanac());
 	NavBitArray[DataBitCNav2]->SetAlmanac(NavData.GetGpsAlmanac());
 	NavBitArray[DataBitD1D2]->SetAlmanac(NavData.GetBdsAlmanac());
+	NavBitArray[DataBitBCNav1]->SetAlmanac(NavData.GetBdsAlmanac());
+	NavBitArray[DataBitBCNav2]->SetAlmanac(NavData.GetBdsAlmanac());
+	NavBitArray[DataBitBCNav3]->SetAlmanac(NavData.GetBdsAlmanac());
 	NavBitArray[DataBitINav]->SetAlmanac(NavData.GetGalileoAlmanac());
 	NavBitArray[DataBitFNav]->SetAlmanac(NavData.GetGalileoAlmanac());
 	NavBitArray[DataBitGNav]->SetAlmanac((PGPS_ALMANAC)NavData.GetGlonassAlmanac());
@@ -250,7 +257,7 @@ int main(int argc, char* argv[])
 		if (!(OutputParam.FreqSelect[GpsSystem] & (1 << SignalIndex)))
 			continue;
 		IfFreq = SignalCenterFreq[0][SignalIndex] - OutputParam.CenterFreq * 1000;
-		printf("GPS %s with IF %dkHz\n", SignalName[0][SignalIndex], IfFreq / 1000);
+		printf("GPS %s %d visible SVs with IF %dkHz\n", SignalName[0][SignalIndex], GpsSatNumber, IfFreq / 1000);
 		for (i = 0; i < GpsSatNumber; i++)
 		{
 			if (TotalChannelNumber >= TOTAL_SAT_CHANNEL)
@@ -266,7 +273,7 @@ int main(int argc, char* argv[])
 		if (!(OutputParam.FreqSelect[BdsSystem] & (1 << SignalIndex)))
 			continue;
 		IfFreq = SignalCenterFreq[1][SignalIndex] - OutputParam.CenterFreq * 1000;
-		printf("BDS %s with IF %dkHz\n", SignalName[1][SignalIndex], IfFreq / 1000);
+		printf("BDS %s %d visible SVs with IF %dkHz\n", SignalName[1][SignalIndex], BdsSatNumber, IfFreq / 1000);
 		for (i = 0; i < BdsSatNumber; i++)
 		{
 			if (TotalChannelNumber >= TOTAL_SAT_CHANNEL)
@@ -282,7 +289,7 @@ int main(int argc, char* argv[])
 		if (!(OutputParam.FreqSelect[GalileoSystem] & (1 << SignalIndex)))
 			continue;
 		IfFreq = SignalCenterFreq[2][SignalIndex] - OutputParam.CenterFreq * 1000;
-		printf("Galileo %s with IF %dkHz\n", SignalName[2][SignalIndex], IfFreq / 1000);
+		printf("Galileo %s %d visible SVs with IF %dkHz\n", SignalName[2][SignalIndex], GalSatNumber, IfFreq / 1000);
 		for (i = 0; i < GalSatNumber; i++)
 		{
 			if (TotalChannelNumber >= TOTAL_SAT_CHANNEL)
@@ -298,7 +305,7 @@ int main(int argc, char* argv[])
 		if (!(OutputParam.FreqSelect[GlonassSystem] & (1 << SignalIndex)))
 			continue;
 		IfFreq = SignalCenterFreq[3][SignalIndex] - OutputParam.CenterFreq * 1000;
-		printf("GLONASS %s with IF %dkHz\n", SignalName[3][SignalIndex], IfFreq / 1000);
+		printf("GLONASS %s %d visible SVs with IF %dkHz\n", SignalName[3][SignalIndex], GloSatNumber, IfFreq / 1000);
 		for (i = 0; i < GloSatNumber; i++)
 		{
 			if (TotalChannelNumber >= TOTAL_SAT_CHANNEL)
@@ -310,39 +317,74 @@ int main(int argc, char* argv[])
 			printf("\tSV%02d with Doppler %dHz\n", GloEphVisible[i]->n, (int)GetDoppler(&GloSatParam[GloEphVisible[i]->n-1], SignalIndex));
 		}
 	}
+	printf("Total channels: %d\n\n", TotalChannelNumber);
 
 	NoiseArray = new complex_number[OutputParam.SampleFreq];
 	QuantArray = new unsigned char[OutputParam.SampleFreq * 2];
 
 	int length = 0;
+	long long TotalClippedSamples = 0;
+	long long TotalSamples = 0;
+	double AGCGain = 1.0;
+
 	while (!StepToNextMs())
 	{
 		// generate white noise
 		for (i = 0; i < OutputParam.SampleFreq; i ++)
 			NoiseArray[i] = GenerateNoise(1.0);
-		for (i = 0; i < TOTAL_SAT_CHANNEL; i++)
+
+		#pragma omp parallel for schedule(dynamic)
+		for (i = 0; i < TotalChannelNumber; i++)
 		{
-			if (!SatIfSignal[i])
-				continue;
 			SatIfSignal[i]->GetIfSample(CurTime);
+
+			#pragma omp parallel for schedule(static) if(OutputParam.SampleFreq > 1000)
 			for (j = 0; j < OutputParam.SampleFreq; j++)
 				NoiseArray[j] += SatIfSignal[i]->SampleArray[j];
 		}
+	
 		if (OutputParam.Format == OutputFormatIQ4)
 		{
-			QuantSamplesIQ4(NoiseArray, OutputParam.SampleFreq, QuantArray);
+			TotalClippedSamples += QuantSamplesIQ4(NoiseArray, OutputParam.SampleFreq, QuantArray, AGCGain);
 			fwrite(QuantArray, sizeof(unsigned char), OutputParam.SampleFreq, IfFile);
 		}
 		else
 		{
-			QuantSamplesIQ8(NoiseArray, OutputParam.SampleFreq, QuantArray);
+			TotalClippedSamples += QuantSamplesIQ8(NoiseArray, OutputParam.SampleFreq, QuantArray, AGCGain);
 			fwrite(QuantArray, sizeof(unsigned char) * 2, OutputParam.SampleFreq, IfFile);
 		}
+		TotalSamples += OutputParam.SampleFreq * 2; // I and Q
+
+#if 1
+		// Adjust gain every 100ms
+		if ((length % 100) == 99)
+		{
+			double ClippingRate = (double)TotalClippedSamples / TotalSamples;
+			if (ClippingRate > 0.01) // clipped rate over 1%
+			{
+				AGCGain *= 0.95; // reduce gain by 5%
+				printf("AGC: Clipping %.2f%%, reducing gain to %.3f\n", ClippingRate * 100, AGCGain);
+			}
+			else if (ClippingRate < 0.001 && AGCGain < 1.0) // clipped rate under 0.1%
+			{
+				AGCGain *= 1.02; // increase gain by 2%
+				if (AGCGain > 1.0) AGCGain = 1.0;
+				printf("AGC: Clipping %.2f%%, increasing gain to %.3f\n", ClippingRate * 100, AGCGain);
+			}
+		}
+#endif
 
 //		for (j = 0; j < OutputParam.SampleFreq; j ++)
 //			printf("%f %f\n", NoiseArray[j].real, NoiseArray[j].imag);
 		if (((++length) % 10) == 0) printf("Generate IF data completed %6d ms\r", length);
 //		if (length == 2) break;
+	}
+	printf("\nTotal samples: %lld\n", TotalSamples);
+	printf("Clipped samples: %lld (%.4f%%)\n", TotalClippedSamples, (double)TotalClippedSamples / TotalSamples * 100);
+	printf("Final AGC gain: %.3f\n", AGCGain);
+	if ((double)TotalClippedSamples / TotalSamples > 0.05)
+	{
+		printf("WARNING: High clipping rate! Consider reducing initPower in JSON config.\n");
 	}
 
 	for (i = 0; i < TOTAL_GPS_SAT; i ++)
@@ -419,19 +461,17 @@ int StepToNextMs()
 
 complex_number GenerateNoise(double Sigma)
 {
-	int value1, value2;
-	double fvalue1, fvalue2;
-	complex_number noise;
+	double fvalue1, fvalue2, mag;
 
-	value1 = RAND_MAX + 1 - rand();	// range from 1 to RAND_MAX
-	value2 = RAND_MAX + 1 - rand();	// range from 1 to RAND_MAX
-	fvalue1 = (double)value1 / (RAND_MAX + 1);
-	fvalue2 = (double)value2 / (RAND_MAX + 1);
-	// scale noise power to be Sigma^2
-	noise.real = sqrt(-log(fvalue1) * 2) * cos(PI2 * fvalue2) * Sigma;
-	noise.imag = sqrt(-log(fvalue1) * 2) * sin(PI2 * fvalue2) * Sigma;
+	// Marsaglia Polar method (improved Box-Muller method)
+    do {
+        fvalue1 = 2.0 * ((double)rand() / RAND_MAX) - 1.0;
+        fvalue2 = 2.0 * ((double)rand() / RAND_MAX) - 1.0;
+        mag = fvalue1 * fvalue1 + fvalue2 * fvalue2;
+    } while (mag >= 1.0 || mag == 0.0);
+	mag = sqrt(-2.0 * log(mag) / mag) * Sigma;
 
-	return noise;
+	return complex_number(fvalue1 * mag, fvalue2 * mag);
 }
 
 NavBit* GetNavData(GnssSystem SatSystem, int SatSignalIndex, NavBit* NavBitArray[])
@@ -471,6 +511,7 @@ NavBit* GetNavData(GnssSystem SatSystem, int SatSignalIndex, NavBit* NavBitArray
 		case SIGNAL_INDEX_E6:  return NavBitArray[DataBitECNav];
 		default: return NavBitArray[DataBitINav];
 		}
+		break;
 	case GlonassSystem:
 		switch (SatSignalIndex)
 		{
@@ -478,52 +519,79 @@ NavBit* GetNavData(GnssSystem SatSystem, int SatSignalIndex, NavBit* NavBitArray
 		case SIGNAL_INDEX_G2: return NavBitArray[DataBitGNav];
 		default: return NavBitArray[DataBitINav];
 		}
+		break;
 	default: return NavBitArray[DataBitLNav];
 	}
 }
 
-void QuantSamplesIQ4(complex_number Samples[], int Length, unsigned char QuantSamples[])
+int QuantSamplesIQ4(complex_number Samples[], int Length, unsigned char QuantSamples[], double GainScale)
 {
 	int i;
 	double Value;
 	unsigned char QuantValue, QuantSample;
+	const double Gain = GainScale * 3.0;
+	int ClippedCount = 0;
 
 	for (i = 0; i < Length; i++)
 	{
 		Value = fabs(Samples[i].real);
-		QuantValue = (int)(Value * 3);	// optimal quantization for sigma=1 noise
+		QuantValue = (int)(Value * Gain);	// optimal quantization for sigma=1 noise
 		if (QuantValue > 7)
+		{
 			QuantValue = 7;
+			ClippedCount ++;
+		}
 		QuantValue += ((Samples[i].real >= 0) ? 0 : (1 << 3));	// add sign bit as MSB
 		QuantSample = QuantValue << 4;
 		Value = fabs(Samples[i].imag);
-		QuantValue = (int)(Value * 3);	// optimal quantization for sigma=1 noise
+		QuantValue = (int)(Value * Gain);	// optimal quantization for sigma=1 noise
 		if (QuantValue > 7)
+		{
 			QuantValue = 7;
+			ClippedCount ++;
+		}
 		QuantValue += ((Samples[i].imag >= 0) ? 0 : (1 << 3));	// add sign bit as MSB
 		QuantSample |= QuantValue;
 		QuantSamples[i] = QuantSample;
 	}
+
+	return ClippedCount;
 }
 
-void QuantSamplesIQ8(complex_number Samples[], int Length, unsigned char QuantSamples[])
+int QuantSamplesIQ8(complex_number Samples[], int Length, unsigned char QuantSamples[], double GainScale)
 {
 	int i;
 	int QuantValue;
+	const double Gain = GainScale * 25.0;
+	int ClippedCount = 0;
 
 	for (i = 0; i < Length; i++)
 	{
-		QuantValue = (int)(Samples[i].real * 25);	// sigma scaled at 25 -> +-5 sigma scaled within range of INT8
+		QuantValue = (int)(Samples[i].real * Gain);	// sigma scaled at 25 -> +-5 sigma scaled within range of INT8
 		if (QuantValue > 127)	// saturate at -128~127
+		{
 			QuantValue = 127;
+			ClippedCount ++;
+		}
 		else if (QuantValue < -128)
-			QuantValue = 128;
+		{
+			QuantValue = -128;
+			ClippedCount ++;
+		}
 		QuantSamples[i * 2] = (unsigned char)(QuantValue & 0xff);
-		QuantValue = (int)(Samples[i].imag * 25);	// sigma scaled at 25 -> +-5 sigma scaled within range of INT8
+		QuantValue = (int)(Samples[i].imag * Gain);	// sigma scaled at 25 -> +-5 sigma scaled within range of INT8
 		if (QuantValue > 127)	// saturate at -128~127
+		{
 			QuantValue = 127;
+			ClippedCount ++;
+		}
 		else if (QuantValue < -128)
-			QuantValue = 128;
+		{
+			QuantValue = -128;
+			ClippedCount ++;
+		}
 		QuantSamples[i * 2 + 1] = (unsigned char)(QuantValue & 0xff);
 	}
+
+	return ClippedCount;
 }
