@@ -554,6 +554,7 @@ NavBit* GetNavData(GnssSystem SatSystem, int SatSignalIndex, NavBit* NavBitArray
 		case SIGNAL_INDEX_E6:  return NavBitArray[DataBitECNav];
 		default: return NavBitArray[DataBitINav];
 		}
+		break;
 	case GlonassSystem:
 		switch (SatSignalIndex)
 		{
