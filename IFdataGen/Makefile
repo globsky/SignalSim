@@ -9,8 +9,8 @@ CC = gcc
 TARGET = IFdataGen
 
 # Directories
-SRCDIR = ../src
-INCDIR = ../inc
+SRCDIR = src
+INCDIR = inc
 OBJDIR = obj
 BINDIR = .
 
@@ -52,7 +52,7 @@ SOURCES = $(TARGET).cpp \
 OBJECTS = $(patsubst %.cpp,$(OBJDIR)/%.o,$(notdir $(SOURCES)))
 
 # Compiler flags
-CXXFLAGS = -O3 -Wall -std=c++11 -I$(INCDIR)
+CXXFLAGS = -g -O0 -Wall -std=c++11 -I$(INCDIR)
 LDFLAGS = -lm
 
 # Check for OpenMP support

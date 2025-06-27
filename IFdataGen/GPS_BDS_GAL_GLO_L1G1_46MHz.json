@@ -1,0 +1,138 @@
+{
+	"version": 1.0,
+	"description": "GPS+BDS+GAL+GLONASS L1/G1 bands - 46.5 MHz - 3 minutes",
+	"time": {
+		"type": "UTC",
+		"year": 2025,
+		"month": 6,
+		"day": 5,
+		"hour": 10,
+		"minute": 5,
+		"second": 30
+	},
+	"trajectory": {
+		"name": "GPS+BDS+GAL+GLO L1/G1 test scenario",
+		"initPosition": {
+			"type": "LLA",
+			"format": "d",
+			"longitude": -114.2847,
+			"latitude": 48.4928,
+			"altitude": 100.0
+		},
+		"initVelocity": {
+			"type": "SCU",
+			"speed": 0,
+			"course": 318.91
+		},
+		"trajectoryList": [
+			{
+				"type": "Const",
+				"time": 180.0
+			}
+		]
+	},
+	"ephemeris": {
+		"type": "RINEX",
+		"name": "../EphData/rinex_v3_20251560000.rnx"
+	},
+	"output": {
+		"type": "IFdata",
+		"format": "IQ8",
+		"sampleFreq": 46.5,
+		"centerFreq": 1582.2105,
+		"name": "generated_files/GPS_BDS_GAL_GLO_L1G1_46MHz_3min.C8",
+		"config": {
+			"elevationMask": 5
+		},
+		"systemSelect": [
+			{
+				"system": "GPS",
+				"signal": "L1CA",
+				"enable": true
+			},
+			{
+				"system": "GPS",
+				"signal": "L1C",
+				"enable": true
+			},
+			{
+				"system": "GPS",
+				"signal": "L2C",
+				"enable": false
+			},			
+			{
+				"system": "GPS",
+				"signal": "L5",
+				"enable": false
+			},
+			{
+				"system": "BDS",
+				"signal": "B1C",
+				"enable": true
+			},
+			{
+				"system": "BDS",
+				"signal": "B1I",
+				"enable": true
+			},
+			{
+				"system": "BDS",
+				"signal": "B2a",
+				"enable": false
+			},
+			{
+				"system": "BDS",
+				"signal": "B2I",
+				"enable": false
+			},
+			{
+				"system": "BDS",
+				"signal": "B2b",
+				"enable": false
+			},
+			{
+				"system": "BDS",
+				"signal": "B3I",
+				"enable": false
+			},
+			{
+				"system": "Galileo",
+				"signal": "E1",
+				"enable": true
+			},
+			{
+				"system": "Galileo",
+				"signal": "E5a",
+				"enable": false
+			},
+			{
+				"system": "Galileo",
+				"signal": "E5b",
+				"enable": false
+			},
+			{
+				"system": "Galileo",
+				"signal": "E6",
+				"enable": false
+			},
+			{
+				"system": "GLONASS",
+				"signal": "G1",
+				"enable": true
+			},
+			{
+				"system": "GLONASS",
+				"signal": "G2",
+				"enable": false
+			}
+		]
+	},
+	"power": {
+		"noiseFloor": -172,
+		"initPower": {
+			"unit": "dBHz",
+			"value": 40
+		},
+		"elevationAdjust": true
+	}
+}

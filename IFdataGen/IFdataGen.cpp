@@ -382,10 +382,10 @@ int main(int argc, char* argv[])
 		for (j = 0; j < OutputParam.SampleFreq; j++)
 		{
 			complex_number sum = NoiseArray[j];
-			for (i = 0; i < TotalChannelNumber; i++)
+			for (int ch = 0; ch < TotalChannelNumber; ch++)
 			{
-				if (SatIfSignal[i] && SatIfSignal[i]->SampleArray) {
-					sum += SatIfSignal[i]->SampleArray[j];
+				if (SatIfSignal[ch] && SatIfSignal[ch]->SampleArray) {
+					sum += SatIfSignal[ch]->SampleArray[j];
 				}
 			}
 			// Применяем AGC
