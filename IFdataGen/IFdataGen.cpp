@@ -384,7 +384,9 @@ int main(int argc, char* argv[])
 			complex_number sum = NoiseArray[j];
 			for (i = 0; i < TotalChannelNumber; i++)
 			{
-				sum += SatIfSignal[i]->SampleArray[j];
+				if (SatIfSignal[i] && SatIfSignal[i]->SampleArray) {
+					sum += SatIfSignal[i]->SampleArray[j];
+				}
 			}
 			// Применяем AGC
 			sum.real *= AGCGain;
@@ -551,7 +553,7 @@ NavBit* GetNavData(GnssSystem SatSystem, int SatSignalIndex, NavBit* NavBitArray
 		case SIGNAL_INDEX_E5a: return NavBitArray[DataBitFNav];
 		case SIGNAL_INDEX_E5b: return NavBitArray[DataBitINav];
 		case SIGNAL_INDEX_E5:  return NavBitArray[DataBitFNav];
-		case SIGNAL_INDEX_E6:  return NavBitArray[DataBitECNav];
+		case SIGNAL_INDEX_E6:  return NavBitArray[DataBitINav]; // E6 uses I/NAV for now
 		default: return NavBitArray[DataBitINav];
 		}
 		break;
@@ -560,8 +562,9 @@ NavBit* GetNavData(GnssSystem SatSystem, int SatSignalIndex, NavBit* NavBitArray
 		{
 		case SIGNAL_INDEX_G1: return NavBitArray[DataBitGNav];
 		case SIGNAL_INDEX_G2: return NavBitArray[DataBitGNav];
-		default: return NavBitArray[DataBitINav];
+		default: return NavBitArray[DataBitGNav];
 		}
+		break;
 	default: return NavBitArray[DataBitLNav];
 	}
 }
