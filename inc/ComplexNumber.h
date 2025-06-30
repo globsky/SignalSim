@@ -25,6 +25,7 @@ public:
 	void operator *= (const complex_number data);
 	complex_number operator * (const double data);
 	void operator *= (const double data);
+	complex_number operator -() const { return complex_number(-real, -imag); };
 	double abs();
 	complex_number conj();
 };

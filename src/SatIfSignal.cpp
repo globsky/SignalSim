@@ -3,7 +3,7 @@
 #include <memory.h>
 
 #include "SatIfSignal.h"
-#include "FastMath.h"
+//#include "FastMath.h"
 
 CSatIfSignal::CSatIfSignal(int MsSampleNumber, int SatIfFreq, GnssSystem SatSystem, int SatSignalIndex, unsigned char SatId) : SampleNumber(MsSampleNumber), IfFreq(SatIfFreq), System(SatSystem), SignalIndex(SatSignalIndex), Svid((int)SatId)
 {
@@ -96,7 +96,7 @@ complex_number CSatIfSignal::GetPrnValue(double& CurChip, double CodeStep)
 	DataChip = ChipCount % DataLength;
 	if (IsBoc || IsL2C)
 		DataChip >>= 1;
-	PrnValue = DataSignal * (PrnSequence->DataPrn[DataChip] ? -1 : 1);
+	PrnValue = PrnSequence->DataPrn[DataChip] ? -DataSignal : DataSignal;
 	if (PrnSequence->PilotPrn && PilotLength > 0)
 	{
 		PilotChip = ChipCount % PilotLength;
@@ -105,10 +105,10 @@ complex_number CSatIfSignal::GetPrnValue(double& CurChip, double CodeStep)
 		if (IsL2C)
 		{
 			if (ChipCount & 1)	// L2CL slot
-				PrnValue = PilotSignal * (PrnSequence->PilotPrn[PilotChip] ? -1 : 1);
+				PrnValue = PrnSequence->PilotPrn[PilotChip] ? -PilotSignal : PilotSignal;
 		}
 		else
-			PrnValue += PilotSignal * (PrnSequence->PilotPrn[PilotChip] ? -1 : 1);
+			PrnValue += PrnSequence->PilotPrn[PilotChip] ? -PilotSignal : PilotSignal;
 	}
 	if (IsBoc && (ChipCount & 1))	// second half of BOC code
 		PrnValue *= -1;
@@ -124,12 +124,12 @@ complex_number CSatIfSignal::GetPrnValue(double& CurChip, double CodeStep)
 
 complex_number CSatIfSignal::GetRotateValue(double& CurPhase, double PhaseStep)
 {
-//	complex_number Rotate = complex_number(cos(CurPhase * PI2), sin(CurPhase * PI2));
-	complex_number Rotate = FastMath::FastRotate(CurPhase * PI2);
+	complex_number Rotate = complex_number(cos(CurPhase * PI2), sin(CurPhase * PI2));
+//	complex_number Rotate = FastMath::FastRotate(CurPhase * PI2);	// LUT seems does not faster than sin/cos function (40% slower)
 	CurPhase += PhaseStep;
 	return Rotate;
 }
-
+#if 0
 // Cannot correctly deal with data/secondary code modulation yet, just put here for future optimize
 void CSatIfSignal::GenerateSamplesVectorized(int SampleCount, double& CurChip, double CodeStep, double& CurPhase, double PhaseStep, double Amp)
 {
@@ -187,3 +187,4 @@ void CSatIfSignal::GenerateSamplesVectorized(int SampleCount, double& CurChip, d
 	CurChip += CodeStep * SampleCount;
 	CurPhase += PhaseStep * SampleCount;
 }
+#endif

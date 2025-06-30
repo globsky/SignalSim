@@ -3,10 +3,11 @@
 #include <math.h>
 #include <iostream>
 #include <cstring>
-#include <time.h>
-#ifdef _OPENMP
-#include <omp.h>
-#endif
+#include <thread>
+#include <vector>
+#include <mutex>
+#include <condition_variable>
+#include <chrono>
 
 #include "SignalSim.h"
 
@@ -42,6 +43,7 @@ PGPS_EPHEMERIS GalEph[TOTAL_GAL_SAT], GalEphVisible[TOTAL_GAL_SAT];
 PGLONASS_EPHEMERIS GloEph[TOTAL_GLO_SAT], GloEphVisible[TOTAL_GLO_SAT];
 SATELLITE_PARAM GpsSatParam[TOTAL_GPS_SAT], BdsSatParam[TOTAL_BDS_SAT], GalSatParam[TOTAL_GAL_SAT], GloSatParam[TOTAL_GLO_SAT];	// satellite parameter array at CurTime
 int GpsSatNumber, BdsSatNumber, GalSatNumber, GloSatNumber;	// number of visible satellite
+int TotalChannelNumber;
 const int SignalCenterFreq[][8] = {
 	{ FREQ_GPS_L1, FREQ_GPS_L1, FREQ_GPS_L2, FREQ_GPS_L2, FREQ_GPS_L5 },
 	{ FREQ_BDS_B1C, FREQ_BDS_B1I, FREQ_BDS_B2I, FREQ_BDS_B3I, FREQ_BDS_B2a, FREQ_BDS_B2b, FREQ_BDS_B2ab },
@@ -54,6 +56,54 @@ const char *SignalName[][8] = {
 	{ "E1", "E5a", "E5b", "E5", "E6", },
 	{ "G1", "G2", },
 };
+
+// thread synchronize variables
+//const int NUM_THREADS = 3;  // 线程数量
+std::mutex mtx;
+std::condition_variable cv_task;	// for start task
+std::condition_variable cv_ready;	// for task ready
+std::condition_variable cv_done;	// for task complete notification
+int exec_cycle = 0;
+int ready_tasks = 0;
+int completed_tasks = 0;
+bool shutdown = false;
+
+// IF signal generation thread
+void IF_generate_thread(CSatIfSignal* SatIfSignal)
+{
+	int thread_cycle = -1;
+
+	while (true)
+	{
+		std::unique_lock<std::mutex> lock(mtx);
+
+		++ready_tasks;
+		if (ready_tasks == TotalChannelNumber)
+			cv_ready.notify_one();  // notify main thread ready state
+
+		// wait task or termineate
+		cv_task.wait(lock, [&] { return (exec_cycle > thread_cycle) || shutdown; });
+
+		if (shutdown)
+			break;
+
+		thread_cycle = exec_cycle;
+		// unlock to have other threads continue
+		lock.unlock();
+
+//		std::cout << "[Sat " << SatIfSignal->Svid << "] for " << exec_cycle << " begin..." << std::endl;
+		SatIfSignal->GetIfSample(CurTime);
+//		std::cout << "[Sat " << SatIfSignal->Svid << "] for " << exec_cycle << " end" << std::endl;
+
+        // update complete count
+		{
+			std::lock_guard<std::mutex> lock(mtx);
+			++completed_tasks;
+			if (completed_tasks == TotalChannelNumber)
+				cv_done.notify_one();  // notify main thread work done
+		}
+	}
+}
 
 int main(int argc, char* argv[])
 {
@@ -71,12 +121,14 @@ int main(int argc, char* argv[])
 	PSIGNAL_POWER PowerList;
 	int FreqLow, FreqHigh;
 	CSatIfSignal* SatIfSignal[TOTAL_SAT_CHANNEL];
-	int TotalChannelNumber, SignalIndex;
+	int SignalIndex;
 	int IfFreq, FdmaOffset;
 	complex_number *NoiseArray;
 	unsigned char *QuantArray;
 	FILE* IfFile;
 	clock_t start_time, end_time;
+
+    std::vector<std::thread> threads;
 
 	// read JSON file and assign parameters
     const char* jsonFile = "IfGenTest.json"; // Default JSON file
@@ -266,6 +318,7 @@ int main(int argc, char* argv[])
 				break;
 			SatIfSignal[TotalChannelNumber] = new CSatIfSignal(OutputParam.SampleFreq, IfFreq, GpsSystem, SignalIndex, GpsEphVisible[i]->svid);
 			SatIfSignal[TotalChannelNumber]->InitState(CurTime, &GpsSatParam[GpsEphVisible[i]->svid-1], GetNavData(GpsSystem, SignalIndex, NavBitArray));
+	        threads.emplace_back(IF_generate_thread, SatIfSignal[TotalChannelNumber]);
 			TotalChannelNumber++;
 			printf("\tSV%02d with Doppler %dHz\n", GpsEphVisible[i]->svid, (int)GetDoppler(&GpsSatParam[GpsEphVisible[i]->svid-1], SignalIndex));
 		}
@@ -282,6 +335,7 @@ int main(int argc, char* argv[])
 				break;
 			SatIfSignal[TotalChannelNumber] = new CSatIfSignal(OutputParam.SampleFreq, IfFreq, BdsSystem, SignalIndex, BdsEphVisible[i]->svid);
 			SatIfSignal[TotalChannelNumber]->InitState(CurTime, &BdsSatParam[BdsEphVisible[i]->svid - 1], GetNavData(BdsSystem, SignalIndex, NavBitArray));
+	        threads.emplace_back(IF_generate_thread, SatIfSignal[TotalChannelNumber]);
 			TotalChannelNumber++;
 			printf("\tSV%02d with Doppler %dHz\n", BdsEphVisible[i]->svid, (int)GetDoppler(&BdsSatParam[BdsEphVisible[i]->svid-1], SignalIndex));
 		}
@@ -298,6 +352,7 @@ int main(int argc, char* argv[])
 				break;
 			SatIfSignal[TotalChannelNumber] = new CSatIfSignal(OutputParam.SampleFreq, IfFreq, GalileoSystem, SignalIndex, GalEphVisible[i]->svid);
 			SatIfSignal[TotalChannelNumber]->InitState(CurTime, &GalSatParam[GalEphVisible[i]->svid - 1], GetNavData(GalileoSystem, SignalIndex, NavBitArray));
+	        threads.emplace_back(IF_generate_thread, SatIfSignal[TotalChannelNumber]);
 			TotalChannelNumber++;
 			printf("\tSV%02d with Doppler %dHz\n", GalEphVisible[i]->svid, (int)GetDoppler(&GalSatParam[GalEphVisible[i]->svid-1], SignalIndex));
 		}
@@ -315,6 +370,7 @@ int main(int argc, char* argv[])
 			FdmaOffset = (SignalIndex == SIGNAL_INDEX_G1) ? GloEphVisible[i]->freq * 562500 : (SignalIndex == SIGNAL_INDEX_G2) ? GloEphVisible[i]->freq * 437500 : 0;
 			SatIfSignal[TotalChannelNumber] = new CSatIfSignal(OutputParam.SampleFreq, IfFreq + FdmaOffset, GlonassSystem, SignalIndex, GloEphVisible[i]->n);
 			SatIfSignal[TotalChannelNumber]->InitState(CurTime, &GloSatParam[GloEphVisible[i]->n - 1], GetNavData(GlonassSystem, SignalIndex, NavBitArray));
+	        threads.emplace_back(IF_generate_thread, SatIfSignal[TotalChannelNumber]);
 			TotalChannelNumber++;
 			printf("\tSV%02d with Doppler %dHz\n", GloEphVisible[i]->n, (int)GetDoppler(&GloSatParam[GloEphVisible[i]->n-1], SignalIndex));
 		}
@@ -324,7 +380,6 @@ int main(int argc, char* argv[])
 	NoiseArray = new complex_number[OutputParam.SampleFreq];
 	QuantArray = new unsigned char[OutputParam.SampleFreq * 2];
 
-	int exec_cycle = 0;
 	long long TotalClippedSamples = 0;
 	long long TotalSamples = 0;
 	double AGCGain = 1.0;
@@ -332,21 +387,41 @@ int main(int argc, char* argv[])
 
 	while (!StepToNextMs())
 	{
-		exec_cycle ++;
+		// wait for all tasks ready
+		{
+			std::unique_lock<std::mutex> lock(mtx);
+			while (ready_tasks < TotalChannelNumber)
+				cv_ready.wait(lock);
+//			std::cout << "all threads ready" << std::endl;
+			exec_cycle ++;
+		// reset ready count
+			ready_tasks = 0;
+        }
+
+		// wake all threads
+        cv_task.notify_all();
+
 		// generate white noise
 		for (i = 0; i < OutputParam.SampleFreq; i ++)
 			NoiseArray[i] = GenerateNoise(1.0);
 
-		#pragma omp parallel for schedule(dynamic)
-		for (i = 0; i < TotalChannelNumber; i++)
+        // wait all threads complete
 		{
-			SatIfSignal[i]->GetIfSample(CurTime);
+			std::unique_lock<std::mutex> lock(mtx);
+			while (completed_tasks < TotalChannelNumber)
+				cv_done.wait(lock);
+//            std::cout << "all threads done for " << exec_cycle << std::endl;
+            completed_tasks = 0;
+        }
 
-			#pragma omp parallel for schedule(static) if(OutputParam.SampleFreq > 1000)
+		for (i = 0; i < TOTAL_SAT_CHANNEL; i++)
+		{
+			if (!SatIfSignal[i])
+				continue;
+//			SatIfSignal[i]->GetIfSample(CurTime);
 			for (j = 0; j < OutputParam.SampleFreq; j++)
 				NoiseArray[j] += SatIfSignal[i]->SampleArray[j];
 		}
-	
 		if (OutputParam.Format == OutputFormatIQ4)
 		{
 			TotalClippedSamples += QuantSamplesIQ4(NoiseArray, OutputParam.SampleFreq, QuantArray, AGCGain);
@@ -386,7 +461,23 @@ int main(int argc, char* argv[])
 			printf("Generate IF data completed %6d ms\r", exec_cycle);
 //		if (length == 2) break;
 	}
+
+	// terminate all threads
+	{
+		std::lock_guard<std::mutex> lock(mtx);
+		shutdown = true;
+		std::cout << "\nterminate all threads" << std::endl;
+	}
+	cv_task.notify_all();
+
+    // wait all threads complete
+	for (auto& t : threads)
+	{
+		if (t.joinable()) t.join();
+	}
+
 	end_time = clock();
+	std::cout << "All threads terminated. Generate IF file complete" << std::endl;
 	printf("\nTotal samples: %lld\n", (long long)OutputParam.SampleFreq * exec_cycle);
 	printf("Final Clipped rate %.4f%% (%lld out of %lld)\n", (double)TotalClippedSamples / TotalSamples * 100, TotalClippedSamples, TotalSamples);
 	printf("Final AGC gain: %.3f\n", AGCGain);
@@ -468,6 +559,7 @@ int StepToNextMs()
 
 complex_number GenerateNoise(double Sigma)
 {
+#if 1
 	double fvalue1, fvalue2, mag;
 
 	// Marsaglia Polar method (improved Box-Muller method)
@@ -479,6 +571,21 @@ complex_number GenerateNoise(double Sigma)
 	mag = sqrt(-2.0 * log(mag) / mag) * Sigma;
 
 	return complex_number(fvalue1 * mag, fvalue2 * mag);
+#else
+	int value1, value2;
+	double fvalue1, fvalue2;
+	complex_number noise;
+
+	value1 = RAND_MAX + 1 - rand();	// range from 1 to RAND_MAX
+	value2 = RAND_MAX + 1 - rand();	// range from 1 to RAND_MAX
+	fvalue1 = (double)value1 / (RAND_MAX + 1);
+	fvalue2 = (double)value2 / (RAND_MAX + 1);
+	// scale noise power to be Sigma^2
+	noise.real = sqrt(-log(fvalue1) * 2) * cos(PI2 * fvalue2) * Sigma;
+	noise.imag = sqrt(-log(fvalue1) * 2) * sin(PI2 * fvalue2) * Sigma;
+
+	return noise;
+#endif
 }
 
 NavBit* GetNavData(GnssSystem SatSystem, int SatSignalIndex, NavBit* NavBitArray[])

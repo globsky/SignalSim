@@ -63,12 +63,18 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 
 ### 2025
 
+- **6/30/2025**
+  - Add benchmark to check execution speed
+  - Remove lookup-table sin/cos calculation cause it seems slower than FPU math lib
+  - A trial version multi-thread program `IFdataGenThread.cpp` released using std::thread
+  - Other minor modifications
+
 - **6/27/2025**
-  - Added OpenMP parallelization for signal generation
+  - Add OpenMP parallelization for signal generation
   - Implemented FastMath class with lookup tables for trigonometric functions
   - Optimized noise generation using Marsaglia Polar method
-  - Added Makefile with optimization flags
-  - Added clipping counter for quantization monitoring
+  - Add Makefile with optimization flags
+  - Add clipping counter for quantization monitoring
   - Add SVID boundary check and protection
   - Correction on L2C time-multiplex signal generation
 
