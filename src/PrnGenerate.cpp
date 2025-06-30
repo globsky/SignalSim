@@ -189,6 +189,13 @@ PrnGenerate::PrnGenerate(GnssSystem System, int SignalIndex, int Svid)
 	switch (System)
 	{
 	case GpsSystem:
+		// validate GPS SVID range
+		if (Svid < 1 || Svid > 32)
+		{
+			DataPrn = NULL; PilotPrn = NULL;
+			Attribute = NULL;
+			break;
+		}
 		switch (SignalIndex)
 		{
 		case SIGNAL_INDEX_L1CA:
@@ -222,6 +229,13 @@ PrnGenerate::PrnGenerate(GnssSystem System, int SignalIndex, int Svid)
 		}
 		break;
 	case BdsSystem:
+		// validate BDS SVID range
+		if (Svid < 1 || Svid > 63)
+		{
+			DataPrn = NULL; PilotPrn = NULL;
+			Attribute = NULL;
+			break;
+		}
 		switch (SignalIndex)
 		{
 		case SIGNAL_INDEX_B1I:
@@ -256,6 +270,13 @@ PrnGenerate::PrnGenerate(GnssSystem System, int SignalIndex, int Svid)
 		}
 		break;
 	case GalileoSystem:
+		// validate Galileo SVID range
+		if (Svid < 1 || Svid > 36)
+		{
+			DataPrn = NULL; PilotPrn = NULL;
+			Attribute = NULL;
+			break;
+		}
 		switch (SignalIndex)
 		{
 		case SIGNAL_INDEX_E1 :
