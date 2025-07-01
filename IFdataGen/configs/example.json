@@ -33,14 +33,14 @@
 	},
 	"ephemeris": {
 		"type": "RINEX",
-		"name": "../EphData/rinex_v3_20251560000.rnx"
+		"name": "..\/EphData\/rinex_v3_20251560000.rnx"
 	},
 	"output": {
 		"type": "IFdata",
 		"format": "IQ8",
 		"sampleFreq": 21.0,
 		"centerFreq": 1176.45,
-		"name": "generated_files/GPS_L5_only_3min.C8",
+		"name": "GPS_L5_only_3min.bin",
 		"config": {
 			"elevationMask": 5
 		},

@@ -60,8 +60,8 @@ static const char *DictionaryListOutputType[] = {
 	"position", "observation", "IFdata", "baseband",
 };
 static const char *DictionaryListOutputFormat[] = {
-//     0      1       2      3       4       5      6
-	"ECEF", "LLA", "NMEA", "KML", "RINEX", "IQ8", "IQ4",
+//     0      1       2      3       4       5      6      7
+	"ECEF", "LLA", "NMEA", "KML", "RINEX", "IQ8", "IQ4", "IQ2",
 };
 static const char *DictionaryListSignal[] = {
 //    0      1      2      3      4      5     6   7
@@ -232,7 +232,7 @@ BOOL SetTrajectory(JsonObject *Object, LLA_POSITION &StartPos, LOCAL_SPEED &Star
 		}
 		Object = JsonStream::GetNextObject(Object);
 	}
-	return TRUE;
+	return TRUE;	// FIXME: Why return TRUE even if the trajectory is not set.
 }
 
 BOOL SetEphemeris(JsonObject *Object, CNavData &NavData)
@@ -251,7 +251,7 @@ BOOL SetEphemeris(JsonObject *Object, CNavData &NavData)
 			ObjectArray = JsonStream::GetNextObject(ObjectArray);
 		}
 	}
-	return TRUE;
+	return TRUE;	// FIXME: Why return TRUE even if the file is not found.
 }
 
 BOOL SetEphemerisFile(JsonObject *Object, CNavData &NavData)
@@ -259,10 +259,22 @@ BOOL SetEphemerisFile(JsonObject *Object, CNavData &NavData)
 	while (Object)
 	{
 		if (strcmp(Object->Key, "name") == 0)
-			NavData.ReadNavFile(Object->String);
+		{	printf("[INFO]\tLoading ephemeris file: %s\n", Object->String);
+			FILE *fp = fopen(Object->String, "r");
+			if (fp == NULL)	//FIXME: The program should end right here, instead goes on.
+			{
+				printf("[ERROR]\tFailed to open ephemeris file: %s. Please check the file path in the JSON file.\n", Object->String);
+			}
+			else
+			{
+				fclose(fp);
+				NavData.ReadNavFile(Object->String);
+				printf("[INFO]\tEphemeris file loaded successfully: %s\n", Object->String);
+			}
+		}
 		Object = JsonStream::GetNextObject(Object);
 	}
-	return TRUE;
+	return TRUE;	// FIXME: Why return TRUE even if the file is not found.
 }
 
 BOOL SetAlmanac(JsonObject *Object, CNavData &NavData)

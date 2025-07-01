@@ -3,8 +3,16 @@
 
 #include <cmath>
 #include <cstdint>
-#include "ComplexNumber.h"
 #include "ConstVal.h"
+#include "ComplexNumber.h"
+
+#ifdef _MSC_VER
+    #define FORCE_INLINE __forceinline
+#elif defined(__GNUC__) || defined(__clang__)
+    #define FORCE_INLINE inline __attribute__((always_inline))
+#else
+    #define FORCE_INLINE inline
+#endif
 
 // Fast math functions for signal generation optimization
 
@@ -31,10 +39,10 @@ private:
             lut_initialized = true;
         }
     }
-    
+
 public:
-    // Fast sine using lookup table
-    static inline double FastSin(double angle) {
+    // Fast sine using lookup table - force inline for performance
+    static FORCE_INLINE double FastSin(double angle) {
         if (!lut_initialized) InitializeLUT();
         
         // Normalize angle to [0, 2*PI)
@@ -46,8 +54,8 @@ public:
         return sin_lut[index];
     }
     
-    // Fast cosine using lookup table
-    static inline double FastCos(double angle) {
+    // Fast cosine using lookup table - force inline for performance
+    static FORCE_INLINE double FastCos(double angle) {
         if (!lut_initialized) InitializeLUT();
         
         // Normalize angle to [0, 2*PI)
@@ -59,8 +67,8 @@ public:
         return cos_lut[index];
     }
     
-    // Fast complex rotation using lookup tables
-    static inline complex_number FastRotate(double angle) {
+    // Fast complex rotation using lookup tables - force inline for performance
+    static FORCE_INLINE complex_number FastRotate(double angle) {
         if (!lut_initialized) InitializeLUT();
         
         // Normalize angle to [0, 2*PI)

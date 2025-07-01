@@ -602,3 +602,17 @@ void CTrajectory::SetTrajectoryName(char *Name)
 {
 	strncpy(TrajectoryName, Name, 127);
 }
+
+double CTrajectory::GetTimeLength()
+{
+	double totalTime = 0.0;
+	CTrajectorySegment* pSegment = m_pTrajectoryList;
+	
+	while (pSegment)
+	{
+		totalTime += pSegment->m_TimeSpan;
+		pSegment = pSegment->m_pNextTrajectory;
+	}
+	
+	return totalTime;
+}

@@ -34,14 +34,14 @@
 	},
 	"ephemeris": {
 		"type": "RINEX",
-		"name": "..\/..\/..\/..\/EphData\/BRDC00IGS_R_20211700000_01D_MN.rnx"
+		"name": "..\/EphData\/BRDC00IGS_R_20211700000_01D_MN.rnx"
 	},
 	"output": {
 		"type": "IFdata",
 		"format": "IQ8",
 		"sampleFreq": 46.329,
 		"centerFreq": 1582.2105,
-		"name": "GPS_BDS_GAL_GLO_L1CA_L1C_B1C_B1I_E1_G1_8.bin",
+		"name": "GPS_BDS_GAL_GLO_L1CA_L1C_B1C_B1I_E1_G1.bin",
 		"config": {
 			"elevationMask": 3
 		},	

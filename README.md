@@ -35,7 +35,7 @@ SignalSim is designed for both educational and professional use, with commercial
 
 ## Signal Support and Testing Status
 
-The following table shows the current testing status of various GNSS signals in SignalSim:
+The [Table](./IFdataGen/README.md#signal-support-and-testing-status) shows the current testing status of various GNSS signals.
 
 ## Key Components
 
@@ -63,6 +63,16 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 
 ### 2025
 
+- **7/1/2025**
+  - Fix performance overheads in Nested Noise addition loop in `IFdataGen.cpp`
+  - Add Build Instructions for Linux
+  - Enhance signal generation status logs on terminal
+  - Improve `CMakeLists.txt` configuration
+  - Update `README.md` documentations
+  - Add support for generating metadata tag file for generated signals
+  - Add 2-bit IQ support (compatible with PocketSDR, testing pending)
+  - Update [Test Table](./IFdataGen/README.md#signal-support-and-testing-status) with additional test cases
+
 - **6/27/2025**
   - Added OpenMP parallelization for signal generation
   - Implemented FastMath class with lookup tables for trigonometric functions
@@ -82,7 +92,6 @@ The core libraries provide fundamental GNSS data processing capabilities includi
   - Explain how to set center frequency and bandwidth for each constellation in the [IFdataGen GNSS_Signal_Calculations](./IFdataGen/GNSS_Signal_Calculations.md).
   - Expand unit and integration tests for signal generation and update the test matrix accordingly.
   - Update  [IFdataGen README](./IFdataGen/README.md) with new examples and configuration guidance.
-
 
 - **5/14/2025**
   - Rewrite BCNAV1/2/3 navigation data stream generation method (ephemeris generation completed, almanac in next release)

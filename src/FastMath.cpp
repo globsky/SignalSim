@@ -1,4 +1,4 @@
-#include "../inc/FastMath.h"
+#include "FastMath.h"
 
 // Static member definitions
 double FastMath::sin_lut[FastMath::TRIG_LUT_SIZE];

@@ -15,8 +15,8 @@ CSatIfSignal::CSatIfSignal(int MsSampleNumber, int SatIfFreq, GnssSystem SatSyst
 		DataLength = PilotLength = 0;
 	else
 	{
-		DataLength = PrnSequence->Attribute->DataPeriod * PrnSequence->Attribute->ChipRate;
-		PilotLength = PrnSequence->Attribute->PilotPeriod * PrnSequence->Attribute->ChipRate;
+	DataLength = PrnSequence->Attribute->DataPeriod * PrnSequence->Attribute->ChipRate;
+	PilotLength = PrnSequence->Attribute->PilotPeriod * PrnSequence->Attribute->ChipRate;
 	}
 	GlonassHalfCycle = ((IfFreq % 1000) != 0) ? 1 : 0;
 }
@@ -108,7 +108,7 @@ complex_number CSatIfSignal::GetPrnValue(double& CurChip, double CodeStep)
 				PrnValue = PilotSignal * (PrnSequence->PilotPrn[PilotChip] ? -1 : 1);
 		}
 		else
-			PrnValue += PilotSignal * (PrnSequence->PilotPrn[PilotChip] ? -1 : 1);
+		PrnValue += PilotSignal * (PrnSequence->PilotPrn[PilotChip] ? -1 : 1);
 	}
 	if (IsBoc && (ChipCount & 1))	// second half of BOC code
 		PrnValue *= -1;
