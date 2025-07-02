@@ -27,21 +27,21 @@
 		"trajectoryList": [
 			{
 				"type": "Const",
-				"time": 0.2
+				"time": 10
 			}
 			
 		]
 	},
 	"ephemeris": {
 		"type": "RINEX",
-		"name": "..\/..\/..\/..\/EphData\/BRDC00IGS_R_20211700000_01D_MN.rnx"
+		"name": "..\/EphData\/BRDC00IGS_R_20211700000_01D_MN.rnx"
 	},
 	"output": {
 		"type": "IFdata",
 		"format": "IQ8",
 		"sampleFreq": 18.48,
 		"centerFreq": 1568.286,
-		"name": "GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1_8.bin",
+		"name": "GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1.bin",
 		"config": {
 			"elevationMask": 3
 		},	

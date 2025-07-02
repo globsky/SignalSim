@@ -63,6 +63,16 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 
 ### 2025
 
+- **7/1/2025**
+  - Merge information display and command line arguments in PR#36
+  - Add Build Instructions for Linux
+  - Enhance signal generation status logs on terminal
+  - Improve `CMakeLists.txt` configuration
+  - Update `README.md` documentations
+  - Add support for generating metadata tag file for generated signals
+  - Add 2-bit IQ support (compatible with PocketSDR, testing pending)
+  - Update [Test Table](./IFdataGen/README.md#signal-support-and-testing-status) with additional test cases
+
 - **6/30/2025**
   - Add benchmark to check execution speed
   - Remove lookup-table sin/cos calculation cause it seems slower than FPU math lib

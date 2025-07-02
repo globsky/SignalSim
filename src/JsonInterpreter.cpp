@@ -60,8 +60,8 @@ static const char *DictionaryListOutputType[] = {
 	"position", "observation", "IFdata", "baseband",
 };
 static const char *DictionaryListOutputFormat[] = {
-//     0      1       2      3       4       5      6
-	"ECEF", "LLA", "NMEA", "KML", "RINEX", "IQ8", "IQ4",
+//     0      1       2      3       4       5      6      7
+	"ECEF", "LLA", "NMEA", "KML", "RINEX", "IQ8", "IQ4", "IQ2",
 };
 static const char *DictionaryListSignal[] = {
 //    0      1      2      3      4      5     6   7
@@ -227,12 +227,12 @@ BOOL SetTrajectory(JsonObject *Object, LLA_POSITION &StartPos, LOCAL_SPEED &Star
 				SpeedEcefToLocal(ConvertMatrix, Position, StartVel);
 			}
 			Trajectory.SetInitPosVel(StartPos, StartVel, FALSE);
-			AssignTrajectoryList(JsonStream::GetFirstObject(Object), Trajectory);
+			Content |= AssignTrajectoryList(JsonStream::GetFirstObject(Object), Trajectory) ? 4 : 0;
 			break;
 		}
 		Object = JsonStream::GetNextObject(Object);
 	}
-	return TRUE;
+	return ((Content & 7) == 7) ? TRUE : FALSE;
 }
 
 BOOL SetEphemeris(JsonObject *Object, CNavData &NavData)
@@ -451,17 +451,21 @@ BOOL AssignTrajectoryList(JsonObject *Object, CTrajectory &Trajectory)
 	TrajectoryType Type;
 	TrajectoryDataType DataType1, DataType2;
 	double Data1, Data2;
+	BOOL HasValidSegment = FALSE, AllSegmentOK = TRUE;
 
 	Trajectory.ClearTrajectoryList();
 	while (Object)
 	{
 		Type = GetTrajectorySegment(JsonStream::GetFirstObject(Object), DataType1, Data1, DataType2, Data2);
 		if (Type != TrajTypeUnknown)
-			Trajectory.AppendTrajectory(Type, DataType1, Data1, DataType2, Data2);
+		{
+			HasValidSegment = TRUE;
+			AllSegmentOK = AllSegmentOK && (Trajectory.AppendTrajectory(Type, DataType1, Data1, DataType2, Data2) == TRAJECTORY_NO_ERR);
+		}
 		Object = JsonStream::GetNextObject(Object);
 	}
 
-	return TRUE;
+	return (HasValidSegment && AllSegmentOK) ? TRUE : FALSE;
 }
 
 TrajectoryType GetTrajectorySegment(JsonObject *Object, TrajectoryDataType &DataType1, double &Data1, TrajectoryDataType &DataType2, double &Data2)

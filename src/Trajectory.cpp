@@ -510,7 +510,7 @@ void CTrajectory::ClearTrajectoryList()
 int CTrajectory::AppendTrajectory(TrajectoryType TrajType, TrajectoryDataType DataType1, double Data1, TrajectoryDataType DataType2, double Data2)
 {
 	CTrajectorySegment *TrajectorySegment, *PrevTrajectorySegment;
-	BOOL ReturnValue;
+	int ReturnValue;
 
 	if (TrajType == TrajTypeConstSpeed)
 		TrajectorySegment = new CTrajectoryConstSpeed;
@@ -601,4 +601,18 @@ CTrajectorySegment *CTrajectory::GetLastSegment()
 void CTrajectory::SetTrajectoryName(char *Name)
 {
 	strncpy(TrajectoryName, Name, 127);
+}
+
+double CTrajectory::GetTimeLength()
+{
+	double totalTime = 0.0;
+	CTrajectorySegment* pSegment = m_pTrajectoryList;
+	
+	while (pSegment)
+	{
+		totalTime += pSegment->m_TimeSpan;
+		pSegment = pSegment->m_pNextTrajectory;
+	}
+	
+	return totalTime;
 }

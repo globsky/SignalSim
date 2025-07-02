@@ -3,7 +3,7 @@
 #include <memory.h>
 
 #include "SatIfSignal.h"
-//#include "FastMath.h"
+#include "FastMath.h"
 
 CSatIfSignal::CSatIfSignal(int MsSampleNumber, int SatIfFreq, GnssSystem SatSystem, int SatSignalIndex, unsigned char SatId) : SampleNumber(MsSampleNumber), IfFreq(SatIfFreq), System(SatSystem), SignalIndex(SatSignalIndex), Svid((int)SatId)
 {
@@ -124,8 +124,8 @@ complex_number CSatIfSignal::GetPrnValue(double& CurChip, double CodeStep)
 
 complex_number CSatIfSignal::GetRotateValue(double& CurPhase, double PhaseStep)
 {
-	complex_number Rotate = complex_number(cos(CurPhase * PI2), sin(CurPhase * PI2));
-//	complex_number Rotate = FastMath::FastRotate(CurPhase * PI2);	// LUT seems does not faster than sin/cos function (40% slower)
+//	complex_number Rotate = complex_number(cos(CurPhase * PI2), sin(CurPhase * PI2));
+	complex_number Rotate = FastMath::FastRotate(CurPhase * PI2);	// TODO: further optimize with integer phase
 	CurPhase += PhaseStep;
 	return Rotate;
 }
