@@ -235,29 +235,26 @@ IFDataGen - GNSS IF Data Generator
 Usage: IFdataGen [options]
 
 Available options:
-  --config, -c <FILE>     Configuration file (JSON) [REQUIRED]
-  --output, -o <FILE>     Output IF data file (overrides config)
-  --validate-only, -vo    Validate configuration and exit
-  --parallel, -p          Use parallel execution (default)
-  --serial, -s            Force serial execution
-  --help, -h              Show this help message
+  -c,   --config <FILE>    Configuration file (JSON) [REQUIRED]
+  -o,   --output <FILE>    Output IF data file (overrides config)
+  -vo,  --validate-only    Validate configuration and exit
+  -mt,  --multi-thread     Force use multi-thread
+  -st,  --single-thread    Force use single-thread
+  -t,   --tag              Output tag file (output file name with .tag appended)
+  -v,   --version          Show version information
+  -h,   --help             Show this help message
 
 Examples:
   IFdataGen -c config.json
-  IFdataGen --config config.json --output mydata.bin
-  IFdataGen -c config.json -o output.bin -s
+  IFdataGen --config config.json --output mydata.bin -t
+  IFdataGen -c config.json -o output.bin -st
   IFdataGen --config config.json -vo
-
-Output structure:
-  filename/
-        |-- filename.bin     (IF data)
-        |-- filename.bin.tag (metadata)
 ```
 
 * Now lets pass the cofiguration json file to the generator. From the `IFdataGen` directory run:
 
   ```cmd
-  ~/SignalSim/IFdataGen$ ./out/build/release/IFdataGen -c configs/GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1.json # Linux
+  ~/SignalSim/IFdataGen$ ./out/build/release/IFdataGen -c configs/GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1.json -t # Linux
   ```
 
 * On successful execution, you'll see output similar to:
@@ -271,12 +268,10 @@ Output structure:
 [INFO]  JSON file read successfully: configs/GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1.json
 [INFO]  Loading ephemeris file: ../EphData/BRDC00IGS_R_20211700000_01D_MN.rnx
 [INFO]  Ephemeris file loaded successfully: ../EphData/BRDC00IGS_R_20211700000_01D_MN.rnx
-[INFO]  Creating output directory: bin_signals/GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1
-[INFO]  Output directory created successfully: bin_signals/GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1
-[INFO]  Creating tag file: bin_signals/GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1/GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1.bin.tag
-[INFO]  Tag file created: bin_signals/GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1/GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1.bin.tag
-[INFO]  Opening output file: bin_signals/GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1/GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1.bin
+[INFO]  Opening output file: GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1.bin
 [INFO]  Output file opened successfully.
+[INFO]  Creating tag file: GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1.bin.tag
+[INFO]  Tag file created: GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1.bin.tag
 [INFO]  OpenMP configured for PARALLEL execution (20 threads auto-detected)
 [INFO]  Generating IF data with following satellite signals:
 
@@ -287,7 +282,7 @@ Output structure:
 
 Signals Summary Table:
 +---------------+-------------+--------------+------------------------------+
-| Constellation | Visible SVs | Signals / SV | Total Signals / Visible SVs |
+| Constellation | Visible SVs | Signals / SV | Total Signals / Visible SVs  |
 +---------------+-------------+--------------+------------------------------+
 | GPS           | 9           | 2            | 18                           |
 | BeiDou        | 10          | 2            | 20                           |
@@ -361,49 +356,49 @@ Galileo E1 with IF +7134kHz:
 
 ```
 
-* A `.bin` and `.bin.tag` files will be generated in `IFdataGen/bin_signals/fine_name/` directory. In above examlpe, the bin signal will land in `bin_signal/GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1` directory. The `file_name` is the name which you set in `.json` file, the `.bin.tag` contains metadata (compatible with PocketSDR) about the signal generated.
+* A `.bin` and `.bin.tag` files will be generated in `IFdataGen/` directory (or next to the executable). In above examlpe, the bin signal will land in `IFdataGen/` directory. The `.bin.tag` contains metadata (information about the signal generated) (compatible with PocketSDR) about the signal generated.
 
   ---
 
 ### Bonus: Generate Other multi-Constellation IF Data
 
-Run the `IFdataGen.exe` with pre-computed examples `.json` files, present in `<path-to-repo>/SignalSim/IFdataGen/configs/` directory, to generate multi-constellation IF signals. Go inside `IFdataGen` directory and run the following commands:
+Run the `IFdataGen` with pre-computed examples `.json` files, present in `<path-to-repo>/SignalSim/IFdataGen/configs/` directory, to generate multi-constellation IF signals. Go inside `IFdataGen` directory and run the following commands:
 
 1. **GPS + BeiDou + Galileo (L1 Bands)**:
 
    ```cmd
-   ./out/build/release/IFdataGen -c configs/GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1.json # Linux
-   .\out\build\x64-Release\IFdataGen -c configs\GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1.json # Windows (cmd/powersehh)
+   ./out/build/release/IFdataGen -c configs/GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1.json -t # Linux
+   .\out\build\x64-Release\IFdataGen -c configs\GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1.json -t # Windows (cmd/powersehh)
    ```
 2. **GPS + BeiDou + Galileo (L1 Bands with B1I)**:
 
    ```cmd
-   ./out/build/release/IFdataGen -c configs/GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1.json # Linux
-   .\out\build\x64-Release\IFdataGen -c configs\GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1.json # Windows (cmd/powersehh)
+   ./out/build/release/IFdataGen -c configs/GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1.json -t # Linux
+   .\out\build\x64-Release\IFdataGen -c configs\GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1.json -t # Windows (cmd/powersehh)
    ```
 3. **GPS + BeiDou + Galileo + GLONASS (L1/G1 Bands)**:
 
    ```cmd
-   ./out/build/release/IFdataGen -c configs/GPS_BDS_GAL_GLO_L1CA_L1C_B1C_B1I_E1_G1.json # Linux
-   .\out\build\x64-Release\IFdataGen -c configs\GPS_BDS_GAL_GLO_L1CA_L1C_B1C_B1I_E1_G1.json # Windows (cmd/powersehh)
+   ./out/build/release/IFdataGen -c configs/GPS_BDS_GAL_GLO_L1CA_L1C_B1C_B1I_E1_G1.json -t # Linux
+   .\out\build\x64-Release\IFdataGen -c configs\GPS_BDS_GAL_GLO_L1CA_L1C_B1C_B1I_E1_G1.json -t # Windows (cmd/powersehh)
    ```
 4. **GPS + BeiDou + Galileo + GLONASS (L2/B2/G2 Bands)**:
 
    ```cmd
-   ./out/build/release/IFdataGen -c configs/GPS_BDS_GAL_GLO_L2C_B2I_B2b_E5b_G2.json # Linux
-   .\out\build\x64-Release\IFdataGen -c configs\GPS_BDS_GAL_GLO_L2C_B2I_B2b_E5b_G2.json # Windows (cmd/powersehh)
+   ./out/build/release/IFdataGen -c configs/GPS_BDS_GAL_GLO_L2C_B2I_B2b_E5b_G2.json -t # Linux
+   .\out\build\x64-Release\IFdataGen -c configs\GPS_BDS_GAL_GLO_L2C_B2I_B2b_E5b_G2.json -t # Windows (cmd/powersehh)
    ```
 5. **GPS + BeiDou + Galileo (L5/E5a/B2a Bands)**:
 
    ```cmd
-   ./out/build/release/IFdataGen -c configs/GPS_BDS_GAL_L5_B2a_E5a.json # Linux
-   .\out\build\x64-Release\IFdataGen -c configs\GPS_BDS_GAL_L5_B2a_E5a.json # Windows (cmd/powersehh)
+   ./out/build/release/IFdataGen -c configs/GPS_BDS_GAL_L5_B2a_E5a.json -t # Linux
+   .\out\build\x64-Release\IFdataGen -c configs\GPS_BDS_GAL_L5_B2a_E5a.json -t # Windows (cmd/powersehh)
    ```
 6. **BeiDou + Galileo (B3I/E6 Bands)**:
 
    ```cmd
-   ./out/build/release/IFdataGen -c configs/BDS_GAL_B3I_E6.json # Linux
-   .\out\build\x64-Release\IFdataGen -c configs\BDS_GAL_B3I_E6.json # Windows (cmd/powersehh)
+   ./out/build/release/IFdataGen -c configs/BDS_GAL_B3I_E6.json -t # Linux
+   .\out\build\x64-Release\IFdataGen -c configs\BDS_GAL_B3I_E6.json -t # Windows (cmd/powersehh)
    ```
 
 ---

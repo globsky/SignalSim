@@ -6,7 +6,6 @@
 #include <chrono>
 #include <string>
 #include <vector>
-//#include <filesystem>
 #include <ctime>
 #ifdef _OPENMP
 #include <omp.h>
@@ -46,7 +45,6 @@ int QuantSamplesIQ4(complex_number Samples[], int Length, unsigned char QuantSam
 int QuantSamplesIQ8(complex_number Samples[], int Length, unsigned char QuantSamples[], double GainScale);
 void ShowHelp(const char* ProgramName);
 bool ParseCommandLineArgs(int argc, char* argv[], CommandArguments &Arguments);
-//std::string CreateOutputDirectory(const std::string& outputFilename);
 void CreateTagFile(const std::string& tagFilePath, const OUTPUT_PARAM& outputParam);
 
 CTrajectory Trajectory;
@@ -162,14 +160,9 @@ int main(int argc, char* argv[])
 	CurPos = LlaToEcef(StartPos);
 	SpeedLocalToEcef(StartPos, StartVel, CurPos);
 
-	// Create output directory structure
-//	std::string outputDir = CreateOutputDirectory(OutputParam.filename);
-//	std::string binFilePath = outputDir + "/" + std::filesystem::path(OutputParam.filename).filename().string();
-//	std::string tagFilePath = binFilePath + ".tag";
 
-//	CreateTagFile(tagFilePath, OutputParam);
 
-//	printf("[INFO]\tOpening output file: %s\n", binFilePath.c_str());
+	printf("[INFO]\tOpening output file: %s\n", OutputParam.filename);
 	if ((IfFile = fopen(OutputParam.filename, "wb")) == NULL)
 	{
 		printf("[ERROR]\tFailed to open output file: %s\n", OutputParam.filename);
@@ -645,7 +638,8 @@ int main(int argc, char* argv[])
 
 //		for (j = 0; j < OutputParam.SampleFreq; j ++)
 //			printf("%f %f\n", NoiseArray[j].real, NoiseArray[j].imag);
-		if ((exec_cycle % 10) == 0)
+		// Enhanced progress reporting with percentage, MB/s, and ETA
+		if ((exec_cycle % 25) == 0)
 		{
 			auto current_time = std::chrono::high_resolution_clock::now();
 			auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - start_time).count();
@@ -988,8 +982,6 @@ int QuantSamplesIQ8(complex_number Samples[], int Length, unsigned char QuantSam
 void ShowHelp(const char* ProgramPath)
 {
 	// Extract just the executable name from the path
-//	std::string ProgramName = std::filesystem::path(programPath).filename().string();
-	// simplified programe name extract for compiler earlier than C++17 that does not support std::filesystem
 	std::string PathName = ProgramPath;
 	std::string ProgramName;
     size_t pos = PathName.find_last_of("/\\");
@@ -1001,18 +993,19 @@ void ShowHelp(const char* ProgramPath)
 	std::cout << "IFDataGen - GNSS IF Data Generator\n\n";
 	std::cout << "Usage: " << ProgramName << " [options]\n\n";
 	std::cout << "Available options:\n";
-	std::cout << "  --config, -c <FILE>     Configuration file (JSON) [REQUIRED]\n";
-	std::cout << "  --output, -o <FILE>     Output IF data file (overrides config)\n";
-	std::cout << "  --validate-only, -vo    Validate configuration and exit\n";
-	std::cout << "  --multi-thread, -mt     Force use multi-thread\n";
-	std::cout << "  --single-thread, -st    Force use single-thread\n";
-	std::cout << "  --tag, -t               Output tag file (output file name with .tag appended)\n";
-	std::cout << "  --help, -h              Show this help message\n\n";
+	std::cout << "   -c, 	--config <FILE>    Configuration file (JSON) [REQUIRED]\n";
+	std::cout << "   -o, 	--output <FILE>    Output IF data file (overrides config)\n";
+	std::cout << "   -vo, 	--validate-only    Validate configuration and exit\n";
+	std::cout << "   -mt, 	--multi-thread     Force use multi-thread\n";
+	std::cout << "   -st, 	--single-thread    Force use single-thread\n";
+	std::cout << "   -t,  	--tag              Output tag file (output file name with .tag appended)\n";
+	std::cout << "   -v, 	--version          Show version information\n";
+	std::cout << "   -h, 	--help             Show this help message\n\n";
 	std::cout << "Examples:\n";
-	std::cout << "  " << ProgramName << " -c config.json\n";
-	std::cout << "  " << ProgramName << " --config config.json --output mydata.bin\n";
-	std::cout << "  " << ProgramName << " -c config.json -o output.bin -s\n";
-	std::cout << "  " << ProgramName << " --config config.json -vo\n\n";
+	std::cout << "   " << ProgramName << " -c config.json\n";
+	std::cout << "   " << ProgramName << " --config config.json --output mydata.bin\n";
+	std::cout << "   " << ProgramName << " -c config.json -o output.bin -st\n";
+	std::cout << "   " << ProgramName << " --config config.json -vo\n\n";
 }
 
 bool ParseCommandLineArgs(int argc, char* argv[], CommandArguments &Arguments)
@@ -1021,7 +1014,7 @@ bool ParseCommandLineArgs(int argc, char* argv[], CommandArguments &Arguments)
 		"--help", "-h",	// 0
 		"--config", "-c",	// 1
 		"--output", "-o",	// 2
-		"--validateo-nly", "-vo",	// 3
+		"--validate-only", "-vo",	// 3
 		"--multi-thread", "-mt",	// 4
 		"--single-thread", "-st",	// 5
 		"--tag", "-t",	// 6
