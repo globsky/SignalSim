@@ -63,6 +63,10 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 
 ### 2025
 
+- **7/9/2025**
+  - Use LFS to track all *.pdf files
+  - Config LFS to not maintain old pdf files to reduce storage space
+
 - **7/5/2025**
   - Update/Fix the `README.md` of `IFdatagGen` directory
   - Fix typos in command line arguments of help print function
