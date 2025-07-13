@@ -553,7 +553,7 @@ int main(int argc, char* argv[])
 	printf("[INFO]\tSignal Size: %.2f MB\n", totalMB);
 	printf("[INFO]\tSignal Data format: %s\n", (OutputParam.Format == OutputFormatIQ2) ? "IQ2" : (OutputParam.Format == OutputFormatIQ4) ? "IQ4" : "IQ8");
 	printf("[INFO]\tSignal Center freq: %0.4f MHz\n", OutputParam.CenterFreq/1000.0);
-	printf("[INFO]\tSignal Sample rate: %0.2f MHz\n\n", OutputParam.SampleFreq/1000.0);
+	printf("[INFO]\tSignal Sample rate: %0.4f MHz\n\n", OutputParam.SampleFreq/1000.0);
 	fflush(stdout);
 	
 	auto start_time = std::chrono::high_resolution_clock::now();

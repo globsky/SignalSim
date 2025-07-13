@@ -50,7 +50,7 @@ The **`Fc`** and **`Fs`** in table below are the valuse used in **`.json`** file
 |                   | L5         | 1176.45  | 21        | 🟢                        | 🟢                                       | 🟡                                                |
 |                   | L1P/L2P    | ----     | ---       | (Commercial license only) | (Commercial license only)                | (Commercial license only)                         |
 | **BeiDou**  | B1C        | 1575.42  | 4.1       | 🟢                        | 🟢                                       | 🟡                                                |
-|                   | B1I        | 1561.098 | 4.1       | 🟢                        | 🟢                                       | 🟡                                                |
+|                   | B1I        | 1561.098 | 4.1       | 🟢                        | 🟢                                       | 🟢  [Tested With HackRF (Tx), PocketSDR (Rx)] |
 |                   | B2I        | 1207.14  | 4.1       | 🟢                        | 🟢                                       | 🟡                                                |
 |                   | B2a        | 1176.45  | 21        | 🟢                        | 🟢                                       | 🟡                                                |
 |                   | B2b        | 1207.14  | 21        | 🟢                        | 🟢                                       | 🟡                                                |
