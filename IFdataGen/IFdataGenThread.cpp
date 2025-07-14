@@ -31,6 +31,8 @@ complex_number GenerateNoise(double Sigma);
 NavBit* GetNavData(GnssSystem SatSystem, int SatSignalIndex, NavBit* NavBitArray[]);
 int QuantSamplesIQ4(complex_number Samples[], int Length, unsigned char QuantSamples[], double GainScale);
 int QuantSamplesIQ8(complex_number Samples[], int Length, unsigned char QuantSamples[], double GainScale);
+int QuantSamplesIQ16(complex_number Samples[], int Length, unsigned char QuantSamples[], double GainScale);
+
 
 CTrajectory Trajectory;
 CPowerControl PowerControl;
@@ -58,7 +60,7 @@ const char *SignalName[][8] = {
 };
 
 // thread synchronize variables
-//const int NUM_THREADS = 3;  // 线程数量
+//const int NUM_THREADS = 3;  // 脧脽鲁脤脢媒脕驴
 std::mutex mtx;
 std::condition_variable cv_task;	// for start task
 std::condition_variable cv_ready;	// for task ready
@@ -378,7 +380,7 @@ int main(int argc, char* argv[])
 	printf("Total channels: %d\n\n", TotalChannelNumber);
 
 	NoiseArray = new complex_number[OutputParam.SampleFreq];
-	QuantArray = new unsigned char[OutputParam.SampleFreq * 2];
+	QuantArray = new unsigned char[OutputParam.SampleFreq * 4];
 
 	long long TotalClippedSamples = 0;
 	long long TotalSamples = 0;
@@ -426,6 +428,11 @@ int main(int argc, char* argv[])
 		{
 			TotalClippedSamples += QuantSamplesIQ4(NoiseArray, OutputParam.SampleFreq, QuantArray, AGCGain);
 			fwrite(QuantArray, sizeof(unsigned char), OutputParam.SampleFreq, IfFile);
+		}
+		else if (OutputParam.Format == OutputFormatIQ16)
+		{
+			TotalClippedSamples += QuantSamplesIQ16(NoiseArray, OutputParam.SampleFreq, QuantArray, AGCGain);
+			fwrite(QuantArray, sizeof(unsigned char) * 4, OutputParam.SampleFreq, IfFile);
 		}
 		else
 		{
@@ -708,4 +715,48 @@ int QuantSamplesIQ8(complex_number Samples[], int Length, unsigned char QuantSam
 	}
 
 	return ClippedCount;
+}
+
+int QuantSamplesIQ16(complex_number Samples[], int Length, unsigned char QuantSamples[], double GainScale)
+{
+    int i;
+    int QuantValue;
+    
+    const double Gain = GainScale * 3277;
+    int ClippedCount = 0;
+
+    for (i = 0; i < Length; i++)
+    {
+        QuantValue = (int)(Samples[i].real * Gain);  
+        if (QuantValue > 32767)  
+        {
+            QuantValue = 32767;
+            ClippedCount++;
+        }
+        else if (QuantValue < -32768)
+        {
+            QuantValue = -32768;
+            ClippedCount++;
+        }
+      
+        QuantSamples[i * 4] = (unsigned char)(QuantValue & 0xff);    
+        QuantSamples[i * 4 + 1] = (unsigned char)((QuantValue >> 8) & 0xff);
+
+        QuantValue = (int)(Samples[i].imag * Gain); 
+        if (QuantValue > 32767) 
+        {
+            QuantValue = 32767;
+            ClippedCount++;
+        }
+        else if (QuantValue < -32768)
+        {
+            QuantValue = -32768;
+            ClippedCount++;
+        }
+
+        QuantSamples[i * 4 + 2] = (unsigned char)(QuantValue & 0xff);  
+        QuantSamples[i * 4 + 3] = (unsigned char)((QuantValue >> 8) & 0xff); 
+    }
+
+    return ClippedCount;
 }
