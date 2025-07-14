@@ -62,7 +62,9 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 ## Change List
 
 ### 2025
-
+- **7/14/2025**
+  - Add USRP support (IQ16)
+    
 - **7/9/2025**
   - Use LFS to track all *.pdf files
   - Config LFS to not maintain old pdf files to reduce storage space
