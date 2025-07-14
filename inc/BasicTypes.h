@@ -293,7 +293,7 @@ typedef struct
 } SAT_OBSERVATION, *PSAT_OBSERVATION;
 
 typedef enum { OutputTypePosition, OutputTypeObservation, OutputTypeIFdata, OutputTypeBaseband } OutputType;
-typedef enum { OutputFormatEcef, OutputFormatLla, OutputFormatNmea, OutputFormatKml, OutputFormatRinex, OutputFormatIQ8, OutputFormatIQ4, OutputFormatIQ2 } OutputFormat;
+typedef enum { OutputFormatEcef, OutputFormatLla, OutputFormatNmea, OutputFormatKml, OutputFormatRinex, OutputFormatIQ8, OutputFormatIQ4, OutputFormatIQ2, OutputFormatIQ16 } OutputFormat;
 
 typedef struct
 {
