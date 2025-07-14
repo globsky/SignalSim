@@ -43,6 +43,8 @@ NavBit* GetNavData(GnssSystem SatSystem, int SatSignalIndex, NavBit* NavBitArray
 int QuantSamplesIQ2(complex_number Samples[], int Length, unsigned char QuantSamples[], double GainScale);	//TODO: Varify 2-bit quantization
 int QuantSamplesIQ4(complex_number Samples[], int Length, unsigned char QuantSamples[], double GainScale);
 int QuantSamplesIQ8(complex_number Samples[], int Length, unsigned char QuantSamples[], double GainScale);
+int QuantSamplesIQ16(complex_number Samples[], int Length, unsigned char QuantSamples[], double GainScale);
+
 void ShowHelp(const char* ProgramName);
 bool ParseCommandLineArgs(int argc, char* argv[], CommandArguments &Arguments);
 void CreateTagFile(const std::string& tagFilePath, const OUTPUT_PARAM& outputParam);
@@ -538,11 +540,11 @@ int main(int argc, char* argv[])
 	printf("Total channels: %d\n\n", TotalChannelNumber);
 
 	NoiseArray = new complex_number[OutputParam.SampleFreq];
-	QuantArray = new unsigned char[OutputParam.SampleFreq * 2];
+	QuantArray = new unsigned char[OutputParam.SampleFreq * 4];
 
 	// Calculate total data size and setup progress tracking
 	int totalDurationMs = (int)(Trajectory.GetTimeLength() * 1000);
-	double bytesPerMs = OutputParam.SampleFreq *  ((OutputParam.Format == OutputFormatIQ2) ? 0.5 : (OutputParam.Format == OutputFormatIQ4) ? 1.0 : 2.0);
+	double bytesPerMs = OutputParam.SampleFreq *  ((OutputParam.Format == OutputFormatIQ2) ? 0.5 : (OutputParam.Format == OutputFormatIQ4) ? 1.0: (OutputParam.Format == OutputFormatIQ16) ? 4.0 : 2.0);
 	double totalMB = (totalDurationMs * bytesPerMs) / (1024.0 * 1024.0);
 	int exec_cycle = 0;
 	long long TotalClippedSamples = 0;
@@ -551,7 +553,7 @@ int main(int argc, char* argv[])
 	printf("[INFO]\tStarting signal generation loop...\n");
 	printf("[INFO]\tSignal Duration: %0.2f s\n", totalDurationMs/1000.0);
 	printf("[INFO]\tSignal Size: %.2f MB\n", totalMB);
-	printf("[INFO]\tSignal Data format: %s\n", (OutputParam.Format == OutputFormatIQ2) ? "IQ2" : (OutputParam.Format == OutputFormatIQ4) ? "IQ4" : "IQ8");
+	printf("[INFO]\tSignal Data format: %s\n", (OutputParam.Format == OutputFormatIQ2) ? "IQ2" : (OutputParam.Format == OutputFormatIQ4) ? "IQ4":(OutputParam.Format == OutputFormatIQ16) ? "IQ16" : "IQ8");
 	printf("[INFO]\tSignal Center freq: %0.4f MHz\n", OutputParam.CenterFreq/1000.0);
 	printf("[INFO]\tSignal Sample rate: %0.4f MHz\n\n", OutputParam.SampleFreq/1000.0);
 	fflush(stdout);
@@ -607,6 +609,11 @@ int main(int argc, char* argv[])
 		{
 			TotalClippedSamples += QuantSamplesIQ4(NoiseArray, OutputParam.SampleFreq, QuantArray, AGCGain);
 			fwrite(QuantArray, sizeof(unsigned char), OutputParam.SampleFreq, IfFile); // 1 byte/sample
+		}
+		else if (OutputParam.Format == OutputFormatIQ16) 
+		{
+			TotalClippedSamples += QuantSamplesIQ16(NoiseArray, OutputParam.SampleFreq, QuantArray, AGCGain);
+			fwrite(QuantArray, sizeof(unsigned char) * 4, OutputParam.SampleFreq, IfFile); // 4 bytes/sample
 		}
 		else
 		{
@@ -979,6 +986,51 @@ int QuantSamplesIQ8(complex_number Samples[], int Length, unsigned char QuantSam
 	return ClippedCount;
 }
 
+int QuantSamplesIQ16(complex_number Samples[], int Length, unsigned char QuantSamples[], double GainScale)
+{
+    int i;
+    int QuantValue;
+    
+    const double Gain = GainScale * 3277;
+    int ClippedCount = 0;
+
+    for (i = 0; i < Length; i++)
+    {
+        QuantValue = (int)(Samples[i].real * Gain);  
+        if (QuantValue > 32767)  
+        {
+            QuantValue = 32767;
+            ClippedCount++;
+        }
+        else if (QuantValue < -32768)
+        {
+            QuantValue = -32768;
+            ClippedCount++;
+        }
+    
+        QuantSamples[i * 4] = (unsigned char)(QuantValue & 0xff);       
+        QuantSamples[i * 4 + 1] = (unsigned char)((QuantValue >> 8) & 0xff);  
+
+      
+        QuantValue = (int)(Samples[i].imag * Gain);  
+        if (QuantValue > 32767)  
+        {
+            QuantValue = 32767;
+            ClippedCount++;
+        }
+        else if (QuantValue < -32768)
+        {
+            QuantValue = -32768;
+            ClippedCount++;
+        }
+      
+        QuantSamples[i * 4 + 2] = (unsigned char)(QuantValue & 0xff);        
+        QuantSamples[i * 4 + 3] = (unsigned char)((QuantValue >> 8) & 0xff);  
+    }
+
+    return ClippedCount;
+}
+
 void ShowHelp(const char* ProgramPath)
 {
 	// Extract just the executable name from the path
@@ -1100,7 +1152,11 @@ void CreateTagFile(const std::string& tagFilePath, const OUTPUT_PARAM& outputPar
         formatStr = "INT4X2";
         iqStr = "1";
         bitsStr = "4";
-    } else { // OutputFormatIQ8
+    }else if (outputParam.Format == OutputFormatIQ16){
+	formatStr = "INT16X2";
+        iqStr = "1";
+        bitsStr = "16"; 
+    }else { // OutputFormatIQ8
         formatStr = "INT8X2";
         iqStr = "1";
         bitsStr = "8";

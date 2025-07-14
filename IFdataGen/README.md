@@ -44,7 +44,7 @@ The **`Fc`** and **`Fs`** in table below are the valuse used in **`.json`** file
 
 | Constellation     | Signal     | Fc (MHz) | Fs ( MHz) | Implementation            | Signal Generation Testing Status (Notes) | Signal Processing Testing Status (Notes)          |
 | ----------------- | ---------- | -------- | --------- | ------------------------- | ---------------------------------------- | ------------------------------------------------- |
-| **GPS**     | L1CA       | 1575.42  | 2.1       | 🟢                        | 🟢                                       | 🟢    [Tested With HackRF (Tx), PocketSDR (Rx)] |
+| **GPS**     | L1CA       | 1575.42  | 2.1       | 🟢                        | 🟢                                       | 🟢    [Tested With HackRF (Tx), PocketSDR (Rx)][Tested With USRP B210 (Tx), PocketSDR (Rx)] |
 |                   | L1C        | 1575.42  | 4.1       | 🟢                        | 🟢                                       | 🟡                                                |
 |                   | L2C (L2CM) | 1227.60  | 4.1       | 🟢                        | 🟢                                       | 🟡                                                |
 |                   | L5         | 1176.45  | 21        | 🟢                        | 🟢                                       | 🟡                                                |
@@ -413,6 +413,11 @@ The generated binary file can be:
 ```bash
 hackrf_transfer -t GPS_BDS_GAL_L1CA_L1C_B1C_B1I_E1.bin -f 1568286000 -s 18480000 -a 1 -x 47 -R
 ```
+USRP B210 example:
+```bash
+tx_samples_from_file --file GPS_BDS_GAL_L1CA_L1C_B1C_E1.bin --spb 20000 --rate 4091000 --freq 1575420000 --wirefmt sc8 --gain 70
+```
+* For USRP, if the word "U" is seen in the command-line tool, it indicates an output timeout and data accumulation in the USRP hardware protocol stack, which can cause the receiver to lose lock. Better devices (x310 or x410 with fiber optic connections) can be used to avoid this. Any appearance of "UUUU..." will result in experimental failure.
 
 * Processed by GNSS software like GNSS-SDR or PocketSDR
 * Used for testing and development of GNSS signal processing algorithms
