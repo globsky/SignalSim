@@ -38,6 +38,8 @@ public:
 	unsigned int BdtUtcParam[5];		// BDT-UTC parameters (97 bits)
 	unsigned int EopParam[6];			// EOP parameters (138 bits)
 	unsigned int BgtoParam[7][3];		// BGTO parameters (68 bits)
+	unsigned int AlmanacWeek;			// valid almanac week
+	unsigned int AlmanacToa;			// valid almanac toa
 
 private:
 	static const unsigned int crc24q[256];				// CRC24Q table

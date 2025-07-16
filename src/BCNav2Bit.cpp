@@ -87,7 +87,7 @@ int BCNav2Bit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBi
 
 	sow = StartTime.MilliSeconds / 3000;	// SOW with scale factor 3s
 	MessageType = MessageOrder[sow % 20];
-	ComposeMessage(MessageType, StartTime.Week, sow, svid, FrameData);
+	ComposeMessage(MessageType, StartTime.Week - 1356, sow, svid, FrameData);
 	AppendCRC(FrameData, 12);
 	// assign each 6bit into Symbols array
 	for (i = 0; i < 12; i ++)

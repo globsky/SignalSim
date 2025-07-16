@@ -120,7 +120,7 @@ int BCNav3Bit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBi
 		return 1;
 
 	sow = StartTime.MilliSeconds / 1000;
-	ComposeMessage(MessageOrder[sow % 6], StartTime.Week, sow, svid, FrameData);
+	ComposeMessage(MessageOrder[sow % 6], StartTime.Week - 1356, sow, svid, FrameData);
 	AppendCRC(FrameData, 21);
 	// assign each 6bit into Symbols array
 	Symbols[0] = FrameData[0] & 0x3f;
@@ -147,6 +147,8 @@ int BCNav3Bit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBi
 // FrameData[0] only has 6 valid bits in LSB 
 void BCNav3Bit::ComposeMessage(int MessageType, int week, int sow, int svid, unsigned int FrameData[])
 {
+	int AlmanacPrn;
+
 	// first fill in MessageType
 	FrameData[0] = MessageType & 0x3f;
 
@@ -176,7 +178,22 @@ void BCNav3Bit::ComposeMessage(int MessageType, int week, int sow, int svid, uns
 		break;
 	case 40:
 		FrameData[1] = COMPOSE_BITS(sow, 4, 20);
-		memset(&FrameData[2], 0, sizeof(unsigned int) * 18);
+		AppendWord(&FrameData[1], 20, BgtoParam[sow % 3], 68);	// first 3 BGTO fields
+		AlmanacPrn = sow % 63;
+		AppendWord(&FrameData[4], 16, MidiAlmanac[AlmanacPrn], 156);	// midi almanac
+		FrameData[11] |= COMPOSE_BITS(AlmanacWeek, 7, 13);
+		FrameData[11] |= COMPOSE_BITS(AlmanacToa >> 1, 0, 7);
+		FrameData[12] = COMPOSE_BITS(AlmanacToa, 23, 1);
+		AlmanacPrn = (sow * 5) % 63;
+		AppendWord(&FrameData[12], 1, ReducedAlmanac[AlmanacPrn], 38);	// reduced almanac
+		AlmanacPrn = (sow * 5 + 1) % 63;
+		AppendWord(&FrameData[13], 15, ReducedAlmanac[AlmanacPrn], 38);	// reduced almanac
+		AlmanacPrn = (sow * 5 + 2) % 63;
+		AppendWord(&FrameData[15], 5, ReducedAlmanac[AlmanacPrn], 38);	// reduced almanac
+		AlmanacPrn = (sow * 5 + 3) % 63;
+		AppendWord(&FrameData[16], 19, ReducedAlmanac[AlmanacPrn], 38);	// reduced almanac
+		AlmanacPrn = (sow * 5 + 4) % 63;
+		AppendWord(&FrameData[18], 9, ReducedAlmanac[AlmanacPrn], 38);	// reduced almanac
 		break;
 	}
 }

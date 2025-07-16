@@ -12,7 +12,7 @@
 #include "BasicTypes.h"
 #include "Rinex.h"
 
-#define EPH_NUMBER_INC 100
+#define EPH_NUMBER_INIT 100
 
 class CNavData
 {

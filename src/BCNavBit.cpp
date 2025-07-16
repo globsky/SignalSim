@@ -205,7 +205,7 @@ int BCNavBit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
 
 int BCNavBit::SetAlmanac(GPS_ALMANAC Alm[])
 {
-	int i, toa = 0, week = 0;
+	int i;
 
 	// fill in almanac page
 	for (i = 0; i < 63; i ++)
@@ -213,8 +213,8 @@ int BCNavBit::SetAlmanac(GPS_ALMANAC Alm[])
 		FillBdsAlmanacPage(&Alm[i], MidiAlmanac[i], ReducedAlmanac[i]);
 		if (Alm[i].valid & 1)
 		{
-			toa = Alm[i].toa >> 12;
-			week = Alm[i].week & 0xff;
+			AlmanacToa = Alm[i].toa >> 12;
+			AlmanacWeek = Alm[i].week;
 		}
 	}
 
@@ -318,5 +318,58 @@ int BCNavBit::GF6IntMul(int a, int b)
 
 int BCNavBit::FillBdsAlmanacPage(PGPS_ALMANAC Almanac, unsigned int MidiAlm[8], unsigned int ReducedAlm[2])
 {
+	signed int IntValue;
+	unsigned int UintValue;
+
+	if (!(Almanac->valid & 1))	// almanac not valid
+	{
+		MidiAlm[0] = ReducedAlm[0] = 0;	// set PRN field to 0
+		return 0;
+	}
+
+	// fill midi almanac
+	MidiAlm[0] = COMPOSE_BITS(Almanac->svid, 18, 6);	// PRN
+	MidiAlm[0] |= COMPOSE_BITS(Almanac->flag, 16, 2);	// SatType
+	MidiAlm[0] |= COMPOSE_BITS(Almanac->week, 3, 13);	// WN
+	UintValue = Almanac->toa >> 12;	// toa
+	MidiAlm[0] |= COMPOSE_BITS(UintValue >> 5, 0, 3);
+	MidiAlm[1] = COMPOSE_BITS(UintValue, 19, 5);
+	UintValue = UnscaleUint(Almanac->ecc, -16);	// ecc
+	MidiAlm[1] |= COMPOSE_BITS(UintValue, 8, 11);
+	IntValue = UnscaleInt(Almanac->i0 / PI - ((Almanac->flag == 1) ? 0 : 0.3), -14);	// delta_i
+	MidiAlm[1] |= COMPOSE_BITS(IntValue >> 3, 0, 8);
+	MidiAlm[2] = COMPOSE_BITS(IntValue, 21, 3);
+	UintValue = UnscaleUint(Almanac->sqrtA, -4);	// sqrtA
+	MidiAlm[2] |= COMPOSE_BITS(UintValue, 4, 17);
+	IntValue = UnscaleInt(Almanac->omega0 / PI, -15);	// omega0
+	MidiAlm[2] |= COMPOSE_BITS(IntValue >> 12, 0, 4);
+	MidiAlm[3] = COMPOSE_BITS(IntValue, 12, 12);
+	IntValue = UnscaleInt(Almanac->omega_dot / PI, -33);	// omega_dot
+	MidiAlm[3] |= COMPOSE_BITS(IntValue, 1, 11);
+	IntValue = UnscaleInt(Almanac->w / PI, -15);	// w
+	MidiAlm[3] |= COMPOSE_BITS(IntValue >> 15, 0, 1);
+	MidiAlm[4] = COMPOSE_BITS(IntValue, 9, 15);
+	IntValue = UnscaleInt(Almanac->M0 / PI, -15);	// M0
+	MidiAlm[4] |= COMPOSE_BITS(IntValue >> 7, 0, 9);
+	MidiAlm[5] = COMPOSE_BITS(IntValue, 17, 7);
+	IntValue = UnscaleInt(Almanac->af0, -20);	// af0
+	MidiAlm[5] |= COMPOSE_BITS(IntValue, 6, 11);
+	IntValue = UnscaleInt(Almanac->af1, -37);	// af1
+	MidiAlm[5] |= COMPOSE_BITS(IntValue >> 4, 0, 6);
+	MidiAlm[6] = COMPOSE_BITS(IntValue, 20, 4);
+	MidiAlm[6] |= COMPOSE_BITS(Almanac->health, 12, 8);	// use B1I health as clock health
+
+	// fill reduced almanac
+	MidiAlm[0] = COMPOSE_BITS(Almanac->svid, 18, 6);	// PRN
+	MidiAlm[0] |= COMPOSE_BITS(Almanac->flag, 16, 2);	// SatType
+	IntValue = UnscaleInt(Almanac->sqrtA * Almanac->sqrtA - ((Almanac->flag == 3) ? 27906100.0 : 42162200.0), 9);	// deltaA
+	MidiAlm[0] |= COMPOSE_BITS(IntValue, 8, 8);
+	IntValue = UnscaleInt(Almanac->omega0 / PI, -6);	// omega0
+	MidiAlm[0] |= COMPOSE_BITS(IntValue, 1, 7);
+	IntValue = UnscaleInt((Almanac->M0 + Almanac->w) / PI, -6);	// Phi0
+	MidiAlm[0] |= COMPOSE_BITS(IntValue >> 6, 0, 1);
+	MidiAlm[1] = COMPOSE_BITS(IntValue, 18, 6);
+	MidiAlm[1] |= COMPOSE_BITS(Almanac->health, 10, 8);	// use B1I health as clock health
+
 	return 0;
 }

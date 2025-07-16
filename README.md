@@ -62,6 +62,11 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 ## Change List
 
 ### 2025
+- **7/15/2025**
+  - Change ephemeris increase method in class CNavData to double the size (more efficient)
+  - Fix bug of using GPS week number instead of BDS in BDS CNAV2 and CNAV3 data
+  - Add midi-almanac and reduced almanac to BDS CNAV3 message type 40
+
 - **7/14/2025**
   - Add USRP support (IQ16)
     
