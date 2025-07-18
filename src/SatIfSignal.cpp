@@ -44,6 +44,8 @@ void CSatIfSignal::GetIfSample(GNSS_TIME CurTime)
 {
 	int i, TransmitMsDiff;
 	double CurPhase, PhaseStep, CurChip, CodeDiff, CodeStep;
+	unsigned int CurIntPhase;
+	int IntPhaseStep;
 	const PrnAttribute* CodeAttribute = PrnSequence->Attribute;
 	complex_number IfSample;
 	double Amp = pow(10, (SatParam->CN0 - 3000) / 1000.) / sqrt(SampleNumber);
@@ -60,6 +62,8 @@ void CSatIfSignal::GetIfSample(GNSS_TIME CurTime)
 	PhaseStep += IfFreq / 1000. / SampleNumber;
 	CurPhase = StartCarrierPhase - (int)StartCarrierPhase;
 	CurPhase = 1 - CurPhase;	// carrier is fractional part of negative of travel time, equvalent to 1 minus positive fractional part
+	CurIntPhase = (unsigned int)std::floor(CurPhase * 4294967296.);
+	IntPhaseStep = (int)std::round(PhaseStep * 4294967296.);
 	StartCarrierPhase = EndCarrierPhase;
 	if (GlonassHalfCycle)	// for GLONASS odd number FreqID, nominal IF result in half cycle toggle every 1ms
 	{
@@ -76,9 +80,11 @@ void CSatIfSignal::GetIfSample(GNSS_TIME CurTime)
 	CurChip = (StartTransmitTime.MilliSeconds % CodeAttribute->PilotPeriod + StartTransmitTime.SubMilliSeconds) * CodeAttribute->ChipRate;
 	StartTransmitTime = EndTransmitTime;
 
+	FastMath::InitializeLUT();
 	for (i = 0; i < SampleNumber; i ++)
 	{
-		SampleArray[i] = GetPrnValue(CurChip, CodeStep) * GetRotateValue(CurPhase, PhaseStep) * Amp;
+//		SampleArray[i] = GetPrnValue(CurChip, CodeStep) * GetRotateValue(CurPhase, PhaseStep) * Amp;
+		SampleArray[i] = GetPrnValue(CurChip, CodeStep) * GetRotateValue(CurIntPhase, IntPhaseStep) * Amp;
 	}
 }
 
@@ -129,6 +135,14 @@ complex_number CSatIfSignal::GetRotateValue(double& CurPhase, double PhaseStep)
 	CurPhase += PhaseStep;
 	return Rotate;
 }
+
+complex_number CSatIfSignal::GetRotateValue(unsigned int & CurPhase, int PhaseStep)
+{
+	complex_number Rotate = FastMath::FastRotate(CurPhase);
+	CurPhase += PhaseStep;
+	return Rotate;
+}
+
 #if 0
 // Cannot correctly deal with data/secondary code modulation yet, just put here for future optimize
 void CSatIfSignal::GenerateSamplesVectorized(int SampleCount, double& CurChip, double CodeStep, double& CurPhase, double PhaseStep, double Amp)

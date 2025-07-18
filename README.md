@@ -62,6 +62,10 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 ## Change List
 
 ### 2025
+- **7/17/2025**
+  - Improve speed of rotate factor calculation by using fixed point angles
+  - Update multi-thread version IFdataGenThread.cpp using same command argument as IFdataGen
+
 - **7/15/2025**
   - Change ephemeris increase method in class CNavData to double the size (more efficient)
   - Fix bug of using GPS week number instead of BDS in BDS CNAV2 and CNAV3 data

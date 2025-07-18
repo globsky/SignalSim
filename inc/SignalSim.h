@@ -32,6 +32,5 @@
 #include "SatelliteSignal.h"
 #include "SatIfSignal.h"
 #include "Coordinate.h"
-#include "FastMath.h"
 
 #endif // __SIGNAL_SIM_H__

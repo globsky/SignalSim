@@ -30,5 +30,6 @@ private:
 
 	complex_number GetPrnValue(double &CurChip, double CodeStep);
 	complex_number GetRotateValue(double & CurPhase, double PhaseStep);
+	complex_number GetRotateValue(unsigned int & CurPhase, int PhaseStep);
 	void GenerateSamplesVectorized(int SampleCount, double& CurChip, double CodeStep, double& CurPhase, double PhaseStep, double Amp);
 };

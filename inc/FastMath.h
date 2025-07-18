@@ -19,32 +19,32 @@
 class FastMath {
 public:
     // Lookup table size - must be power of 2 for fast modulo
-    static constexpr int TRIG_LUT_SIZE = 65536;
+    static constexpr int TRIG_LUT_DEPTH = 16;
+    static constexpr int TRIG_LUT_SIZE = 1 << TRIG_LUT_DEPTH;
     static constexpr double TRIG_LUT_SCALE = TRIG_LUT_SIZE / PI2;
+    static constexpr int TRIG_LUT_SHIFT = 32 - TRIG_LUT_DEPTH;
     
 private:
     // Static lookup tables
-    static double sin_lut[TRIG_LUT_SIZE];
-    static double cos_lut[TRIG_LUT_SIZE];
+    static double sin_lut[TRIG_LUT_SIZE + TRIG_LUT_SIZE / 4];
+//    static double cos_lut[TRIG_LUT_SIZE];
     static bool lut_initialized;
     
+public:
     // Initialize lookup tables
     static void InitializeLUT() {
         if (!lut_initialized) {
-            for (int i = 0; i < TRIG_LUT_SIZE; i++) {
+            for (int i = 0; i < TRIG_LUT_SIZE + TRIG_LUT_SIZE / 4; i++) {
                 double angle = (PI2 * i) / TRIG_LUT_SIZE;
                 sin_lut[i] = std::sin(angle);
-                cos_lut[i] = std::cos(angle);
+//                cos_lut[i] = std::cos(angle);
             }
             lut_initialized = true;
         }
     }
 
-public:
     // Fast sine using lookup table - force inline for performance
     static FORCE_INLINE double FastSin(double angle) {
-        if (!lut_initialized) InitializeLUT();
-        
         // Normalize angle to [0, 2*PI)
         angle = std::fmod(angle, PI2);
         if (angle < 0) angle += PI2;
@@ -56,28 +56,42 @@ public:
     
     // Fast cosine using lookup table - force inline for performance
     static FORCE_INLINE double FastCos(double angle) {
-        if (!lut_initialized) InitializeLUT();
-        
         // Normalize angle to [0, 2*PI)
         angle = std::fmod(angle, PI2);
         if (angle < 0) angle += PI2;
         
         // Convert to table index
         int index = static_cast<int>(angle * TRIG_LUT_SCALE) & (TRIG_LUT_SIZE - 1);
-        return cos_lut[index];
+        return sin_lut[index + TRIG_LUT_SIZE / 4];
     }
     
     // Fast complex rotation using lookup tables - force inline for performance
     static FORCE_INLINE complex_number FastRotate(double angle) {
-        if (!lut_initialized) InitializeLUT();
-        
         // Normalize angle to [0, 2*PI)
         angle = std::fmod(angle, PI2);
         if (angle < 0) angle += PI2;
         
         // Convert to table index
         int index = static_cast<int>(angle * TRIG_LUT_SCALE) & (TRIG_LUT_SIZE - 1);
-        return complex_number(cos_lut[index], sin_lut[index]);
+        return complex_number(sin_lut[index + TRIG_LUT_SIZE / 4], sin_lut[index]);
+    }
+
+    // Fast sine using lookup table - force inline for performance
+    static FORCE_INLINE double FastSin(unsigned int angle_index) {
+        angle_index >>= TRIG_LUT_SHIFT;
+        return sin_lut[angle_index];
+    }
+    
+    // Fast cosine using lookup table - force inline for performance
+    static FORCE_INLINE double FastCos(unsigned int angle_index) {
+        angle_index >>= TRIG_LUT_SHIFT;
+        return sin_lut[angle_index + TRIG_LUT_SIZE / 4];
+    }
+    
+    // Fast complex rotation using lookup tables - force inline for performance
+    static FORCE_INLINE complex_number FastRotate(unsigned int angle_index) {
+        angle_index >>= TRIG_LUT_SHIFT;
+        return complex_number(sin_lut[angle_index + TRIG_LUT_SIZE / 4], sin_lut[angle_index]);
     }
     
     // Fast noise generation using Box-Muller with cached values
