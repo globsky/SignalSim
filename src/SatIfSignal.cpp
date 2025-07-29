@@ -1,3 +1,10 @@
+//----------------------------------------------------------------------
+// SatIfSignal.cpp:
+//   Definition of satellite IF signal generation class
+//
+//          Copyright (C) 2020-2029 by Jun Mo, All rights reserved.
+//
+//----------------------------------------------------------------------
 #include <math.h>
 #include <stdio.h>
 #include <memory.h>

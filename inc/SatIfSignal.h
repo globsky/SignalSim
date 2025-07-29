@@ -1,3 +1,10 @@
+//----------------------------------------------------------------------
+// SatIfSignal.h:
+//   Declaration of satellite IF signal generation class
+//
+//          Copyright (C) 2020-2029 by Jun Mo, All rights reserved.
+//
+//----------------------------------------------------------------------
 #include "BasicTypes.h"
 #include "ComplexNumber.h"
 #include "PrnGenerate.h"

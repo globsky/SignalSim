@@ -11,6 +11,7 @@
 #include "ConstVal.h"
 #include "Coordinate.h"
 #include "Trajectory.h"
+#include "MessageOutput.h"
 
 CTrajectorySegment::CTrajectorySegment()
 {
@@ -65,9 +66,15 @@ void CTrajectorySegment::InitSegment(CTrajectorySegment *PrevSegment)
 int CTrajectoryConstSpeed::SetSegmentParam(CTrajectorySegment *PrevSegment, TrajectoryDataType DataType1, double Data1, TrajectoryDataType DataType2, double Data2)
 {
 	if (DataType1 != TrajDataTimeSpan)
+	{
+		MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter type mismatch in \"Const\", type \"time\" needed.\n");
 		return TRAJECTORY_TYPE_MISMATCH;
+	}
 	else if (Data1 <= 0)
+	{
+		MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter %f invalid for type \"time\" in \"Const\"\n");
 		return TRAJECTORY_INVALID_PARAM;
+	}
 
 	m_TimeSpan = Data1;
 	return TRAJECTORY_NO_ERR;
@@ -99,7 +106,10 @@ int CTrajectoryConstAcc::SetSegmentParam(CTrajectorySegment *PrevSegment, Trajec
 		else if (DataType2 == TrajDataSpeed)
 			acc = (Data2 - speed) / time;
 		else
+		{
+			MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter type mismatch in \"ConstAcc\", type \"acceleration/speed\" needed.\n");
 			return TRAJECTORY_TYPE_MISMATCH;
+		}
 		break;
 	case TrajDataAcceleration:
 		acc = Data1;
@@ -115,7 +125,10 @@ int CTrajectoryConstAcc::SetSegmentParam(CTrajectorySegment *PrevSegment, Trajec
 			}
 		}
 		else
+		{
+			MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter type mismatch in \"ConstAcc\", type \"time/speed\" needed.\n");
 			return TRAJECTORY_TYPE_MISMATCH;
+		}
 		break;
 	case TrajDataSpeed:
 		if (DataType2 == TrajDataTimeSpan)
@@ -134,12 +147,18 @@ int CTrajectoryConstAcc::SetSegmentParam(CTrajectorySegment *PrevSegment, Trajec
 			}
 		}
 		else
+		{
+			MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter type mismatch in \"ConstAcc\", type \"time/acceleration\" needed.\n");
 			return TRAJECTORY_TYPE_MISMATCH;
+		}
 		break;
 	}
 
 	if (time <= 0)
+	{
+		MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter invalid in \"ConstAcc\", during time is negative\n");
 		return TRAJECTORY_INVALID_PARAM;
+	}
 
 	GetSpeedProjection(projection);
 	m_ax = acc * projection[0];
@@ -177,7 +196,10 @@ int CTrajectoryVerticalAcc::SetSegmentParam(CTrajectorySegment *PrevSegment, Tra
 		else if (DataType2 == TrajDataSpeed)
 			acc = (Data2 - m_LocalSpeed.vu) / time;
 		else
+		{
+			MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter type mismatch in \"VerticalAcc\", type \"speed/acceleration\" needed.\n");
 			return TRAJECTORY_TYPE_MISMATCH;
+		}
 		break;
 	case TrajDataAcceleration:
 		acc = Data1;
@@ -193,7 +215,10 @@ int CTrajectoryVerticalAcc::SetSegmentParam(CTrajectorySegment *PrevSegment, Tra
 			}
 		}
 		else
+		{
+			MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter type mismatch in \"VerticalAcc\", type \"time/speed\" needed.\n");
 			return TRAJECTORY_TYPE_MISMATCH;
+		}
 		break;
 	case TrajDataSpeed:
 		if (DataType2 == TrajDataTimeSpan)
@@ -212,12 +237,18 @@ int CTrajectoryVerticalAcc::SetSegmentParam(CTrajectorySegment *PrevSegment, Tra
 			}
 		}
 		else
+		{
+			MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter type mismatch in \"VerticalAcc\", type \"time/acceleration\" needed.\n");
 			return TRAJECTORY_TYPE_MISMATCH;
+		}
 		break;
 	}
 
 	if (time <= 0)
+	{
+		MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter invalid in \"VerticalAcc\", during time is negative\n");
 		return TRAJECTORY_INVALID_PARAM;
+	}
 
 	m_ax = acc * m_ConvertMatrix.x2u;
 	m_ay = acc * m_ConvertMatrix.y2u;
@@ -280,7 +311,10 @@ int CTrajectoryJerk::SetSegmentParam(CTrajectorySegment *PrevSegment, Trajectory
 		else if (DataType2 == TrajDataAccRate)
 			acc = Data2;
 		else
+		{
+			MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter type mismatch in \"Jerk\", type \"acceleration/rate\" needed.\n");
 			return TRAJECTORY_TYPE_MISMATCH;
+		}
 		break;
 	case TrajDataAccRate:
 		rate = Data1;
@@ -296,7 +330,10 @@ int CTrajectoryJerk::SetSegmentParam(CTrajectorySegment *PrevSegment, Trajectory
 			}
 		}
 		else
+		{
+			MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter type mismatch in \"Jerk\", type \"time/acceleration\" needed.\n");
 			return TRAJECTORY_TYPE_MISMATCH;
+		}
 		break;
 	case TrajDataAcceleration:
 		if (DataType2 == TrajDataTimeSpan)
@@ -315,12 +352,18 @@ int CTrajectoryJerk::SetSegmentParam(CTrajectorySegment *PrevSegment, Trajectory
 			}
 		}
 		else
+		{
+			MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter type mismatch in \"Jerk\", type \"time/rate\" needed.\n");
 			return TRAJECTORY_TYPE_MISMATCH;
+		}
 		break;
 	}
 
 	if (time <= 0)
+	{
+		MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter invalid in \"Jerk\", during time is negative\n");
 		return TRAJECTORY_INVALID_PARAM;
+	}
 
 	GetSpeedProjection(projection);
 	m_Acc.vx = rate * projection[0];
@@ -351,7 +394,10 @@ int CTrajectoryHorizontalCircular::SetSegmentParam(CTrajectorySegment *PrevSegme
 	double speed = sqrt(m_StartPosVel.vx * m_StartPosVel.vx + m_StartPosVel.vy * m_StartPosVel.vy + m_StartPosVel.vz * m_StartPosVel.vz);
 
 	if (speed < 1e-5)
+	{
+		MessagePrint(MSG_LEVEL_ERROR, "Trajectory begin condition invalid in \"HorizontalTurn\", start speed is 0\n");
 		return TRAJECTORY_ZERO_SPEED;
+	}
 
 	// convert type to angular rate
 	if (DataType1 == TrajDataAcceleration)
@@ -362,7 +408,10 @@ int CTrajectoryHorizontalCircular::SetSegmentParam(CTrajectorySegment *PrevSegme
 	else if (DataType1 == TrajDataRadius)
 	{
 		if (fabs(Data1) < 1e-5)
+		{
+			MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter invalid in \"HorizontalTurn\", radius too small\n");
 			return TRAJECTORY_INVALID_PARAM;
+		}
 		DataType1 = TrajDataAngularRate;
 		Data1 = speed / Data1;
 	}
@@ -374,7 +423,10 @@ int CTrajectoryHorizontalCircular::SetSegmentParam(CTrajectorySegment *PrevSegme
 	else if (DataType2 == TrajDataRadius)
 	{
 		if (fabs(Data2) < 1e-5)
+		{
+			MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter invalid in \"HorizontalTurn\", radius too small\n");
 			return TRAJECTORY_INVALID_PARAM;
+		}
 		DataType2 = TrajDataAngularRate;
 		Data2 = speed / Data2;
 	}
@@ -388,7 +440,10 @@ int CTrajectoryHorizontalCircular::SetSegmentParam(CTrajectorySegment *PrevSegme
 		else if (DataType2 == TrajDataAngle)
 			rate = Data2 / time;
 		else
+		{
+			MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter type mismatch in \"HorizontalTurn\", type \"rate/angle\" needed.\n");
 			return TRAJECTORY_TYPE_MISMATCH;
+		}
 		break;
 	case TrajDataAngularRate:
 		rate = Data1;
@@ -404,7 +459,10 @@ int CTrajectoryHorizontalCircular::SetSegmentParam(CTrajectorySegment *PrevSegme
 			}
 		}
 		else
+		{
+			MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter type mismatch in \"HorizontalTurn\", type \"time/angle\" needed.\n");
 			return TRAJECTORY_TYPE_MISMATCH;
+		}
 		break;
 	case TrajDataAngle:
 		if (DataType2 == TrajDataTimeSpan)
@@ -423,14 +481,23 @@ int CTrajectoryHorizontalCircular::SetSegmentParam(CTrajectorySegment *PrevSegme
 			}
 		}
 		else
+		{
+			MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter type mismatch in \"HorizontalTurn\", type \"time/rate\" needed.\n");
 			return TRAJECTORY_TYPE_MISMATCH;
+		}
 		break;
 	}
 
 	if (time <= 0)
+	{
+		MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter invalid in \"HorizontalTurn\", during time is negative\n");
 		return TRAJECTORY_INVALID_PARAM;
+	}
 	if (fabs(rate) <= 1e-8)
+	{
+		MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter invalid in \"HorizontalTurn\", turn rate too small\n");
 		return TRAJECTORY_INVALID_PARAM;
+	}
 
 	m_TimeSpan = time;
 	m_AngularRate = rate;
@@ -523,7 +590,10 @@ int CTrajectory::AppendTrajectory(TrajectoryType TrajType, TrajectoryDataType Da
 	else if (TrajType == TrajTypeHorizontalCircular)
 		TrajectorySegment = new CTrajectoryHorizontalCircular;
 	else
+	{
+		MessagePrint(MSG_LEVEL_ERROR, "Unknown trajectory type\n");
 		return TRAJECTORY_UNKNOWN_TYPE;
+	}
 
 	PrevTrajectorySegment = GetLastSegment();
 	if (PrevTrajectorySegment == NULL)
@@ -539,7 +609,10 @@ int CTrajectory::AppendTrajectory(TrajectoryType TrajType, TrajectoryDataType Da
 	TrajectorySegment->InitSegment(PrevTrajectorySegment);
 	ReturnValue = TrajectorySegment->SetSegmentParam(PrevTrajectorySegment, DataType1, Data1, DataType2, Data2);
 	if (ReturnValue != TRAJECTORY_NO_ERR)
+	{
+		MessagePrint(MSG_LEVEL_WARNING, "Trajectory append failed\n");
 		delete TrajectorySegment;
+	}
 	else
 		PrevTrajectorySegment->m_pNextTrajectory = TrajectorySegment;
 	if (m_pTrajectoryList == TrajectorySegment)

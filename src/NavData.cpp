@@ -13,6 +13,7 @@
 #include "NavData.h"
 #include "Almanac.h"
 #include "GnssTime.h"
+#include "MessageOutput.h"
 
 CNavData::CNavData()
 {
@@ -263,7 +264,7 @@ void CNavData::ReadNavFile(char *filename)
 
 	if ((fp = fopen(filename, "r")) == NULL)
 	{
-		fprintf(stderr, "Error: Unable to open ephemeris file: %s\n", filename);	// change to call-back error message output message later
+		MessagePrint(MSG_LEVEL_ERROR, "Unable to open ephemeris file: %s\n", filename);
 		return;	// for multiple RINEX navigation file to be loaded, one file load fail will only possibly reduce the visible satellite
 	}
 
@@ -289,7 +290,7 @@ void CNavData::ReadAlmFile(char *filename)
 
 	if ((fp = fopen(filename, "r")) == NULL)
 	{
-		fprintf(stderr, "Error: Unable to open almanac file: %s\n", filename);	// change to call-back error message output message later
+		MessagePrint(MSG_LEVEL_ERROR, "Unable to open almanac file: %s\n", filename);
 		return;
 	}
 	Type = CheckAlmnanacType(fp);

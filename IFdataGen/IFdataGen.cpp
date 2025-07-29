@@ -93,7 +93,7 @@ int main(int argc, char* argv[])
 	int IfFreq, FdmaOffset;
 	complex_number *NoiseArray;
 	unsigned char *QuantArray;
-	FILE* IfFile;
+	FILE* IfFile = NULL;
 	CommandArguments Arguments;
 
 	// Default arguments
@@ -102,6 +102,9 @@ int main(int argc, char* argv[])
 	Arguments.MultiThread = true; // Default to use multi-threading
 	Arguments.ValidateOnly = false;
 	Arguments.OutputTag = false;
+
+	SetOutputFile(stdout);
+//	SetOutputLevel(MSG_LEVEL_INFO);
 
 	// Show help if no arguments provided
 	if (argc == 1)
@@ -143,7 +146,7 @@ int main(int argc, char* argv[])
 	}
 
 	// Validate configuration and exit if requested
-	if (Arguments.ValidateOnly)
+/*	if (Arguments.ValidateOnly)
 	{
 		// TODO: Fully Implement Validation
 		printf("[INFO]\tConfiguration validation To Be Implemented.\n");
@@ -152,7 +155,7 @@ int main(int argc, char* argv[])
 		printf("[INFO]\tCenter frequency: %.4f MHz\n", OutputParam.CenterFreq / 1e3);
 		printf("[INFO]\tFormat: %s\n", (OutputParam.Format == OutputFormatIQ2) ? "IQ2" : (OutputParam.Format == OutputFormatIQ4) ? "IQ4" : "IQ8");
 		return 0;
-	}
+	}*/
 
 	// initial variables
  	Trajectory.ResetTrajectoryTime();
@@ -162,15 +165,16 @@ int main(int argc, char* argv[])
 	CurPos = LlaToEcef(StartPos);
 	SpeedLocalToEcef(StartPos, StartVel, CurPos);
 
-
-
-	printf("[INFO]\tOpening output file: %s\n", OutputParam.filename);
-	if ((IfFile = fopen(OutputParam.filename, "wb")) == NULL)
+	if (!Arguments.ValidateOnly)
 	{
-		printf("[ERROR]\tFailed to open output file: %s\n", OutputParam.filename);
-		return 0;
+		printf("[INFO]\tOpening output file: %s\n", OutputParam.filename);
+		if ((IfFile = fopen(OutputParam.filename, "wb")) == NULL)
+		{
+			printf("[ERROR]\tFailed to open output file: %s\n", OutputParam.filename);
+			return 0;
+		}
+		printf("[INFO]\tOutput file opened successfully.\n");
 	}
-	printf("[INFO]\tOutput file opened successfully.\n");
 
 	if (Arguments.OutputTag)
 	{
@@ -422,8 +426,11 @@ int main(int argc, char* argv[])
 		{
 			if (TotalChannelNumber >= TOTAL_SAT_CHANNEL)
 				break;
-			SatIfSignal[TotalChannelNumber] = new CSatIfSignal(OutputParam.SampleFreq, IfFreq, GpsSystem, SignalIndex, GpsEphVisible[i]->svid);
-			SatIfSignal[TotalChannelNumber]->InitState(CurTime, &GpsSatParam[GpsEphVisible[i]->svid-1], GetNavData(GpsSystem, SignalIndex, NavBitArray));
+			if (!Arguments.ValidateOnly)
+			{
+				SatIfSignal[TotalChannelNumber] = new CSatIfSignal(OutputParam.SampleFreq, IfFreq, GpsSystem, SignalIndex, GpsEphVisible[i]->svid);
+				SatIfSignal[TotalChannelNumber]->InitState(CurTime, &GpsSatParam[GpsEphVisible[i]->svid-1], GetNavData(GpsSystem, SignalIndex, NavBitArray));
+			}
 			TotalChannelNumber++;
 			
 			if (svCount % 4 == 0) printf("|");
@@ -455,8 +462,11 @@ int main(int argc, char* argv[])
 		{
 			if (TotalChannelNumber >= TOTAL_SAT_CHANNEL)
 				break;
-			SatIfSignal[TotalChannelNumber] = new CSatIfSignal(OutputParam.SampleFreq, IfFreq, BdsSystem, SignalIndex, BdsEphVisible[i]->svid);
-			SatIfSignal[TotalChannelNumber]->InitState(CurTime, &BdsSatParam[BdsEphVisible[i]->svid - 1], GetNavData(BdsSystem, SignalIndex, NavBitArray));
+			if (!Arguments.ValidateOnly)
+			{
+				SatIfSignal[TotalChannelNumber] = new CSatIfSignal(OutputParam.SampleFreq, IfFreq, BdsSystem, SignalIndex, BdsEphVisible[i]->svid);
+				SatIfSignal[TotalChannelNumber]->InitState(CurTime, &BdsSatParam[BdsEphVisible[i]->svid - 1], GetNavData(BdsSystem, SignalIndex, NavBitArray));
+			}
 			TotalChannelNumber++;
 			
 			if (svCount % 4 == 0) printf("|");
@@ -487,8 +497,11 @@ int main(int argc, char* argv[])
 		{
 			if (TotalChannelNumber >= TOTAL_SAT_CHANNEL)
 				break;
-			SatIfSignal[TotalChannelNumber] = new CSatIfSignal(OutputParam.SampleFreq, IfFreq, GalileoSystem, SignalIndex, GalEphVisible[i]->svid);
-			SatIfSignal[TotalChannelNumber]->InitState(CurTime, &GalSatParam[GalEphVisible[i]->svid - 1], GetNavData(GalileoSystem, SignalIndex, NavBitArray));
+			if (!Arguments.ValidateOnly)
+			{
+				SatIfSignal[TotalChannelNumber] = new CSatIfSignal(OutputParam.SampleFreq, IfFreq, GalileoSystem, SignalIndex, GalEphVisible[i]->svid);
+				SatIfSignal[TotalChannelNumber]->InitState(CurTime, &GalSatParam[GalEphVisible[i]->svid - 1], GetNavData(GalileoSystem, SignalIndex, NavBitArray));
+			}
 			TotalChannelNumber++;
 			
 			if (svCount % 4 == 0) printf("|");
@@ -520,8 +533,11 @@ int main(int argc, char* argv[])
 			if (TotalChannelNumber >= TOTAL_SAT_CHANNEL)
 				break;
 			FdmaOffset = (SignalIndex == SIGNAL_INDEX_G1) ? GloEphVisible[i]->freq * 562500 : (SignalIndex == SIGNAL_INDEX_G2) ? GloEphVisible[i]->freq * 437500 : 0;
-			SatIfSignal[TotalChannelNumber] = new CSatIfSignal(OutputParam.SampleFreq, IfFreq + FdmaOffset, GlonassSystem, SignalIndex, GloEphVisible[i]->n);
-			SatIfSignal[TotalChannelNumber]->InitState(CurTime, &GloSatParam[GloEphVisible[i]->n - 1], GetNavData(GlonassSystem, SignalIndex, NavBitArray));
+			if (!Arguments.ValidateOnly)
+			{
+				SatIfSignal[TotalChannelNumber] = new CSatIfSignal(OutputParam.SampleFreq, IfFreq + FdmaOffset, GlonassSystem, SignalIndex, GloEphVisible[i]->n);
+				SatIfSignal[TotalChannelNumber]->InitState(CurTime, &GloSatParam[GloEphVisible[i]->n - 1], GetNavData(GlonassSystem, SignalIndex, NavBitArray));
+			}
 			TotalChannelNumber++;
 			
 			if (svCount % 4 == 0) printf("|");
@@ -539,23 +555,31 @@ int main(int argc, char* argv[])
 	}
 	printf("Total channels: %d\n\n", TotalChannelNumber);
 
-	NoiseArray = new complex_number[OutputParam.SampleFreq];
-	QuantArray = new unsigned char[OutputParam.SampleFreq * 4];
-
-	// Calculate total data size and setup progress tracking
 	int totalDurationMs = (int)(Trajectory.GetTimeLength() * 1000);
 	double bytesPerMs = OutputParam.SampleFreq *  ((OutputParam.Format == OutputFormatIQ2) ? 0.5 : (OutputParam.Format == OutputFormatIQ4) ? 1.0: (OutputParam.Format == OutputFormatIQ16) ? 4.0 : 2.0);
 	double totalMB = (totalDurationMs * bytesPerMs) / (1024.0 * 1024.0);
-	int exec_cycle = 0;
-	long long TotalClippedSamples = 0;
-	long long TotalSamples = 0;
-	double AGCGain = 1.0;
-	printf("[INFO]\tStarting signal generation loop...\n");
 	printf("[INFO]\tSignal Duration: %0.2f s\n", totalDurationMs/1000.0);
 	printf("[INFO]\tSignal Size: %.2f MB\n", totalMB);
 	printf("[INFO]\tSignal Data format: %s\n", (OutputParam.Format == OutputFormatIQ2) ? "IQ2" : (OutputParam.Format == OutputFormatIQ4) ? "IQ4":(OutputParam.Format == OutputFormatIQ16) ? "IQ16" : "IQ8");
 	printf("[INFO]\tSignal Center freq: %0.4f MHz\n", OutputParam.CenterFreq/1000.0);
 	printf("[INFO]\tSignal Sample rate: %0.4f MHz\n\n", OutputParam.SampleFreq/1000.0);
+	if (Arguments.ValidateOnly)
+	{
+		for (i = 0; i < static_cast<int>(sizeof(NavBitArray) / sizeof(NavBitArray[0])); ++i)
+			delete NavBitArray[i];
+		printf("Configuration validation completed\n");
+		return 0;
+	}
+
+	NoiseArray = new complex_number[OutputParam.SampleFreq];
+	QuantArray = new unsigned char[OutputParam.SampleFreq * 4];
+
+	// Calculate total data size and setup progress tracking
+	int exec_cycle = 0;
+	long long TotalClippedSamples = 0;
+	long long TotalSamples = 0;
+	double AGCGain = 1.0;
+	printf("[INFO]\tStarting signal generation loop...\n");
 	fflush(stdout);
 	
 	auto start_time = std::chrono::high_resolution_clock::now();
@@ -1101,7 +1125,7 @@ bool ParseCommandLineArgs(int argc, char* argv[], CommandArguments &Arguments)
 			}
 			Arguments.OutputFile = argv[++i];
 			break;
-		case 3:	// --validateo-nly
+		case 3:	// --validate-only
 			Arguments.ValidateOnly = true;
 			break;
 		case 4:	// --multi-thread

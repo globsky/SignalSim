@@ -62,6 +62,10 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 ## Change List
 
 ### 2025
+- **7/28/2025**
+  - Add message output control with output target stream and level selection
+  - Fully implement --validate-only (-vo) option
+
 - **7/17/2025**
   - Improve speed of rotate factor calculation by using fixed point angles
   - Update multi-thread version IFdataGenThread.cpp using same command argument as IFdataGen
