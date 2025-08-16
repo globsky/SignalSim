@@ -34,6 +34,7 @@ struct CommandArguments
 	bool MultiThread;
 	bool ValidateOnly;
 	bool OutputTag;
+	bool WithoutNoise;
 };
 
 void UpdateSatParamList(GNSS_TIME CurTime, KINEMATIC_INFO CurPos, int ListCount, PSIGNAL_POWER PowerList, PIONO_PARAM IonoParam);
@@ -102,6 +103,7 @@ int main(int argc, char* argv[])
 	Arguments.MultiThread = true; // Default to use multi-threading
 	Arguments.ValidateOnly = false;
 	Arguments.OutputTag = false;
+	Arguments.WithoutNoise = false; // Default to include noise
 
 	SetOutputFile(stdout);
 //	SetOutputLevel(MSG_LEVEL_INFO);
@@ -588,8 +590,10 @@ int main(int argc, char* argv[])
 	{
 		exec_cycle ++;
 		// generate white noise
-		for (i = 0; i < OutputParam.SampleFreq; i ++)
-			NoiseArray[i] = GenerateNoise(1.0);
+		if (!Arguments.WithoutNoise) {
+			for (i = 0; i < OutputParam.SampleFreq; i ++)
+				NoiseArray[i] = GenerateNoise(1.0);
+		}
 		
 		// Use parallel or serial processing based on command line flag
 		if (Arguments.MultiThread)
@@ -619,7 +623,10 @@ int main(int argc, char* argv[])
 		for (i = 0; i < TotalChannelNumber; i++)
 		{
 			for (j = 0; j < OutputParam.SampleFreq; j++)
-				NoiseArray[j] += SatIfSignal[i]->SampleArray[j];
+				if (!Arguments.WithoutNoise)
+					NoiseArray[j] = SatIfSignal[i]->SampleArray[j];
+				else
+					NoiseArray[j] += SatIfSignal[i]->SampleArray[j];
 		}
 
 		
@@ -1094,6 +1101,7 @@ bool ParseCommandLineArgs(int argc, char* argv[], CommandArguments &Arguments)
 		"--multi-thread", "-mt",	// 4
 		"--single-thread", "-st",	// 5
 		"--tag", "-t",	// 6
+		"--without-noise", "-wn",	// 7
 	};
 	std::string arg;
 	int i = 1, index;
@@ -1136,6 +1144,9 @@ bool ParseCommandLineArgs(int argc, char* argv[], CommandArguments &Arguments)
 			break;
 		case 6:	// --tag
 			Arguments.OutputTag = true;
+			break;
+		case 7:	// --without-noise
+			Arguments.WithoutNoise = true;
 			break;
 		default:
 			std::cout << "[WARNING] Unknown option " << arg << "\n";

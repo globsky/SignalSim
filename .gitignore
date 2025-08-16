@@ -1,3 +1,5 @@
 .vs
 IFdataGen/out/build
 IFdataGen/bin_signals/
+IFdataGen/.vscode/
+IFdataGen/build/
