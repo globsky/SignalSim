@@ -299,11 +299,6 @@ int ReadContentsTime(char *str, UTC_TIME *time, double *data)
 	ConvertD2E(str);
 	sscanf(str+4, "%d %d %d %d %d %d", &(time->Year), &(time->Month), &(time->Day), &(time->Hour), &(time->Minute), &Second);
 	time->Second = (double)Second;
-	// if (str[1] == ' ') svid = 0; else sscanf(str+1, "%2d", &svid);
-	// if (length > 24 && str[24] != ' ') sscanf(str+23, "%lf", &data[0]); else data[0] = 0.0;
-	// if (length > 43 && str[43] != ' ') sscanf(str+42, "%lf", &data[1]); else data[1] = 0.0;
-	// if (length > 62 && str[62] != ' ') sscanf(str+61, "%lf", &data[2]); else data[2] = 0.0;
-
 	if (str[1] == ' ' && str[2] == ' ') svid = 0; else sscanf(str+1, "%2d", &svid);
 	if (length > 24 ) sscanf(str+23, "%lf", &data[0]); else data[0] = 0.0;
 	if (length > 43 ) sscanf(str+42, "%lf", &data[1]); else data[1] = 0.0;
