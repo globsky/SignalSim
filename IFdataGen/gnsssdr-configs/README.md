@@ -54,7 +54,36 @@ sudo make install
 
 ---
 
-## 3. Expected Outputs
+## 3. Supported Satellite Systems
+
+GNSS-SDR supports a wide range of GNSS constellations and signals:
+
+- **GPS (USA)**
+  - L1 C/A
+  - L2C
+  - L5
+- **Galileo (Europe)**
+  - E1 B/C
+  - E5a
+  - E5b
+- **GLONASS (Russia)**
+  - L1 C/A
+  - L2 C/A
+- **BeiDou (China)**
+  - B1I
+  - B3I
+- **QZSS (Japan)**
+  - L1 C/A
+  - L2C
+  - L5
+- **SBAS (WAAS, EGNOS, etc.)**
+  - L1 C/A
+
+> Support depends on your configuration and available RF front-end. Not all signals are enabled in the default builds.
+
+---
+
+## 4. Expected Outputs
 
 Depending on your `.conf` setup, GNSS-SDR produces different outputs:
 
@@ -72,37 +101,6 @@ Depending on your `.conf` setup, GNSS-SDR produces different outputs:
   - `RMC`: position, speed, course, UTC date/time
   - `GSA/GSV`: satellite geometry/status
 - **CSV PVT logs** (lat, lon, alt, velocity, clock bias).
-
----
-
-## 4. Converting Outputs to Maps
-
-You can convert GNSS-SDR logs into mapping-friendly formats:
-
-### Using `gpsbabel`
-```bash
-sudo apt install gpsbabel
-```
-
-- NMEA → GPX:
-  ```bash
-  gpsbabel -i nmea -f output.nmea -o gpx -F track.gpx
-  ```
-- NMEA → KML:
-  ```bash
-  gpsbabel -i nmea -f output.nmea -o kml -F track.kml
-  ```
-
-### GPX → GeoJSON (using GDAL)
-```bash
-sudo apt install gdal-bin
-ogr2ogr -f GeoJSON track.geojson track.gpx
-```
-
-### Using Python Libraries
-- `simplekml` → KML
-- `gpxpy` → GPX
-- `geojson` → GeoJSON
 
 ---
 
