@@ -299,10 +299,10 @@ int ReadContentsTime(char *str, UTC_TIME *time, double *data)
 	ConvertD2E(str);
 	sscanf(str+4, "%d %d %d %d %d %d", &(time->Year), &(time->Month), &(time->Day), &(time->Hour), &(time->Minute), &Second);
 	time->Second = (double)Second;
-	if (str[1] == ' ') svid = 0; else sscanf(str+1, "%2d", &svid);
-	if (length > 24 && str[24] != ' ') sscanf(str+23, "%lf", &data[0]); else data[0] = 0.0;
-	if (length > 43 && str[43] != ' ') sscanf(str+42, "%lf", &data[1]); else data[1] = 0.0;
-	if (length > 62 && str[62] != ' ') sscanf(str+61, "%lf", &data[2]); else data[2] = 0.0;
+	if (str[1] == ' ' && str[2] == ' ') svid = 0; else sscanf(str+1, "%2d", &svid);
+	if (length > 24 ) sscanf(str+23, "%lf", &data[0]); else data[0] = 0.0;
+	if (length > 43 ) sscanf(str+42, "%lf", &data[1]); else data[1] = 0.0;
+	if (length > 62 ) sscanf(str+61, "%lf", &data[2]); else data[2] = 0.0;
 
 	return svid;
 }
@@ -312,10 +312,10 @@ void ReadContentsData(char *str, double *data)
 	int length = strlen(str);
 
 	ConvertD2E(str);
-	if (length >  5 && str[ 5] != ' ') sscanf(str+ 4, "%lf", &data[0]); else data[0] = 0.0;
-	if (length > 24 && str[24] != ' ') sscanf(str+23, "%lf", &data[1]); else data[1] = 0.0;
-	if (length > 43 && str[43] != ' ') sscanf(str+42, "%lf", &data[2]); else data[2] = 0.0;
-	if (length > 62 && str[62] != ' ') sscanf(str+61, "%lf", &data[3]); else data[3] = 0.0;
+	if (length >  5 ) sscanf(str+ 4, "%lf", &data[0]); else data[0] = 0.0;
+	if (length > 24 ) sscanf(str+23, "%lf", &data[1]); else data[1] = 0.0;
+	if (length > 43 ) sscanf(str+42, "%lf", &data[2]); else data[2] = 0.0;
+	if (length > 62 ) sscanf(str+61, "%lf", &data[3]); else data[3] = 0.0;
 }
 
 NavDataType ReadRinex4Iono(char *str, FILE *fp_nav, void *NavData)
