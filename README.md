@@ -62,6 +62,14 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 ## Change List
 
 ### 2025
+- **9/26/2025**
+  - Fix bug in CNAV2 message compose and put valid contents in subframe3
+  - Fix bug in BCNAV message compose and put valid contents in subframe3 of BCNAV1
+
+- **9/8/2025**
+  - Merge PR#59 for bug fix in parsing RINEX 3.02 nav data file
+  - Merge PR#60 to add config for GNSS-SDR
+
 - **7/28/2025**
   - Add message output control with output target stream and level selection
   - Fully implement --validate-only (-vo) option

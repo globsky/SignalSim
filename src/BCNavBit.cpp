@@ -69,6 +69,7 @@ BCNavBit::BCNavBit()
 	memset(Ephemeris2, 0, sizeof(Ephemeris2));
 	memset(ClockParam, 0, sizeof(ClockParam));
 	memset(IntegrityFlags, 0, sizeof(IntegrityFlags));
+	memset(HealthFlags, 0, sizeof(HealthFlags));
 	memset(ReducedAlmanac, 0, sizeof(ReducedAlmanac));
 	memset(MidiAlmanac, 0, sizeof(MidiAlmanac));
 	memset(BdGimIono, 0, sizeof(BdGimIono));
@@ -184,8 +185,9 @@ int BCNavBit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
 	Data[2] |= COMPOSE_BITS(IntValue, 3, 11);
 	Data[3] |= COMPOSE_BITS(Eph->iodc, 0, 10);
 
-	// fill in IntegrityFlags
-	IntegrityFlags[svid-1] = Eph->flag >> 2;
+	// fill in IntegrityFlags and health flag
+	IntegrityFlags[svid-1] = Eph->flag;
+	HealthFlags[svid-1] = Eph->health;
 
 	// fill in TGD and ISC
 	Data = TgsIscParam[svid-1];
@@ -360,16 +362,16 @@ int BCNavBit::FillBdsAlmanacPage(PGPS_ALMANAC Almanac, unsigned int MidiAlm[8], 
 	MidiAlm[6] |= COMPOSE_BITS(Almanac->health, 12, 8);	// use B1I health as clock health
 
 	// fill reduced almanac
-	MidiAlm[0] = COMPOSE_BITS(Almanac->svid, 18, 6);	// PRN
-	MidiAlm[0] |= COMPOSE_BITS(Almanac->flag, 16, 2);	// SatType
+	ReducedAlm[0] = COMPOSE_BITS(Almanac->svid, 18, 6);	// PRN
+	ReducedAlm[0] |= COMPOSE_BITS(Almanac->flag, 16, 2);	// SatType
 	IntValue = UnscaleInt(Almanac->sqrtA * Almanac->sqrtA - ((Almanac->flag == 3) ? 27906100.0 : 42162200.0), 9);	// deltaA
-	MidiAlm[0] |= COMPOSE_BITS(IntValue, 8, 8);
+	ReducedAlm[0] |= COMPOSE_BITS(IntValue, 8, 8);
 	IntValue = UnscaleInt(Almanac->omega0 / PI, -6);	// omega0
-	MidiAlm[0] |= COMPOSE_BITS(IntValue, 1, 7);
+	ReducedAlm[0] |= COMPOSE_BITS(IntValue, 1, 7);
 	IntValue = UnscaleInt((Almanac->M0 + Almanac->w) / PI, -6);	// Phi0
-	MidiAlm[0] |= COMPOSE_BITS(IntValue >> 6, 0, 1);
-	MidiAlm[1] = COMPOSE_BITS(IntValue, 18, 6);
-	MidiAlm[1] |= COMPOSE_BITS(Almanac->health, 10, 8);	// use B1I health as clock health
+	ReducedAlm[0] |= COMPOSE_BITS(IntValue >> 6, 0, 1);
+	ReducedAlm[1] = COMPOSE_BITS(IntValue, 18, 6);
+	ReducedAlm[1] |= COMPOSE_BITS(Almanac->health, 10, 8);	// use B1I health as clock health
 
 	return 0;
 }

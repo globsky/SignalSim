@@ -169,9 +169,9 @@ void BCNav3Bit::ComposeMessage(int MessageType, int week, int sow, int svid, uns
 		FrameData[1] = COMPOSE_BITS(sow, 4, 20);
 		FrameData[1] |= COMPOSE_BITS(week >> 9, 0, 4);
 		FrameData[2] = COMPOSE_BITS(week, 15, 9);
+		AppendWord(&FrameData[5], 22, BdGimIono, 96);	// fill BDGIM first (with 22 leading 0s)
 		AppendWord(&FrameData[2], 13, ClockParam[svid-1], 69);
 		FrameData[5] |= COMPOSE_BITS(TgsIscParam[svid-1][2], 2, 12);
-		AppendWord(&FrameData[5], 22, BdGimIono, 74);
 		AppendWord(&FrameData[9], 0, BdtUtcParam, 97);
 		AppendWord(&FrameData[13], 1, EopParam, 138);
 		FrameData[19] = 0;	// SISAI_oc, SISAI_oe and HS filled with 0

@@ -946,7 +946,7 @@ int CNav2Bit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBit
 		return 1;
 	page = StartTime.MilliSeconds / 18000;		// frames from week epoch
 	itow = page / 400;
-	toi = page % 400;
+	toi = (page + 1) % 400;	// time of interval corresponds to start of next frame
 	// assume subframe 3 broadcast first page
 	page = 0;
 
@@ -961,8 +961,8 @@ int CNav2Bit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBit
 	LDPCEncode(Stream, bits, L1C_SUBFRAME2_SYMBOL_LENGTH, 19, L1CMatrixGen2);		// do LDPC encode
 
 	// generate CRC for subframe3
-	data = Subframe3[page];	// assume CRC has already appended to end
-	LDPCEncode(data, bits + 1200, L1C_SUBFRAME3_SYMBOL_LENGTH, 9, L1CMatrixGen3);		// do LDPC encode
+	GetSubframe3Data(svid, 0, Stream);
+	LDPCEncode(Stream, bits + 1200, L1C_SUBFRAME3_SYMBOL_LENGTH, 9, L1CMatrixGen3);		// do LDPC encode
 
 	// do interleaving
 	p = NavBits + 52;
@@ -972,9 +972,9 @@ int CNav2Bit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBit
 
 	// add subframe 1
 	NavBits[0] = (toi & 0x100) ? 1 : 0;	// MSB of TOI
-	value = (unsigned int)(BCH_toi_table[toi & 0xff] >> 32);
+	value = (unsigned int)(BCH_toi_table[toi & 0xff] >> 32) ^ (NavBits[0] ? 0x7ffff : 0);	// modulo-2 add MSB
 	AssignBits(value, 19, NavBits + 1);
-	value = (unsigned int)(BCH_toi_table[toi & 0xff]);
+	value = (unsigned int)(BCH_toi_table[toi & 0xff]) ^ (NavBits[0] ? 0xffffffff : 0);	// modulo-2 add MSB
 	AssignBits(value, 32, NavBits + 20);
 	return 0;
 }
@@ -983,13 +983,13 @@ int CNav2Bit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
 {
 	if (svid < 1 || svid > 32 || !Eph || !Eph->valid)
 		return 0;
-	ComposeSubframe2(Eph, Subframe2[svid-1]);
+	ComposeSubframe2(Eph, Subframe2[svid-1], ISC[svid-1]);
 	return svid;
 }
 
 // 576 bits subframe information divided int 18 DWORDs
 // each DWORD has 32bits with bit order MSB first and least index first
-void CNav2Bit::ComposeSubframe2(PGPS_EPHEMERIS Eph, unsigned int Subframe2[18])
+void CNav2Bit::ComposeSubframe2(PGPS_EPHEMERIS Eph, unsigned int Subframe2[18], unsigned int ISCData[2])
 {
 	signed int IntValue;
 	unsigned int UintValue;
@@ -1001,7 +1001,7 @@ void CNav2Bit::ComposeSubframe2(PGPS_EPHEMERIS Eph, unsigned int Subframe2[18])
 	Subframe2[1] |= COMPOSE_BITS(Eph->ura, 26, 5);
 	Subframe2[1] |= COMPOSE_BITS(Eph->toe / 300, 15, 11);
 	IntValue = UnscaleInt(Eph->axis - 26559710.0, -9);	// deltaA
-	Subframe2[1] |= COMPOSE_BITS(IntValue >> 15, 0, 15);
+	Subframe2[1] |= COMPOSE_BITS(IntValue >> 11, 0, 15);
 	Subframe2[2] = COMPOSE_BITS(IntValue, 21, 11);
 	IntValue = UnscaleInt(Eph->axis_dot, -21);	// Adot
 	Subframe2[2] |= COMPOSE_BITS(IntValue >> 4, 0, 21);
@@ -1041,7 +1041,7 @@ void CNav2Bit::ComposeSubframe2(PGPS_EPHEMERIS Eph, unsigned int Subframe2[18])
 	Subframe2[8] |= COMPOSE_BITS(IntValue, 15, 1);
 	Subframe2[8] |= COMPOSE_BITS(UintValue >> 17, 0, 15);
 	Subframe2[9] = COMPOSE_BITS(UintValue, 15, 17);
-	IntValue = UnscaleInt(Eph->omega_dot / PI, -44);	// omega dot
+	IntValue = UnscaleInt(Eph->omega_dot / PI + 2.6e-9, -44);	// omega dot
 	Subframe2[9] |= COMPOSE_BITS(IntValue >> 2, 0, 15);
 	Subframe2[10] = COMPOSE_BITS(IntValue, 30, 2);
 	IntValue = UnscaleInt(Eph->idot / PI, -44);	// i dot
@@ -1071,14 +1071,73 @@ void CNav2Bit::ComposeSubframe2(PGPS_EPHEMERIS Eph, unsigned int Subframe2[18])
 	Subframe2[16] = COMPOSE_BITS(IntValue, 28, 4);
 	IntValue = UnscaleInt(Eph->af2, -60);	// af2
 	Subframe2[16] |= COMPOSE_BITS(IntValue, 18, 10);
-	IntValue = UnscaleInt(Eph->tgd, -35);	// TGD
+	IntValue = UnscaleInt(Eph->tgd_ext[4], -35);	// TGD
 	Subframe2[16] |= COMPOSE_BITS(IntValue, 5, 13);
-	IntValue = UnscaleInt(Eph->tgd - Eph->tgd_ext[1], -35);	// ISC_L1CP
+	IntValue = UnscaleInt(Eph->tgd_ext[4] - Eph->tgd_ext[1], -35);	// ISC_L1CP
 	Subframe2[16] |= COMPOSE_BITS(IntValue >> 8, 0, 5);
 	Subframe2[17] = COMPOSE_BITS(IntValue, 24, 8);
-	IntValue = UnscaleInt(Eph->tgd - Eph->tgd_ext[0], -35);	// ISC_L1CD
+	IntValue = UnscaleInt(Eph->tgd_ext[4] - Eph->tgd_ext[0], -35);	// ISC_L1CD
 	Subframe2[17] |= COMPOSE_BITS(IntValue, 11, 13);
 	Subframe2[17] |= COMPOSE_BITS(Eph->week, 2, 8);	// Wn_op
+
+	// fill in ISC
+	IntValue = UnscaleInt(Eph->tgd_ext[4] - Eph->tgd, -35);	// ISC_L1CA
+	ISCData[0] = COMPOSE_BITS(IntValue, 13, 13);
+	IntValue = UnscaleInt(Eph->tgd_ext[4] - Eph->tgd2, -35);	// TGD_L2C
+	ISCData[0] |= COMPOSE_BITS(IntValue, 0, 13);
+	IntValue = UnscaleInt(Eph->tgd_ext[4] - Eph->tgd_ext[2], -35);	// ISC_L5I5
+	ISCData[1] = COMPOSE_BITS(IntValue, 13, 13);
+	IntValue = UnscaleInt(Eph->tgd_ext[4] - Eph->tgd_ext[3], -35);	// ISC_L5Q5
+	ISCData[1] |= COMPOSE_BITS(IntValue, 0, 13);
+}
+
+int CNav2Bit::SetIonoUtc(PIONO_PARAM IonoParam, PUTC_PARAM UtcParam)
+{
+	signed int IntValue;
+	unsigned int *SubFrameData = Subframe3[PAGE_INDEX_IONO_UTC];
+
+	SubFrameData[0] = 1 << 12;	// page number
+
+	if (IonoParam->flag == 0 || (UtcParam->flag & 3) != 3)
+		return 0;
+
+	IntValue = UnscaleInt(UtcParam->A0, -35);
+	SubFrameData[0] |= COMPOSE_BITS(IntValue >> 4, 0, 12);
+	SubFrameData[1] = COMPOSE_BITS(IntValue, 28, 4);
+	IntValue = UnscaleInt(UtcParam->A1, -51);
+	SubFrameData[1] |= COMPOSE_BITS(IntValue, 15, 13);
+	IntValue = UnscaleInt(UtcParam->A2, -68);
+	SubFrameData[1] |= COMPOSE_BITS(IntValue, 8, 7);
+	SubFrameData[1] |= COMPOSE_BITS(UtcParam->TLS, 0, 8);
+	SubFrameData[2] = COMPOSE_BITS(UtcParam->tot, 24, 8);	// UtcParam->tot has scale factor of 2^12, so leaving 8LSB as 0 for scale factor 2^4 
+	SubFrameData[2] |= COMPOSE_BITS(UtcParam->WN, 3, 13);
+	SubFrameData[2] |= COMPOSE_BITS(UtcParam->WNLSF >> 10, 0, 3);
+	SubFrameData[3] = COMPOSE_BITS(UtcParam->WNLSF, 22, 10);
+	SubFrameData[3] |= COMPOSE_BITS(UtcParam->DN, 18, 4);
+	SubFrameData[3] |= COMPOSE_BITS(UtcParam->TLSF, 10, 8);
+
+	IntValue = UnscaleInt(IonoParam->a0, -30);
+	SubFrameData[3] |= COMPOSE_BITS(IntValue, 2, 8);
+	IntValue = UnscaleInt(IonoParam->a1, -27);
+	SubFrameData[3] |= COMPOSE_BITS(IntValue >> 6, 0, 2);
+	SubFrameData[4] = COMPOSE_BITS(IntValue, 26, 6);
+	IntValue = UnscaleInt(IonoParam->a2, -24);
+	SubFrameData[4] |= COMPOSE_BITS(IntValue, 18, 8);
+	IntValue = UnscaleInt(IonoParam->a3, -24);
+	SubFrameData[4] |= COMPOSE_BITS(IntValue, 10, 8);
+	IntValue = UnscaleInt(IonoParam->b0, 11);
+	SubFrameData[4] |= COMPOSE_BITS(IntValue, 2, 8);
+	IntValue = UnscaleInt(IonoParam->b1, 14);
+	SubFrameData[4] |= COMPOSE_BITS(IntValue >> 6, 0, 2);
+	SubFrameData[5] = COMPOSE_BITS(IntValue, 26, 6);
+	IntValue = UnscaleInt(IonoParam->b2, 16);
+	SubFrameData[5] |= COMPOSE_BITS(IntValue, 18, 8);
+	IntValue = UnscaleInt(IonoParam->b3, 16);
+	SubFrameData[5] |= COMPOSE_BITS(IntValue, 10, 8);
+
+	SubFrameData[6] = SubFrameData[7] = 0;	// fill reset of 74bits to 0
+	return 0;
+
 }
 
 void CNav2Bit::LDPCEncode(unsigned int Stream[], int bits[], int SymbolLength, int TableSize, const unsigned int MatrixGen[])
@@ -1114,4 +1173,28 @@ int CNav2Bit::XorBits(unsigned int Data)
 	Data ^= (Data >> 8);
 	Data ^= (Data >> 16);
 	return (int)(Data & 1);
+}
+
+void CNav2Bit::GetSubframe3Data(int Svid, int PageIndex, unsigned int Subframe3Data[9])
+{
+	int i;
+
+	memcpy(Subframe3Data, Subframe3[PageIndex], sizeof(unsigned int) * 8);
+	Subframe3Data[0] &= 0x3ffff;	// clear MSB and PRN field
+	Subframe3Data[0] |= (Svid << 18);	// put transmitting PRN
+	if (PageIndex == PAGE_INDEX_IONO_UTC)	// page1 append ISC
+	{
+		Subframe3Data[5] |= COMPOSE_BITS(ISC[Svid-1][0] >> 16, 0, 10);
+		Subframe3Data[6] = COMPOSE_BITS(ISC[Svid-1][0], 16, 16);
+		Subframe3Data[6] |= COMPOSE_BITS(ISC[Svid-1][1] >> 10, 0, 16);
+		Subframe3Data[7] = COMPOSE_BITS(ISC[Svid-1][1], 22, 10);
+	}
+	Subframe3Data[8] = Crc24qEncode(Subframe3Data, 250) << 8;
+	// whole array shift left 6bit
+	for (i = 0; i < 8; i ++)
+	{
+		Subframe3Data[i] <<= 6;
+		Subframe3Data[i] |= Subframe3Data[i+1] >> 26;
+	}
+	Subframe3Data[8] <<= 6;
 }

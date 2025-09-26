@@ -23,14 +23,13 @@ public:
 	int GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits);
 
 private:
-	unsigned int BdsSubframe3[63][11];	// 63 SVs, 264bits in subframe 3, 24bits (4 symbols) in bit23~0 of each DWORD MSB first, lowest address first
-
 	static const unsigned int BCH_prn_table[64];		// BCH encode table for SVID
 	static const unsigned long long BCH_soh_table[256];	// BCH encode table for SOH
 	static const char B1CMatrixGen2[B1C_SUBFRAME2_SYMBOL_LENGTH*B1C_SUBFRAME2_SYMBOL_LENGTH+1];
 	static const char B1CMatrixGen3[B1C_SUBFRAME3_SYMBOL_LENGTH*B1C_SUBFRAME3_SYMBOL_LENGTH+1];
 
 	void ComposeSubframe2(int week, int how, int svid, unsigned int Frame2Data[25]);
+	void ComposeSubframe3(int soh, unsigned int Flags, unsigned int AccurateIndex, unsigned int Frame3Data[11]);
 };
 
 #endif // __BCNAV1_BIT_H__

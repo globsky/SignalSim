@@ -216,9 +216,10 @@ int BCNav1Bit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBi
 {
 	int i, j, page, soh, how;
 	unsigned int Frame2Data[25];
+	unsigned int Frame3Data[11];
 	int Symbol2[200], Symbol3[88];
 	int bits2[1200], bits3[528];
-	unsigned int *data, value;
+	unsigned int value;
 	int *p1, *p2, *p3;
 
 	// data channel
@@ -246,15 +247,15 @@ int BCNav1Bit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBi
 		AssignBits(Symbol2[i], 6, bits2+i*6);
 
 	// generate CRC for subframe3
-	data = BdsSubframe3[page];
-	AppendCRC(data, 11);
+	ComposeSubframe3(soh, ((HealthFlags[svid-1] & 0x20) ? 0x80 : 0) | ((IntegrityFlags[svid-1] & 0x1c) << 2) | (IntegrityFlags[svid-1] >> 11), 0, Frame3Data);
+	AppendCRC(Frame3Data, 11);
 	// assign each 6bit into Symbol3 array
 	for (i = 0; i < 11; i ++)
 	{
-		Symbol3[i*4+0] = (data[i] >> 18) & 0x3f;
-		Symbol3[i*4+1] = (data[i] >> 12) & 0x3f;
-		Symbol3[i*4+2] = (data[i] >> 6) & 0x3f;
-		Symbol3[i*4+3] = data[i] & 0x3f;
+		Symbol3[i*4+0] = (Frame3Data[i] >> 18) & 0x3f;
+		Symbol3[i*4+1] = (Frame3Data[i] >> 12) & 0x3f;
+		Symbol3[i*4+2] = (Frame3Data[i] >> 6) & 0x3f;
+		Symbol3[i*4+3] = Frame3Data[i] & 0x3f;
 	}
 	LDPCEncode(Symbol3, B1C_SUBFRAME3_SYMBOL_LENGTH, B1CMatrixGen2);		// do LDPC encode
 	for (i = 0; i < 88; i ++)
@@ -306,4 +307,62 @@ void BCNav1Bit::ComposeSubframe2(int week, int how, int svid, unsigned int Frame
 	Frame2Data[22] |= COMPOSE_BITS(TgsIscParam[svid-1][1], 7, 12);
 	Frame2Data[22] |= COMPOSE_BITS(TgsIscParam[svid-1][0] >> 17, 0, 7);
 	Frame2Data[23] = COMPOSE_BITS(TgsIscParam[svid-1][0], 7, 17);
+}
+
+void BCNav1Bit::ComposeSubframe3(int soh, unsigned int Flags, unsigned int AccurateIndex, unsigned int Frame3Data[11])
+{
+	// Flags contains HS+DIF+DIF+AIF+SISMAI
+	// AccurateIndex contains SISAI_oc
+	// assume page type determined by SOH
+	int index = (soh >= 100) ? soh - 100 : soh;	// index range 0~99, loop every half hour
+	int SvIndex;
+
+	// each 100 subframe3 has:
+	// 63 midi-alm page (page type 4)
+	// 16 reduced almamac (page type 2)
+	// 10 page type 1
+	// 10 page type 3
+	// one page type 0 as invalid page
+	memset(Frame3Data, 0, sizeof(unsigned int) * 11);
+	Frame3Data[0] = Flags << 9;
+	if ((index % 10) == 0)	// page type 1
+	{
+		Frame3Data[0] |= (1 << 18);	// PageID
+		AppendWord(&Frame3Data[0], 20, BdGimIono, 96);	// fill BDGIM first (with 22 leading 0s)
+		Frame3Data[0] |= COMPOSE_BITS(AccurateIndex >> 18, 0, 4);	// SISAI_oc
+		Frame3Data[1] |= COMPOSE_BITS(AccurateIndex, 6, 18);	// SISAI_oc
+		AppendWord(&Frame3Data[4], 20, BdtUtcParam, 97);
+	}
+	else if ((index % 10) == 5)	// page type 3
+	{
+		Frame3Data[0] |= (3 << 18);	// PageID
+		AppendWord(&Frame3Data[0], 20, EopParam, 138);
+		AppendWord(&Frame3Data[6], 14, BgtoParam[0], 68);
+	}
+	else if (((index % 5) == 1) && index < 80)	// page type 2
+	{
+		Frame3Data[0] |= (2 << 18);	// PageID
+		Frame3Data[0] |= COMPOSE_BITS(AccurateIndex >> 13, 0, 9);	// SISAI_oc
+		Frame3Data[1] = COMPOSE_BITS(AccurateIndex, 11, 13);	// SISAI_oc
+		Frame3Data[1] = COMPOSE_BITS(AlmanacWeek >> 2, 0, 11);
+		Frame3Data[2] = COMPOSE_BITS(AlmanacWeek, 22, 2);
+		Frame3Data[2] |= COMPOSE_BITS(AlmanacToa, 14, 8);
+		SvIndex = index / 5 * 4;
+		AppendWord(&Frame3Data[2], 10, ReducedAlmanac[SvIndex++], 38);	// reduced almanac
+		AppendWord(&Frame3Data[4],  0, ReducedAlmanac[SvIndex++], 38);	// reduced almanac
+		AppendWord(&Frame3Data[5], 14, ReducedAlmanac[SvIndex++], 38);	// reduced almanac
+		if (SvIndex < 63)
+			AppendWord(&Frame3Data[7], 4, ReducedAlmanac[SvIndex], 38);	// reduced almanac
+	}
+	else if (index == 99)	// page type 0
+	{
+	}
+	else	// page type 4
+	{
+		Frame3Data[0] |= (4 << 18);	// PageID
+		Frame3Data[0] |= COMPOSE_BITS(AccurateIndex >> 13, 0, 9);	// SISAI_oc
+		Frame3Data[1] = COMPOSE_BITS(AccurateIndex, 11, 13);	// SISAI_oc
+		SvIndex = (index < 80) ? (index / 5 * 3) + (index % 5) - 2 : (index / 5 * 4) + (index % 5) - 17;
+		AppendWord(&Frame3Data[1], 13, MidiAlmanac[SvIndex], 156);	// midi almanac
+	}
 }

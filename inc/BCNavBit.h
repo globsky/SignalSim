@@ -30,7 +30,8 @@ public:
 	unsigned int Ephemeris1[63][9];		// IODE + ephemeris I (211 bits)
 	unsigned int Ephemeris2[63][10];	// ephemeris II (222 bits)
 	unsigned int ClockParam[63][4];		// clock + IODC
-	unsigned int IntegrityFlags[63];	// SISMAI + B1C/B2a/B2b DIF/SIF/AIF (13 bits)
+	unsigned int IntegrityFlags[63];	// SISMAI + B1C/B2a/B2b DIF/SIF/AIF + SatType (15 bits)
+	unsigned int HealthFlags[63];		// B1I/B1C/B2a/B2b health flag (bit 7~4)
 	unsigned int TgsIscParam[63][3];	// TGD+ISC for B1C/B2a/B2b
 	unsigned int ReducedAlmanac[63][2];	// reduced almanac (38 bits)
 	unsigned int MidiAlmanac[63][7];	// midi almanac (156 bits)

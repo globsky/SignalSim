@@ -200,6 +200,12 @@ PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int sv
 	{
 		if (EphemerisPool[i].health != 0)
 			continue;
+		if ((system == GpsSystem) && (EphemerisPool[i].toe % 1200) != 0)	// filter out toe not multiple of 2^4 and 300
+			continue;
+		else if ((system == BdsSystem) && (EphemerisPool[i].toe % 600) != 0)	// filter out toe not multiple of 2^3 and 300
+			continue;
+		else if ((system == GalileoSystem) && (EphemerisPool[i].toe % 60) != 0)	// filter out toe not multiple of 60
+			continue;
 		diff = (Week - EphemerisPool[i].week) * 604800 + (time.MilliSeconds / 1000 - EphemerisPool[i].toe);
 		if (diff < 0)
 			diff = -diff;
