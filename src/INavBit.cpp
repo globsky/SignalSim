@@ -14,7 +14,7 @@
 #define NORMINAL_I0 0.97738438111682456307726683035362
 
 const int INavBit::WordAllocationE1[15] = {
-	2, 4, 6, 7, 8, 17, 19, 16, 0, 0, 1, 3, 5, 0, 16,
+	2, 4, 6, 7, 8, 17, 19, 16, 0, 22, 1, 3, 5, 0, 16,
 };
 
 const int INavBit::WordAllocationE5[15] = {
@@ -146,6 +146,7 @@ INavBit::INavBit()
 	GalDummyData[0] = 0xfc000000; GalDummyData[1] = GalDummyData[2] = GalDummyData[3] = 0;
 	memset(GalEphData, 0, sizeof(GalEphData));
 	memset(GalAlmData, 0, sizeof(GalAlmData));
+	memset(GalRsVector, 0, sizeof(GalRsVector));
 	memset(GalUtcData, 0, sizeof(GalUtcData));
 }
 

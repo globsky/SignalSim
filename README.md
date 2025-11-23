@@ -62,6 +62,13 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 ## Change List
 
 ### 2025
+- **11/22/2025**
+  - Assign Galileo week# in Galileo ephemeris structure instead of GPS week# (1024 difference)
+  - Fix bug that Galileo uses incorrect scale factor on toa when converting ephemeris to almanac
+  - Fix bug on BDS GEO satellite determination (add SV59 and above)
+  - Initialize arrays not initialized in INAV/CNAV/BCNAV
+  - Broadcast all types of messages in BCNAV2 data stream
+
 - **9/26/2025**
   - Fix bug in CNAV2 message compose and put valid contents in subframe3
   - Fix bug in BCNAV message compose and put valid contents in subframe3 of BCNAV1

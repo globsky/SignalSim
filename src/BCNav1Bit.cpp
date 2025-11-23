@@ -214,7 +214,7 @@ BCNav1Bit::~BCNav1Bit()
 
 int BCNav1Bit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits)
 {
-	int i, j, page, soh, how;
+	int i, j, index, soh, how;
 	unsigned int Frame2Data[25];
 	unsigned int Frame3Data[11];
 	int Symbol2[200], Symbol3[88];
@@ -225,11 +225,9 @@ int BCNav1Bit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBi
 	// data channel
 	if (svid < 1 || svid > 63)
 		return 1;
-	page = StartTime.MilliSeconds / 18000;		// frames from week epoch
-	how = page / 200;
-	soh = page % 200;
-	// assume subframe 3 broadcast page 1 to 4 cyclically
-	page %= 4;
+	index = StartTime.MilliSeconds / 18000;		// frames from week epoch
+	how = index / 200;
+	soh = index % 200;
 
 	ComposeSubframe2(StartTime.Week - 1356, how, svid, Frame2Data);
 	// generate CRC for subframe2

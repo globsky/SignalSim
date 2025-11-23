@@ -175,7 +175,7 @@ bool GpsSatPosSpeedEph(GnssSystem system, double TransmitTime, PGPS_EPHEMERIS pE
 		Acc[2] += (yp * ik_dot2 + 2 * yp_dot * ik_dot) * cos(ik);
 	}
 
-	if (system == BdsSystem && pEph->svid <= 5)
+	if (system == BdsSystem && (pEph->svid <= 5 || pEph->svid >= 59))
 	{
 		// first rotate -5 degree
 		yp = pPosVel->y * COS_5 - pPosVel->z * SIN_5; // rotated y

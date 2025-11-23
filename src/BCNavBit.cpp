@@ -70,12 +70,15 @@ BCNavBit::BCNavBit()
 	memset(ClockParam, 0, sizeof(ClockParam));
 	memset(IntegrityFlags, 0, sizeof(IntegrityFlags));
 	memset(HealthFlags, 0, sizeof(HealthFlags));
+	memset(TgsIscParam, 0, sizeof(TgsIscParam));
 	memset(ReducedAlmanac, 0, sizeof(ReducedAlmanac));
 	memset(MidiAlmanac, 0, sizeof(MidiAlmanac));
 	memset(BdGimIono, 0, sizeof(BdGimIono));
 	memset(BdtUtcParam, 0, sizeof(BdtUtcParam));
 	memset(EopParam, 0, sizeof(EopParam));
 	memset(BgtoParam, 0, sizeof(BgtoParam));
+	AlmanacValidMask = 0;
+	CurMidiAlmIndex = CurReducedAlmIndex = -1;
 }
 
 BCNavBit::~BCNavBit()
@@ -210,6 +213,7 @@ int BCNavBit::SetAlmanac(GPS_ALMANAC Alm[])
 	int i;
 
 	// fill in almanac page
+	AlmanacValidMask = 0;
 	for (i = 0; i < 63; i ++)
 	{
 		FillBdsAlmanacPage(&Alm[i], MidiAlmanac[i], ReducedAlmanac[i]);
@@ -217,6 +221,7 @@ int BCNavBit::SetAlmanac(GPS_ALMANAC Alm[])
 		{
 			AlmanacToa = Alm[i].toa >> 12;
 			AlmanacWeek = Alm[i].week;
+			AlmanacValidMask |= (1ULL << i);
 		}
 	}
 
@@ -374,4 +379,19 @@ int BCNavBit::FillBdsAlmanacPage(PGPS_ALMANAC Almanac, unsigned int MidiAlm[8], 
 	ReducedAlm[1] |= COMPOSE_BITS(Almanac->health, 10, 8);	// use B1I health as clock health
 
 	return 0;
+}
+
+int BCNavBit::FindNextValidIndex(unsigned long long ValidMask, int CurIndex)
+{
+	if (ValidMask == 0)
+		return 0;
+	while (1)
+	{
+		if (++CurIndex >= 64)
+			CurIndex = 0;
+		if (ValidMask & (1ULL << CurIndex))
+			break;
+	}
+
+	return CurIndex;
 }

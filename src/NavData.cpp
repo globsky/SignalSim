@@ -168,6 +168,7 @@ bool CNavData::AddNavData(NavDataType Type, void *NavData)
 	return true;
 }
 
+// if system is BdsSystem, time uses BDS time, otherwise uses GPS time
 PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int svid, int IgnoreTimeLimit, unsigned char FirstPrioritySource)
 {
 	int i, time_diff, diff;
@@ -191,6 +192,7 @@ PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int sv
 	{
 		EphemerisPool = GalileoEphemerisPool;
 		EphemerisNumber = GalileoEphemerisNumber;
+		Week -= 1024;
 	}
 	else
 		return (PGPS_EPHEMERIS)0;
@@ -325,6 +327,7 @@ void CNavData::CompleteAlmanac(GnssSystem system, UTC_TIME time)
 	GNSS_TIME gnss_time;
 	GLONASS_TIME glonass_time;
 	int i, toa = -1, week;
+	int toa_scale = 4096;	// toa scale factor for GPS/BDS navigation message
 
 	if (system == GpsSystem)
 	{
@@ -343,6 +346,7 @@ void CNavData::CompleteAlmanac(GnssSystem system, UTC_TIME time)
 		Almanac = GalileoAlmanac;
 		AlmanacNumber = GalileoSatNumber;
 		gnss_time = UtcToGpsTime(time);
+		toa_scale = 600;	// Galileo toa scale factor is 600s
 	}
 	else if (system == GlonassSystem)
 	{
@@ -364,9 +368,10 @@ void CNavData::CompleteAlmanac(GnssSystem system, UTC_TIME time)
 	// else assign toa with given system time
 	if (toa < 0)
 	{
-		toa = (gnss_time.MilliSeconds + 2048000) / 4096000 * 4096;	// round to nearest 2^12
-		week = gnss_time.Week;
+		toa = gnss_time.MilliSeconds / 1000;
+		week = gnss_time.Week - ((system == GalileoSystem) ? 1024 : 0);
 	}
+	toa = (toa + toa_scale / 2) / toa_scale * toa_scale;	// round to nearest multiple of toa scale factor
 
 	// for any almanac not valid, find whether there is valid ephemeris
 	for (i = 0; i < AlmanacNumber; i ++)

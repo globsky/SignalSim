@@ -63,7 +63,7 @@ const char BCNav2Bit::B2aMatrixGen[B2a_SYMBOL_LENGTH*B2a_SYMBOL_LENGTH+1] = {
 
 // assume message broadcase cycle is 60s (20 frames) with following MesType order
 const int BCNav2Bit::MessageOrder[20] = {
-	10, 11, 30, 34, 10, 11, 30, 34, 10, 11, 30, 34, 10, 11, 30, 34, 10, 11, 30, 34,
+	10, 11, 30, 40, 10, 11, 31, 40, 10, 11, 32, 40, 10, 11, 33, 40, 10, 11, 34, 40,
 };
 
 BCNav2Bit::BCNav2Bit()
@@ -141,7 +141,52 @@ void BCNav2Bit::ComposeMessage(int MessageType, int week, int sow, int svid, uns
 		AppendWord(&FrameData[1], 18, ClockParam[svid-1], 69);
 		FrameData[4] |= COMPOSE_BITS(ClockParam[svid-1][3] >> 1, 0, 9);	// IODC
 		FrameData[5] = COMPOSE_BITS(ClockParam[svid-1][3], 23, 1);	// IODC
-		FrameData[6] = FrameData[7] = FrameData[8] = FrameData[9] = FrameData[10] = 0;	// fill rest of 143bits with 0
+		AppendWord(&FrameData[5], 3, BdGimIono, 96);	// fill BDGIM first (with 22 leading 0s)
+		FrameData[5] |= COMPOSE_BITS(TgsIscParam[svid-1][1], 11, 12);	// TGD
+		FrameData[5] |= COMPOSE_BITS(TgsIscParam[svid-1][1] >> 13, 0, 11);	// ISC
+		FrameData[6] |= COMPOSE_BITS(TgsIscParam[svid-1][1] >> 12, 0, 1);	// ISC
+		FrameData[9] |= COMPOSE_BITS(TgsIscParam[svid-1][0], 9, 12);	// TGD
+		FrameData[10] = 0;	// fill rest of 33bits with 0
+		break;
+	case 31:
+		// HS filled with 2 zeros
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 5, 13, 3);	// B2a DIF/SIF/AIF
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 11, 9, 4);	// SISMAI
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 2, 6, 3);	// B1C DIF/SIF/AIF
+		AppendWord(&FrameData[1], 18, ClockParam[svid-1], 69);
+		FrameData[4] |= COMPOSE_BITS(ClockParam[svid-1][3] >> 1, 0, 9);	// IODC
+		FrameData[5] = COMPOSE_BITS(ClockParam[svid-1][3], 23, 1);	// IODC
+		FrameData[5] |= COMPOSE_BITS(AlmanacWeek, 10, 13);
+		FrameData[5] |= COMPOSE_BITS(AlmanacToa, 2, 8);
+		CurReducedAlmIndex = FindNextValidIndex(AlmanacValidMask, CurReducedAlmIndex);
+		AppendWord(&FrameData[5], 22, ReducedAlmanac[CurReducedAlmIndex], 38);	// reduced almanac
+		CurReducedAlmIndex = FindNextValidIndex(AlmanacValidMask, CurReducedAlmIndex);
+		AppendWord(&FrameData[7], 12, ReducedAlmanac[CurReducedAlmIndex], 38);	// reduced almanac
+		CurReducedAlmIndex = FindNextValidIndex(AlmanacValidMask, CurReducedAlmIndex);
+		AppendWord(&FrameData[9], 2, ReducedAlmanac[CurReducedAlmIndex], 38);	// reduced almanac
+		break;
+	case 32:
+		// HS filled with 2 zeros
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 5, 13, 3);	// B2a DIF/SIF/AIF
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 11, 9, 4);	// SISMAI
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 2, 6, 3);	// B1C DIF/SIF/AIF
+		AppendWord(&FrameData[1], 18, ClockParam[svid-1], 69);
+		FrameData[4] |= COMPOSE_BITS(ClockParam[svid-1][3] >> 1, 0, 9);	// IODC
+		FrameData[5] = COMPOSE_BITS(ClockParam[svid-1][3], 23, 1);	// IODC
+		AppendWord(&FrameData[5], 1, EopParam, 138);	// EOP
+		break;
+	case 33:
+		// HS filled with 2 zeros
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 5, 13, 3);	// B2a DIF/SIF/AIF
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 11, 9, 4);	// SISMAI
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 2, 6, 3);	// B1C DIF/SIF/AIF
+		AppendWord(&FrameData[1], 18, ClockParam[svid-1], 69);
+		AppendWord(&FrameData[4], 15, BgtoParam[0], 68);
+		CurReducedAlmIndex = FindNextValidIndex(AlmanacValidMask, CurReducedAlmIndex);
+		AppendWord(&FrameData[7], 11, ReducedAlmanac[CurReducedAlmIndex], 38);	// reduced almanac
+		FrameData[9] |= COMPOSE_BITS(ClockParam[svid-1][3], 13, 10);	// IODC
+		FrameData[9] |= COMPOSE_BITS(AlmanacWeek, 0, 13);
+		FrameData[10] = COMPOSE_BITS(AlmanacToa, 16, 8);
 		break;
 	case 34:
 		// HS filled with 2 zeros
@@ -151,8 +196,20 @@ void BCNav2Bit::ComposeMessage(int MessageType, int week, int sow, int svid, uns
 		// SISAI filled with 22 zeros
 		FrameData[2] = 0;
 		AppendWord(&FrameData[2], 16, ClockParam[svid-1], 69);
-		FrameData[4] |= COMPOSE_BITS(ClockParam[svid-1][3], 1, 10);	// IODC
-		FrameData[6] = FrameData[7] = FrameData[8] = FrameData[9] = FrameData[10] = 0;	// fill rest of 121bits with 0
+		FrameData[5] |= COMPOSE_BITS(ClockParam[svid-1][3], 1, 10);	// IODC
+		AppendWord(&FrameData[5], 23, BdtUtcParam, 97);
+		FrameData[10] = 0;	// fill rest of 121bits with 0
+		break;
+	case 40:
+		// HS filled with 2 zeros
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 5, 13, 3);	// B2a DIF/SIF/AIF
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 11, 9, 4);	// SISMAI
+		FrameData[1] |= COMPOSE_BITS(IntegrityFlags[svid-1] >> 2, 6, 3);	// B1C DIF/SIF/AIF
+		// SISAIoe/SISAIoc filled with 27 zeros
+		FrameData[2] = 0;
+		CurMidiAlmIndex = FindNextValidIndex(AlmanacValidMask, CurMidiAlmIndex);
+		AppendWord(&FrameData[2], 21, MidiAlmanac[CurMidiAlmIndex], 156);	// midi almanac
+		FrameData[10] = 0;	// fill rest of 39bits with 0
 		break;
 	}
 }

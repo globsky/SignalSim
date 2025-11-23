@@ -22,6 +22,7 @@ CNavBit::CNavBit()
 	memset(ReducedAlm, 0, sizeof(ReducedAlm));
 	memset(ClockMessage, 0, sizeof(ClockMessage));
 	memset(DelayMessage, 0, sizeof(DelayMessage));
+	memset(IonoMessage, 0, sizeof(IonoMessage));
 	memset(UTCMessage, 0, sizeof(UTCMessage));
 	memset(ConvEncodeBitsL2, 0, sizeof(ConvEncodeBitsL2));
 	memset(ConvEncodeBitsL5, 0, sizeof(ConvEncodeBitsL5));
