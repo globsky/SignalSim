@@ -26,26 +26,33 @@ public:
 	int AppendCRC(unsigned int DataStream[], int Length);
 	int LDPCEncode(int SymbolStream[], int SymbolLength, const char *MatrixGen);
 	int GF6IntMul(int a, int b);
+	int FindNextValidIndex(unsigned long long ValidMask, int CurIndex);
 
+	// in order to do LDPC encode, all composed frame and following parameters arranged in 24bit per DWORD
+	// normally each data block placed from bit23 of first DWORD and padding 0s if length is not multiple of 24
 	unsigned int Ephemeris1[63][9];		// IODE + ephemeris I (211 bits)
 	unsigned int Ephemeris2[63][10];	// ephemeris II (222 bits)
 	unsigned int ClockParam[63][4];		// clock + IODC
 	unsigned int IntegrityFlags[63];	// SISMAI + B1C/B2a/B2b DIF/SIF/AIF + SatType (15 bits)
 	unsigned int HealthFlags[63];		// B1I/B1C/B2a/B2b health flag (bit 7~4)
-	unsigned int TgsIscParam[63][3];	// TGD+ISC for B1C/B2a/B2b
+	unsigned int TgsIscParam[63][3];	// TGD+ISC for B1C/B2a/B2b (ISC in high 12bits, TGD in low 12bits)
 	unsigned int ReducedAlmanac[63][2];	// reduced almanac (38 bits)
 	unsigned int MidiAlmanac[63][7];	// midi almanac (156 bits)
-	unsigned int BdGimIono[4];			// BDGIM ionosphere parameters (74 bits)
+	unsigned int BdGimIono[4];			// BDGIM ionosphere parameters (22 leading 0s + 74 bits, fill with length of 96)
 	unsigned int BdtUtcParam[5];		// BDT-UTC parameters (97 bits)
 	unsigned int EopParam[6];			// EOP parameters (138 bits)
 	unsigned int BgtoParam[7][3];		// BGTO parameters (68 bits)
 	unsigned int AlmanacWeek;			// valid almanac week
 	unsigned int AlmanacToa;			// valid almanac toa
 
+	unsigned long long AlmanacValidMask;
+	int CurMidiAlmIndex, CurReducedAlmIndex;
+
 private:
 	static const unsigned int crc24q[256];				// CRC24Q table
 	static const unsigned int e2v_table[128];
 	static const unsigned int v2e_table[64];
+
 
 	int FillBdsAlmanacPage(PGPS_ALMANAC Almanac, unsigned int MidiAlm[8], unsigned int ReducedAlm[2]);
 };

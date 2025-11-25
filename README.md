@@ -62,6 +62,9 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 ## Change List
 
 ### 2025
+- **11/25/2025**
+  - BCNavBit.h was forgot to be included in the previous commit
+
 - **11/22/2025**
   - Assign Galileo week# in Galileo ephemeris structure instead of GPS week# (1024 difference)
   - Fix bug that Galileo uses incorrect scale factor on toa when converting ephemeris to almanac
