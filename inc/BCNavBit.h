@@ -26,6 +26,7 @@ public:
 	int AppendCRC(unsigned int DataStream[], int Length);
 	int LDPCEncode(int SymbolStream[], int SymbolLength, const char *MatrixGen);
 	int GF6IntMul(int a, int b);
+	int FindNextValidIndex(unsigned long long ValidMask, int CurIndex);
 
 	unsigned int Ephemeris1[63][9];		// IODE + ephemeris I (211 bits)
 	unsigned int Ephemeris2[63][10];	// ephemeris II (222 bits)
@@ -41,6 +42,9 @@ public:
 	unsigned int BgtoParam[7][3];		// BGTO parameters (68 bits)
 	unsigned int AlmanacWeek;			// valid almanac week
 	unsigned int AlmanacToa;			// valid almanac toa
+	unsigned int AlmanacValidMask;
+	int CurReducedAlmIndex;
+	int CurMidiAlmIndex;
 
 private:
 	static const unsigned int crc24q[256];				// CRC24Q table
