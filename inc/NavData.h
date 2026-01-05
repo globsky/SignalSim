@@ -39,8 +39,8 @@ public:
 	PUTC_PARAM GetBdsUtcParam() { return &BdsUtcParam; }
 	PUTC_PARAM GetGalileoUtcParam() { return &GalileoUtcParam; }
 	int GetGlonassSlotFreq(int slot) { return (slot > 0 && slot <= 24) ? GlonassSlotFreq[slot-1] : 7; }
-	void ReadNavFile(char *filename);
-	void ReadAlmFile(char *filename);
+	void ReadNavFile(const char *filename);
+	void ReadAlmFile(const char *filename);
 	void CompleteAlmanac(GnssSystem system, UTC_TIME time);
 	void CompleteGlonassAlmanac(GLONASS_TIME time);
 

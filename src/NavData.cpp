@@ -263,7 +263,7 @@ PGLONASS_EPHEMERIS CNavData::FindGloEphemeris(GLONASS_TIME GlonassTime, int slot
 	return Eph;
 }
 
-void CNavData::ReadNavFile(char *filename)
+void CNavData::ReadNavFile(const char *filename)
 {
 	FILE *fp;
 	NavDataType DataType;
@@ -291,7 +291,7 @@ void CNavData::ReadNavFile(char *filename)
 	}
 }
 
-void CNavData::ReadAlmFile(char *filename)
+void CNavData::ReadAlmFile(const char *filename)
 {
 	FILE *fp;
 	AlmanacType Type;

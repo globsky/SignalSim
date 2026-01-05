@@ -25,7 +25,6 @@ CSatIfSignal::CSatIfSignal(int MsSampleNumber, int SatIfFreq, GnssSystem SatSyst
 		DataLength = PrnSequence->Attribute->DataPeriod * PrnSequence->Attribute->ChipRate;
 		PilotLength = PrnSequence->Attribute->PilotPeriod * PrnSequence->Attribute->ChipRate;
 	}
-	GlonassHalfCycle = ((IfFreq % 1000) != 0) ? 1 : 0;
 }
 
 CSatIfSignal::~CSatIfSignal()
@@ -55,7 +54,7 @@ void CSatIfSignal::GetIfSample(GNSS_TIME CurTime)
 	int IntPhaseStep;
 	const PrnAttribute* CodeAttribute = PrnSequence->Attribute;
 	complex_number IfSample;
-	double Amp = pow(10, (SatParam->CN0 - 3000) / 1000.) / sqrt(SampleNumber);
+	double Amp = pow(10, (SatParam->CN0 - 3000) / 2000.) / sqrt(SampleNumber);
 
 	if (!SatParam)
 		return;
@@ -72,11 +71,6 @@ void CSatIfSignal::GetIfSample(GNSS_TIME CurTime)
 	CurIntPhase = (unsigned int)std::floor(CurPhase * 4294967296.);
 	IntPhaseStep = (int)std::round(PhaseStep * 4294967296.);
 	StartCarrierPhase = EndCarrierPhase;
-	if (GlonassHalfCycle)	// for GLONASS odd number FreqID, nominal IF result in half cycle toggle every 1ms
-	{
-		CurPhase += HalfCycleFlag ? 0.5 : 0.0;
-		HalfCycleFlag = 1 - HalfCycleFlag;
-	}
 
 	// get PRN count for each sample
 	TransmitMsDiff = EndTransmitTime.MilliSeconds - StartTransmitTime.MilliSeconds;

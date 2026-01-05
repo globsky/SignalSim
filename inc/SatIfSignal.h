@@ -33,7 +33,6 @@ private:
 	double StartCarrierPhase, EndCarrierPhase;
 	GNSS_TIME StartTransmitTime, EndTransmitTime, SignalTime;
 	complex_number DataSignal, PilotSignal;
-	int GlonassHalfCycle, HalfCycleFlag;
 
 	complex_number GetPrnValue(double &CurChip, double CodeStep);
 	complex_number GetRotateValue(double & CurPhase, double PhaseStep);

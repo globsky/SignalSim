@@ -61,7 +61,15 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 
 ## Change List
 
+### 2026
+
+- **1/4/2026**
+  - Sort power control list by time in JsonInterpreter.cpp (sorted in XML but missed in JSON)
+  - Remove GLONASS half cycle compensation in IF generation (no need for floating point carrier calculation)
+  - Fix bug in signal amplitude calculation (SNR of each sample should be SNR=CN0-10*lg(fs)=20*lg(A/sigma))
+
 ### 2025
+
 - **11/25/2025**
   - BCNavBit.h was forgot to be included in the previous commit
 

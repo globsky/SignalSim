@@ -698,6 +698,7 @@ BOOL SetPowerControl(JsonObject *Object, CPowerControl &PowerControl)
 		Object = JsonStream::GetNextObject(Object);
 	}
 
+	PowerControl.Sort();
 	return TRUE;
 }
 
