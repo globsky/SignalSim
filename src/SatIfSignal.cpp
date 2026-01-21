@@ -43,7 +43,6 @@ void CSatIfSignal::InitState(GNSS_TIME CurTime, PSATELLITE_PARAM pSatParam, NavB
 	StartCarrierPhase = GetCarrierPhase(SatParam, SignalIndex);
 	SignalTime = StartTransmitTime = GetTransmitTime(CurTime, GetTravelTime(SatParam, SignalIndex));
 	SatelliteSignal.GetSatelliteSignal(SignalTime, DataSignal, PilotSignal);
-	HalfCycleFlag = 0;
 }
 
 void CSatIfSignal::GetIfSample(GNSS_TIME CurTime)
@@ -54,10 +53,11 @@ void CSatIfSignal::GetIfSample(GNSS_TIME CurTime)
 	int IntPhaseStep;
 	const PrnAttribute* CodeAttribute = PrnSequence->Attribute;
 	complex_number IfSample;
-	double Amp = pow(10, (SatParam->CN0 - 3000) / 2000.) / sqrt(SampleNumber);
+	double Amp;
 
 	if (!SatParam)
 		return;
+	Amp = pow(10, (SatParam->CN0 - 3000) / 2000.) / sqrt(SampleNumber);
 	SignalTime = StartTransmitTime;
 	SatelliteSignal.GetSatelliteSignal(SignalTime, DataSignal, PilotSignal);
 	EndCarrierPhase = GetCarrierPhase(SatParam, SignalIndex);
@@ -68,6 +68,8 @@ void CSatIfSignal::GetIfSample(GNSS_TIME CurTime)
 	PhaseStep += IfFreq / 1000. / SampleNumber;
 	CurPhase = StartCarrierPhase - (int)StartCarrierPhase;
 	CurPhase = 1 - CurPhase;	// carrier is fractional part of negative of travel time, equvalent to 1 minus positive fractional part
+	if (SatParam->system == GlonassSystem && (SatParam->FreqID & 1) && (CurTime.MilliSeconds & 1))
+		CurPhase += 0.5;
 	CurIntPhase = (unsigned int)std::floor(CurPhase * 4294967296.);
 	IntPhaseStep = (int)std::round(PhaseStep * 4294967296.);
 	StartCarrierPhase = EndCarrierPhase;
