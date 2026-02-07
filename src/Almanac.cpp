@@ -371,6 +371,11 @@ GLONASS_ALMANAC GetAlmanacFromEphemeris(PGLONASS_EPHEMERIS Eph, int day, int lea
 	v2 = PosVel.vx * PosVel.vx + PosVel.vy * PosVel.vy + PosVel.vz * PosVel.vz;
 	rv = PosVel.x * PosVel.vx + PosVel.y * PosVel.vy + PosVel.z * PosVel.vz;
 	a = 1 / (2 / r -  v2 / PZ90_GM);
+	if (a <= 0.0)
+	{
+		Alm.flag = 0;
+		return Alm;
+	}
 	t = PI2 / sqrt(PZ90_GM / (a * a * a));	// period from major-axis
 	c20 = -PZ90_C20 * 1.5 * PZ90_AE2 / (p * p);
 	t *= (1 + c20 * INCLINATION_FACTOR);	// correction to orbital period
@@ -453,6 +458,11 @@ bool ConvertAlmanacFromEphemerisGeo(PGPS_ALMANAC Alm, PGPS_EPHEMERIS Eph, int we
 	v2 = PosVel.vx * PosVel.vx + PosVel.vy * PosVel.vy + PosVel.vz * PosVel.vz;
 	rv = PosVel.x * PosVel.vx + PosVel.y * PosVel.vy + PosVel.z * PosVel.vz;
 	a = 1 / (2 / r -  v2 / (CGCS2000_SQRT_GM * CGCS2000_SQRT_GM));
+	if (a <= 0.0)
+	{
+		Alm->valid = 0;
+		return false;
+	}
 	Alm->sqrtA = sqrt(a);
 	Alm->ecc = (a > p) ? sqrt(1 - p / a) : 0.0;
 	// calculate mean anomaly at reference time

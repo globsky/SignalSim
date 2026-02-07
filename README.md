@@ -63,6 +63,10 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 
 ### 2026
 
+- **2/6/2026**
+  - Swap L1C data and pilot code generation array because they are mixed up before
+  - Add protection on GLONASS/BDS GEO ephemeris to almanac conversion in case pos/vel does not conform to an elliptical orbit
+
 - **1/20/2026**
   - Add correct GLONASS half cycle compensation on start carrier phase for odd frequency satellites
 
