@@ -981,8 +981,15 @@ int CNav2Bit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBit
 
 int CNav2Bit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
 {
+	GPS_EPHEMERIS NewEph;
+
 	if (svid < 1 || svid > 32 || !Eph || !Eph->valid)
 		return 0;
+	if ((Eph->toe % 300) != 0)
+	{
+		NewEph = AlignToe300s(Eph);
+		Eph = &NewEph;
+	}
 	ComposeSubframe2(Eph, Subframe2[svid-1], ISC[svid-1]);
 	return svid;
 }

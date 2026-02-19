@@ -6,7 +6,9 @@
 //
 //----------------------------------------------------------------------
 
+#include <math.h>
 #include "NavBit.h"
+#include "ConstVal.h"
 
 // following table generate by MATLAB code:
 // encdata=(0:255)';
@@ -194,4 +196,33 @@ unsigned int NavBit::Crc24qEncode(unsigned int *BitStream, int Length)
 	}
 
 	return crc_result & 0xffffff;
+}
+
+// ephemeris of LNAV in GPS or D1/D2 in BDS has scale factor of 2^4 or 2^3 for toe
+// while CNAV/CNAV2/BCNAVx requires toe to be multiple of 300
+// in this case, when assign navigation data for above format, toe/toc/top
+// need to be adjusted to nearest multiple of 300s
+GPS_EPHEMERIS NavBit::AlignToe300s(PGPS_EPHEMERIS Eph)
+{
+	GPS_EPHEMERIS NewEph = *Eph;
+	int NewToe = (Eph->toe + 150) / 300 * 300;
+	int TimeDiff = NewToe - Eph->toe;
+
+	if (NewToe >= 604800)
+	{
+		NewToe -= 604800;
+		NewEph.week ++;
+	}
+	NewEph.toe = NewEph.toc = NewEph.top = NewToe;
+
+	NewEph.axis += NewEph.axis_dot * TimeDiff;
+	NewEph.sqrtA = sqrt(NewEph.axis);
+	NewEph.delta_n += NewEph.delta_n_dot * TimeDiff;
+	NewEph.n += NewEph.delta_n_dot * TimeDiff;
+	NewEph.M0 += NewEph.n * TimeDiff;
+	NewEph.i0 += NewEph.idot * TimeDiff;
+	NewEph.omega0 += NewEph.omega_dot * TimeDiff;
+	NewEph.omega_t = NewEph.omega0 - WGS_OMEGDOTE * NewEph.toe;
+
+	return NewEph;
 }

@@ -35,13 +35,15 @@ CSatIfSignal::~CSatIfSignal()
 	PrnSequence = NULL;
 }
 
-void CSatIfSignal::InitState(GNSS_TIME CurTime, PSATELLITE_PARAM pSatParam, NavBit* pNavData)
+void CSatIfSignal::InitState(GNSS_TIME CurTime, CSatelliteParam *pSatParam, NavBit* pNavData)
 {
 	SatParam = pSatParam;
 	if (!SatelliteSignal.SetSignalAttribute(System, SignalIndex, pNavData, Svid))
 		SatelliteSignal.NavData = (NavBit*)0;	// if system/frequency and navigation data not match, set pointer to NULL
-	StartCarrierPhase = GetCarrierPhase(SatParam, SignalIndex);
-	SignalTime = StartTransmitTime = GetTransmitTime(CurTime, GetTravelTime(SatParam, SignalIndex));
+//	StartCarrierPhase = GetCarrierPhase(SatParam, SignalIndex);
+	StartCarrierPhase = SatParam->GetCarrierPhase(SignalIndex);
+//	SignalTime = StartTransmitTime = GetTransmitTime(CurTime, GetTravelTime(SatParam, SignalIndex));
+	SignalTime = StartTransmitTime = GetTransmitTime(CurTime, SatParam->GetTravelTime(SignalIndex));
 	SatelliteSignal.GetSatelliteSignal(SignalTime, DataSignal, PilotSignal);
 }
 
@@ -60,8 +62,10 @@ void CSatIfSignal::GetIfSample(GNSS_TIME CurTime)
 	Amp = pow(10, (SatParam->CN0 - 3000) / 2000.) / sqrt(SampleNumber);
 	SignalTime = StartTransmitTime;
 	SatelliteSignal.GetSatelliteSignal(SignalTime, DataSignal, PilotSignal);
-	EndCarrierPhase = GetCarrierPhase(SatParam, SignalIndex);
-	EndTransmitTime = GetTransmitTime(CurTime, GetTravelTime(SatParam, SignalIndex));
+//	EndCarrierPhase = GetCarrierPhase(SatParam, SignalIndex);
+//	EndTransmitTime = GetTransmitTime(CurTime, GetTravelTime(SatParam, SignalIndex));
+	EndCarrierPhase = SatParam->GetCarrierPhase(SignalIndex);
+	EndTransmitTime = GetTransmitTime(CurTime, SatParam->GetTravelTime(SignalIndex));
 
 	// calculate start/end signal phase and phase step (actual local signal phase is negative ADR)
 	PhaseStep = (StartCarrierPhase - EndCarrierPhase) / SampleNumber;

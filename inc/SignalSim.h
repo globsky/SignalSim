@@ -32,6 +32,7 @@
 #include "SatelliteSignal.h"
 #include "SatIfSignal.h"
 #include "Coordinate.h"
+#include "DelayModel.h"
 #include "MessageOutput.h"
 
 #endif // __SIGNAL_SIM_H__

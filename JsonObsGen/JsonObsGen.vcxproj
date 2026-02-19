@@ -131,9 +131,11 @@
   <ItemGroup>
     <ClCompile Include="..\src\Almanac.cpp" />
     <ClCompile Include="..\src\Coordinate.cpp" />
+    <ClCompile Include="..\src\DelayModel.cpp" />
     <ClCompile Include="..\src\GnssTime.cpp" />
     <ClCompile Include="..\src\JsonInterpreter.cpp" />
     <ClCompile Include="..\src\JsonParser.cpp" />
+    <ClCompile Include="..\src\MessageOutput.cpp" />
     <ClCompile Include="..\src\NavData.cpp" />
     <ClCompile Include="..\src\PowerControl.cpp" />
     <ClCompile Include="..\src\Rinex.cpp" />
@@ -146,9 +148,11 @@
     <ClInclude Include="..\inc\BasicTypes.h" />
     <ClInclude Include="..\inc\ConstVal.h" />
     <ClInclude Include="..\inc\Coordinate.h" />
+    <ClInclude Include="..\inc\DelayModel.h" />
     <ClInclude Include="..\inc\GnssTime.h" />
     <ClInclude Include="..\inc\JsonInterpreter.h" />
     <ClInclude Include="..\inc\JsonParser.h" />
+    <ClInclude Include="..\inc\MessageOutput.h" />
     <ClInclude Include="..\inc\NavData.h" />
     <ClInclude Include="..\inc\PowerControl.h" />
     <ClInclude Include="..\inc\Rinex.h" />

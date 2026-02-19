@@ -334,7 +334,7 @@ GNSS_TIME GetTransmitTime(GNSS_TIME ReceiverTime, double TravelTime)
 
 	return TransmitTime;
 }
-
+#if 0
 void GetSatPosVel(GnssSystem system, double SatelliteTime, PGPS_EPHEMERIS Eph, PSATELLITE_PARAM SatelliteParam, PKINEMATIC_INFO pPosVel)
 {
 	double TimeDiff = SatelliteTime - SatelliteParam->PosTimeTag;
@@ -372,5 +372,302 @@ void GetSatPosVel(GnssSystem system, double SatelliteTime, PGPS_EPHEMERIS Eph, P
 		}
 		else
 			*pPosVel = SatelliteParam->PosVel;
+	}
+}
+#endif
+
+CSatelliteParam::CSatelliteParam()
+{
+	TimeTag = -1;
+}
+
+CSatelliteParam::~CSatelliteParam()
+{
+}
+
+void CSatelliteParam::Initialize(GnssSystem SatSystem, PGPS_EPHEMERIS Eph, CIonoDelay *IonoModel, double InitCN0, enum ElevationAdjust Adjust)
+{
+	system = SatSystem;
+	EphCur = EphPrev = Eph;
+	GloEphCur = GloEphPrev = (PGLONASS_EPHEMERIS)Eph;
+	IonoDelayModel = IonoModel;
+	if (Eph)
+	{
+		if (system == GlonassSystem)
+		{
+			svid = GloEphCur->n;
+			FreqID = GloEphCur->freq;
+		}
+		else
+		{
+			svid = Eph->svid;
+			FreqID = 0;
+		}
+	}
+	CN0Default = InitCN0;
+	CN0Adjust = Adjust;
+	CN0 = (int)(InitCN0 * 100 + 0.5);
+	EphTransition = 0;
+}
+
+#define TRANSIT_PERIOD_MS 600000	// after ephemeris change, 600s period to transit to new ephemeris to avoid glitch on satellite position
+void CSatelliteParam::UpdateEphemeris(PGPS_EPHEMERIS Eph)
+{
+	if (system == GlonassSystem && GloEphCur != (PGLONASS_EPHEMERIS)Eph)
+	{
+		GloEphCur = (PGLONASS_EPHEMERIS)Eph;
+		if (GloEphPrev != NULL && GloEphPrev != GloEphCur)
+			EphTransition = TRANSIT_PERIOD_MS;
+	}
+	else if (EphCur != Eph)
+	{
+		EphCur = Eph;
+		if (EphPrev != NULL && EphPrev != EphCur)
+			EphTransition = TRANSIT_PERIOD_MS;
+	}
+}
+
+void CSatelliteParam::CalculateParam(KINEMATIC_INFO PositionEcef, LLA_POSITION PositionLla, GNSS_TIME time)
+{
+	KINEMATIC_INFO PosVelPrev;
+	double Distance, SatelliteTime = (time.MilliSeconds + time.SubMilliSeconds) / 1000.0, WeightPrev;
+	double ClockErrorPrev;
+	int Seconds, LeapSecond, TimeStep;
+
+	TimeStep = (TimeTag >= 0) ? (time.MilliSeconds - TimeTag) : 0;
+	if (TimeStep < 0) TimeStep += 604800000;
+	TimeTag = time.MilliSeconds;
+	if (system == BdsSystem)	// subtract leap second difference
+		time.MilliSeconds -= 14000;
+	else if (system == GlonassSystem)	// subtract leap second, add 3 hours
+	{
+		Seconds = (unsigned int)(time.Week * 604800 + time.MilliSeconds / 1000);
+		GetLeapSecond(Seconds, LeapSecond);
+		time.MilliSeconds = (time.MilliSeconds + 10800000 - LeapSecond * 1000) % 86400000;
+	}
+	SatelliteTime = (time.MilliSeconds + time.SubMilliSeconds) / 1000.0;
+
+	// first estimate the travel time, ignore tgd, ionosphere and troposphere delay
+	if (system == GlonassSystem)
+		GlonassSatPosSpeedEph(SatelliteTime, GloEphCur, &PosVel, NULL);
+	else
+		GpsSatPosSpeedEph(system, SatelliteTime, EphCur, &PosVel, NULL);
+
+	TravelTime = GeometryDistance(&PositionEcef, &PosVel, LosVector) / LIGHT_SPEED;
+	PosVel.x -= TravelTime * PosVel.vx; PosVel.y -= TravelTime * PosVel.vy; PosVel.z -= TravelTime * PosVel.vz;
+	TravelTime = GeometryDistance(&PositionEcef, &PosVel, LosVector) / LIGHT_SPEED;
+	SatelliteTime -= TravelTime;
+
+	// calculate accurate transmit time
+	// travel_time = (d + dtrop)/c + tgd - dts - trel + diono
+	if (system == GlonassSystem)
+	{
+		GlonassSatPosSpeedEph(SatelliteTime, GloEphCur, &PosVel, NULL);
+		ClockError = GlonassClockCorrection(GloEphCur, SatelliteTime);
+	}
+	else
+	{
+		GpsSatPosSpeedEph(system, SatelliteTime, EphCur, &PosVel, NULL);
+		ClockError = GpsClockCorrection(EphCur, SatelliteTime);
+	}
+	if (EphTransition > 0)
+	{
+		if (system == GlonassSystem)
+		{
+			GlonassSatPosSpeedEph(SatelliteTime, GloEphPrev, &PosVelPrev, NULL);
+			ClockErrorPrev = GlonassClockCorrection(GloEphPrev, SatelliteTime);
+		}
+		else
+		{
+			GpsSatPosSpeedEph(system, SatelliteTime, EphPrev, &PosVelPrev, NULL);
+			ClockErrorPrev = GpsClockCorrection(EphPrev, SatelliteTime);
+		}
+		if (EphTransition <= TimeStep)
+		{
+			EphTransition = 0;
+			EphPrev = EphCur;
+			GloEphPrev = GloEphCur;
+		}
+		else
+			EphTransition -= TimeStep;
+		WeightPrev = (double)EphTransition / TRANSIT_PERIOD_MS;
+		PosVel.x += (PosVelPrev.x - PosVel.x) * WeightPrev;
+		PosVel.y += (PosVelPrev.y - PosVel.y) * WeightPrev;
+		PosVel.z += (PosVelPrev.z - PosVel.z) * WeightPrev;
+		PosVel.vx += (PosVelPrev.vx - PosVel.vx) * WeightPrev;
+		PosVel.vy += (PosVelPrev.vy - PosVel.vy) * WeightPrev;
+		PosVel.vz += (PosVelPrev.vz - PosVel.vz) * WeightPrev;
+		ClockError += (ClockErrorPrev - ClockError) * WeightPrev;
+	}
+
+	Distance = GeometryDistance(&PositionEcef, &PosVel, LosVector);
+	SatElAz(&PositionLla, LosVector, &Elevation, &Azimuth);
+	IonoDelayMeter = IonoDelayModel->GetDelay(SatelliteTime, PositionLla.lat, PositionLla.lon, Elevation, Azimuth);
+	Distance += (TropoDelayMeter = TropoDelay(PositionLla.lat, PositionLla.alt, Elevation));
+	if (system == GlonassSystem)
+	{
+		TravelTime = Distance / LIGHT_SPEED - ClockError;
+	}
+	else
+	{
+		TravelTime = Distance / LIGHT_SPEED - ClockError;
+		TravelTime -= WGS_F_GTR * EphCur->ecc * EphCur->sqrtA * sin(EphCur->Ek);		// relativity correction
+		// assign GroupDelay[]
+		switch (system)
+		{
+		case GpsSystem:
+			GroupDelay[SIGNAL_INDEX_L1CA] = EphCur->tgd;	// L1C/A
+			GroupDelay[SIGNAL_INDEX_L1C] = EphCur->tgd_ext[1];	// L1C
+			GroupDelay[SIGNAL_INDEX_L2C] = EphCur->tgd2;	// L2C
+			GroupDelay[SIGNAL_INDEX_L5] = EphCur->tgd_ext[3];	// L5
+			break;
+		case BdsSystem:
+			GroupDelay[SIGNAL_INDEX_B1C] = EphCur->tgd_ext[1];	// B1C
+			GroupDelay[SIGNAL_INDEX_B1I] = EphCur->tgd;	// B1I
+			GroupDelay[SIGNAL_INDEX_B2I] = EphCur->tgd2;	// B2I
+			GroupDelay[SIGNAL_INDEX_B3I] = 0;	// B3I
+			GroupDelay[SIGNAL_INDEX_B2a] = EphCur->tgd_ext[3];	// B2a
+			GroupDelay[SIGNAL_INDEX_B2b] = EphCur->tgd_ext[4];	// B2b
+			GroupDelay[SIGNAL_INDEX_B2ab] = (EphCur->tgd_ext[3] + EphCur->tgd_ext[4]) / 2;	// B2a+B2b
+			break;
+		case GalileoSystem:
+			GroupDelay[SIGNAL_INDEX_E1] = EphCur->tgd;	// E1
+			GroupDelay[SIGNAL_INDEX_E5a] = EphCur->tgd_ext[2];	// E5a
+			GroupDelay[SIGNAL_INDEX_E5b] = EphCur->tgd_ext[4];	// E5b
+			GroupDelay[SIGNAL_INDEX_E5] = (EphCur->tgd_ext[2] + EphCur->tgd_ext[4]) / 2;	// E5
+			GroupDelay[SIGNAL_INDEX_E6] = EphCur->tgd_ext[4];	// E6
+			break;
+		}
+	}
+	RelativeSpeed = SatRelativeSpeed(&PositionEcef, &PosVel) - LIGHT_SPEED * EphCur->af1;
+}
+
+void CSatelliteParam::UpdateCN0(int PowerListCount, SIGNAL_POWER PowerList[])
+{
+	int i;
+	double NewCN0;
+
+	// adjust signal power
+	for (i = 0; i < PowerListCount; i ++)
+	{
+		if ((PowerList[i].svid == svid || PowerList[i].svid == 0) && PowerList[i].system == system)
+		{
+			if (PowerList[i].CN0 < 0)
+			{
+				NewCN0 = CN0Default;
+				switch (CN0Adjust)
+				{
+				case ElevationAdjustNone:
+					break;
+				case ElevationAdjustSinSqrtFade:
+					NewCN0 -= (1 - sqrt(Elevation)) * 25;
+				}
+			}
+			else
+				NewCN0 = PowerList[i].CN0;
+			CN0 = (int)(NewCN0 * 100 + 0.5);
+		}
+	}
+}
+
+double CSatelliteParam::GetTravelTime(int SignalIndex)
+{
+	double TotalTravelTime = TravelTime + GroupDelay[SignalIndex];
+	TotalTravelTime += IonoDelayMeter * GetIonoDelayFactor(SignalIndex) / LIGHT_SPEED;
+	return TotalTravelTime;
+}
+
+double CSatelliteParam::GetCarrierPhase(int SignalIndex)
+{
+	double TotalTravelTime = TravelTime + GroupDelay[SignalIndex];
+	TotalTravelTime = TotalTravelTime * LIGHT_SPEED - IonoDelayMeter * GetIonoDelayFactor(SignalIndex);
+	return TotalTravelTime / GetWaveLength(SignalIndex);
+}
+
+double CSatelliteParam::GetDoppler(int SignalIndex)
+{
+	return -RelativeSpeed / GetWaveLength(SignalIndex);
+}
+
+double CSatelliteParam::GetWaveLength(int SignalIndex)
+{
+	double Freq;
+
+	switch (system)
+	{
+	case GpsSystem:
+		switch (SignalIndex)
+		{
+		case SIGNAL_INDEX_L1CA:
+		case SIGNAL_INDEX_L1C : return LIGHT_SPEED / FREQ_GPS_L1;
+		case SIGNAL_INDEX_L2C : return LIGHT_SPEED / FREQ_GPS_L2;
+		case SIGNAL_INDEX_L5  : return LIGHT_SPEED / FREQ_GPS_L5;
+		default: return LIGHT_SPEED / FREQ_GPS_L1;
+		}
+	case BdsSystem:
+		switch (SignalIndex)
+		{
+		case SIGNAL_INDEX_B1C : return LIGHT_SPEED / FREQ_BDS_B1C;
+		case SIGNAL_INDEX_B1I : return LIGHT_SPEED / FREQ_BDS_B1I;
+		case SIGNAL_INDEX_B2I :
+		case SIGNAL_INDEX_B2b : return LIGHT_SPEED / FREQ_BDS_B2b;
+		case SIGNAL_INDEX_B3I : return LIGHT_SPEED / FREQ_BDS_B3I;
+		case SIGNAL_INDEX_B2a : return LIGHT_SPEED / FREQ_BDS_B2a;
+		case SIGNAL_INDEX_B2ab: return LIGHT_SPEED / FREQ_BDS_B2ab;
+		default: return LIGHT_SPEED / FREQ_BDS_B1C;
+		}
+	case GalileoSystem:
+		switch (SignalIndex)
+		{
+		case SIGNAL_INDEX_E1 : return LIGHT_SPEED / FREQ_GAL_E1;
+		case SIGNAL_INDEX_E5a: return LIGHT_SPEED / FREQ_GAL_E5a;
+		case SIGNAL_INDEX_E5b: return LIGHT_SPEED / FREQ_GAL_E5b;
+		case SIGNAL_INDEX_E5 : return LIGHT_SPEED / FREQ_GAL_E5;
+		case SIGNAL_INDEX_E6 : return LIGHT_SPEED / FREQ_GAL_E6;
+		default: return LIGHT_SPEED / FREQ_GAL_E1;
+		}
+	case GlonassSystem:
+		Freq = (SignalIndex == SIGNAL_INDEX_G1) ? (1602e6 + 562500 * FreqID) : (1246e6 + 437500 * FreqID);
+		return LIGHT_SPEED / Freq;
+	default: return LIGHT_SPEED / FREQ_GPS_L1;
+	}
+}
+
+double CSatelliteParam::GetIonoDelayFactor(int SignalIndex)
+{
+	switch (system)
+	{
+	case GpsSystem:
+		switch (SignalIndex)
+		{
+		case SIGNAL_INDEX_L1CA: return 1.0;
+		case SIGNAL_INDEX_L1C : return 1.0;
+		case SIGNAL_INDEX_L2C : return 1.6469444444444444444444444444444; // (154/120)^2
+		case SIGNAL_INDEX_L5  : return 1.7932703213610586011342155009452; // (154/115)^2
+		default: return 1.0;
+		}
+	case BdsSystem:
+		switch (SignalIndex)
+		{
+		case SIGNAL_INDEX_B1C : return 1.0;
+		case SIGNAL_INDEX_B1I : return 1.0184327918525376651796986785624; // (1540/1526)^2
+		case SIGNAL_INDEX_B2I :
+		case SIGNAL_INDEX_B2b : return 1.7032461936225222637173226084458; // (154/118)^2
+		case SIGNAL_INDEX_B3I : return 1.5424037460978147762747138397503; // (154/124)^2
+		case SIGNAL_INDEX_B2a : return 1.7932703213610586011342155009452; // (154/115)^2
+		case SIGNAL_INDEX_B2ab: return 1.7473889738252684705925693971154; // (154/116.5)^2
+		default: return 1.0;
+		}
+	case GalileoSystem:
+		switch (SignalIndex)
+		{
+		case SIGNAL_INDEX_E1 : return 1.0;
+		case SIGNAL_INDEX_E5a: return 1.7932703213610586011342155009452; // (154/115)^2
+		case SIGNAL_INDEX_E5b: return 1.7032461936225222637173226084458; // (154/118)^2
+		case SIGNAL_INDEX_E5 : return 1.7473889738252684705925693971154; // (154/116.5)^2
+		case SIGNAL_INDEX_E6 : return 1.517824; // (154/125)^2
+		default: return 1.0;
+		}
+	default: return 1.0;
 	}
 }

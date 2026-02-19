@@ -42,6 +42,7 @@ public:
 	int AssignBits(unsigned int Data, int BitNumber, int BitStream[]);
 	unsigned char ConvolutionEncode(unsigned char EncodeBits);
 	unsigned int Crc24qEncode(unsigned int *BitStream, int Length);
+	GPS_EPHEMERIS AlignToe300s(PGPS_EPHEMERIS Eph);
 
 	static const unsigned char ConvEncodeTable[256];
 	static const unsigned int Crc24q[256];

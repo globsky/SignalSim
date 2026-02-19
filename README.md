@@ -63,6 +63,16 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 
 ### 2026
 
+- **2/18/2026**
+  - In CNavData::FindEphemeris(), remove the filter for ephemeris with toe not multiple of 300s
+  - Adjust ephemeris parameters if toe is not multiple of 300s in CNAV/CNAV2/BCNAVx navigation message composition
+  - Add DelayModel.cpp to hold encapsulated ionosphere and troposphere delay models
+  - Create class CSatelliteParam to replace functions based on structure SATELLITE_PARAM to allow ephemeris update, different troposphere delay/ionosphere delay model and future precise ephemeris
+  - CSatIfSignal uses pointer to class CSatelliteParam instead of structure SATELLITE_PARAM
+  - All functions based on structure SATELLITE_PARAM will obsolete in the future
+  - Update application IfDataGen and JsonObsGen accordingly
+  - Application JsonObsGen and sample scenario file test_obs3.json illustrate observations get smooth during ephemeris update
+
 - **2/6/2026**
   - Swap L1C data and pilot code generation array because they are mixed up before
   - Add protection on GLONASS/BDS GEO ephemeris to almanac conversion in case pos/vel does not conform to an elliptical orbit

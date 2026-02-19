@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{8939f7f4-c8f3-4867-9cb4-1f896402cfd0}</ProjectGuid>
+    <ProjectGuid>{79d89906-a71b-4f54-8607-b1ad50f30781}</ProjectGuid>
     <RootNamespace>IFdataGen</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
@@ -74,10 +74,8 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\inc</AdditionalIncludeDirectories>
-      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -90,10 +88,8 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\inc</AdditionalIncludeDirectories>
-      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -147,6 +143,7 @@
     <ClInclude Include="..\inc\ConstVal.h" />
     <ClInclude Include="..\inc\Coordinate.h" />
     <ClInclude Include="..\inc\D1D2NavBit.h" />
+    <ClInclude Include="..\inc\DelayModel.h" />
     <ClInclude Include="..\inc\FastMath.h" />
     <ClInclude Include="..\inc\FNavBit.h" />
     <ClInclude Include="..\inc\GNavBit.h" />
@@ -155,6 +152,7 @@
     <ClInclude Include="..\inc\JsonInterpreter.h" />
     <ClInclude Include="..\inc\JsonParser.h" />
     <ClInclude Include="..\inc\LNavBit.h" />
+    <ClInclude Include="..\inc\MessageOutput.h" />
     <ClInclude Include="..\inc\NavBit.h" />
     <ClInclude Include="..\inc\NavData.h" />
     <ClInclude Include="..\inc\PilotBit.h" />
@@ -165,6 +163,7 @@
     <ClInclude Include="..\inc\SatelliteSignal.h" />
     <ClInclude Include="..\inc\SatIfSignal.h" />
     <ClInclude Include="..\inc\SignalSim.h" />
+    <ClInclude Include="..\inc\Tracking.h" />
     <ClInclude Include="..\inc\Trajectory.h" />
   </ItemGroup>
   <ItemGroup>
@@ -178,6 +177,7 @@
     <ClCompile Include="..\src\ComplexNumber.cpp" />
     <ClCompile Include="..\src\Coordinate.cpp" />
     <ClCompile Include="..\src\D1D2NavBit.cpp" />
+    <ClCompile Include="..\src\DelayModel.cpp" />
     <ClCompile Include="..\src\FastMath.cpp" />
     <ClCompile Include="..\src\FNavBit.cpp" />
     <ClCompile Include="..\src\GNavBit.cpp" />
@@ -186,6 +186,7 @@
     <ClCompile Include="..\src\JsonInterpreter.cpp" />
     <ClCompile Include="..\src\JsonParser.cpp" />
     <ClCompile Include="..\src\LNavBit.cpp" />
+    <ClCompile Include="..\src\MessageOutput.cpp" />
     <ClCompile Include="..\src\NavBit.cpp" />
     <ClCompile Include="..\src\NavData.cpp" />
     <ClCompile Include="..\src\PilotBit.cpp" />

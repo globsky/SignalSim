@@ -171,7 +171,7 @@ bool CNavData::AddNavData(NavDataType Type, void *NavData)
 // if system is BdsSystem, time uses BDS time, otherwise uses GPS time
 PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int svid, int IgnoreTimeLimit, unsigned char FirstPrioritySource)
 {
-	int i, time_diff, diff;
+	int i, time_diff = 0x7fffffff, diff;
 	PGPS_EPHEMERIS Eph = NULL;
 	PGPS_EPHEMERIS EphemerisPool;
 	int EphemerisNumber;
@@ -197,38 +197,36 @@ PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int sv
 	else
 		return (PGPS_EPHEMERIS)0;
 
-
 	for (i = 0; i < EphemerisNumber; i ++)
 	{
+		if (svid != EphemerisPool[i].svid)	// not same svid
+			continue;
 		if (EphemerisPool[i].health != 0)
 			continue;
-		if ((system == GpsSystem) && (EphemerisPool[i].toe % 1200) != 0)	// filter out toe not multiple of 2^4 and 300
+/*		if ((system == GpsSystem) && (EphemerisPool[i].toe % 1200) != 0)	// filter out toe not multiple of 2^4 and 300
 			continue;
 		else if ((system == BdsSystem) && (EphemerisPool[i].toe % 600) != 0)	// filter out toe not multiple of 2^3 and 300
 			continue;
 		else if ((system == GalileoSystem) && (EphemerisPool[i].toe % 60) != 0)	// filter out toe not multiple of 60
-			continue;
+			continue;*/
 		diff = (Week - EphemerisPool[i].week) * 604800 + (time.MilliSeconds / 1000 - EphemerisPool[i].toe);
 		if (diff < 0)
 			diff = -diff;
-		if (svid == EphemerisPool[i].svid)	// same svid
-		{
-			if (!IgnoreTimeLimit && diff > 7200) // exceed +-2 hours time span
-				DoAssignment = 0;
-			else if (Eph == NULL)	// not assigned, assign anyway
-				DoAssignment = 1;
-			else if (Eph->source != FirstPrioritySource && EphemerisPool[i].source == FirstPrioritySource)	// new ephemeris from desired source
-				DoAssignment = 1;
-			else if (diff < time_diff)	// either both old and new ephemeris do or do not from desired source, but has smaller time difference
-				DoAssignment = 1;
-			else
-				DoAssignment = 0;
+		if (!IgnoreTimeLimit && diff > 7200) // exceed +-2 hours time span
+			DoAssignment = 0;
+//		else if (Eph == NULL)	// not assigned, assign anyway
+//			DoAssignment = 1;
+		else if (Eph && Eph->source != FirstPrioritySource && EphemerisPool[i].source == FirstPrioritySource)	// new ephemeris from desired source
+			DoAssignment = 1;
+		else if (diff <= time_diff)	// either both old and new ephemeris do or do not from desired source, but has smaller time difference
+			DoAssignment = 1;
+		else
+			DoAssignment = 0;
 
-			if (DoAssignment)
-			{
-				Eph = &EphemerisPool[i];
-				time_diff = diff;
-			}
+		if (DoAssignment)
+		{
+			Eph = &EphemerisPool[i];
+			time_diff = diff;
 		}
 	}
 

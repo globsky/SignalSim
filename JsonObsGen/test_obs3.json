@@ -1,0 +1,108 @@
+{
+	"version": 1.0,
+	"description": "test file with the same settings as test_obs2.xml",
+	"time": {
+		"type": "UTC",
+    "year": 2021,
+    "month": 6,
+    "day": 19,
+    "hour": 8,
+    "minute": 58,
+    "second": 30
+	},
+  "trajectory": {
+    "name": "test flight",
+    "initPosition": {
+      "type": "LLA",
+      "format": "d",
+      "longitude": -121.915773,
+      "latitude": 37.352721,
+      "altitude": 20
+    },
+    "initVelocity": {
+      "type": "SCU",
+      "speed": 0,
+      "course": 318.91
+    },
+    "trajectoryList": [
+      {
+        "type": "Const",
+        "time": 500
+      }
+    ]
+  },
+  "ephemeris": {
+    "type": "RINEX",
+    "name": "..\/EphData\/BRDC00IGS_R_20211700000_01D_MN.rnx"
+  },
+  "output": {
+    "type": "observation",
+    "format": "RINEX",
+    "name": "test_obs3.o",
+    "interval": 1,
+    "config": {
+      "elevationMask": 3,
+      "maskOut": [
+        {
+          "system": "GPS",
+          "svid": [
+            10,
+            20,
+            21
+          ]
+        },
+        {
+          "system": "Galileo",
+          "svid": 3
+        }
+      ]
+    },
+    "systemSelect": [
+      {
+        "system": "GPS",
+        "signal": "L1CA",
+        "enable": true
+      },
+      {
+        "system": "GPS",
+        "signal": "L2C",
+        "enable": false
+      },
+      {
+        "system": "BDS",
+        "enable": true
+      },
+      {
+        "system": "BDS",
+        "signal": "B3I",
+        "enable": false
+      },
+      {
+        "system": "Galileo",
+        "enable": true
+      },
+      {
+        "system": "GLONASS",
+        "enable": true
+      }
+    ]
+  },
+  "power": {
+    "noiseFloor": -172,
+    "initPower": {
+      "unit": "dBHz",
+      "value": 47
+    },
+    "elevationAdjust": false,
+    "signalPower": [
+      {
+        "system": "GPS",
+        "powerValue": {
+          "time": 0,
+          "unit": "dBm",
+          "value": -125
+        }
+      }
+    ]
+  }
+}

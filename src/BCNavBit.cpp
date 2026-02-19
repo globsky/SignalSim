@@ -92,11 +92,15 @@ int BCNavBit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
 	unsigned int UintValue;
 	long long int LongValue;
 	unsigned long long int ULongValue;
+	GPS_EPHEMERIS NewEph;
 
 	if (svid < 1 || svid > 63 || !Eph || !Eph->valid)
 		return 0;
 	if ((Eph->toe % 300) != 0)	// BCNAV ephemeris requires toe be multiple of 300
-		return 0;
+	{
+		NewEph = AlignToe300s(Eph);
+		Eph = &NewEph;
+	}
 
 	// fill in Ephemeris1
 	Data = Ephemeris1[svid-1];

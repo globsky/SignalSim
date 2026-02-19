@@ -58,7 +58,8 @@ PGPS_EPHEMERIS GpsEph[TOTAL_GPS_SAT], GpsEphVisible[TOTAL_GPS_SAT];
 PGPS_EPHEMERIS BdsEph[TOTAL_BDS_SAT], BdsEphVisible[TOTAL_BDS_SAT];
 PGPS_EPHEMERIS GalEph[TOTAL_GAL_SAT], GalEphVisible[TOTAL_GAL_SAT];
 PGLONASS_EPHEMERIS GloEph[TOTAL_GLO_SAT], GloEphVisible[TOTAL_GLO_SAT];
-SATELLITE_PARAM GpsSatParam[TOTAL_GPS_SAT], BdsSatParam[TOTAL_BDS_SAT], GalSatParam[TOTAL_GAL_SAT], GloSatParam[TOTAL_GLO_SAT];	// satellite parameter array at CurTime
+//SATELLITE_PARAM GpsSatParam[TOTAL_GPS_SAT], BdsSatParam[TOTAL_BDS_SAT], GalSatParam[TOTAL_GAL_SAT], GloSatParam[TOTAL_GLO_SAT];	// satellite parameter array at CurTime
+CSatelliteParam GpsSatParam[TOTAL_GPS_SAT], BdsSatParam[TOTAL_BDS_SAT], GalSatParam[TOTAL_GAL_SAT], GloSatParam[TOTAL_GLO_SAT];
 int GpsSatNumber, BdsSatNumber, GalSatNumber, GloSatNumber;	// number of visible satellite
 const int SignalCenterFreq[][8] = {
 	{ FREQ_GPS_L1, FREQ_GPS_L1, FREQ_GPS_L2, FREQ_GPS_L2, FREQ_GPS_L5 },
@@ -315,6 +316,7 @@ int main(int argc, char* argv[])
 		NavBitArray[DataBitGNav]->SetEphemeris(i, (PGPS_EPHEMERIS)GloEph[i - 1]);
 	}
 	NavData.CompleteAlmanac(BdsSystem, UtcTime);
+	NavData.CompleteAlmanac(GalileoSystem, UtcTime);
 	NavBitArray[DataBitLNav]->SetAlmanac(NavData.GetGpsAlmanac());
 	NavBitArray[DataBitCNav]->SetAlmanac(NavData.GetGpsAlmanac());
 	NavBitArray[DataBitCNav2]->SetAlmanac(NavData.GetGpsAlmanac());
@@ -331,6 +333,17 @@ int main(int argc, char* argv[])
 	BdsSatNumber = (OutputParam.FreqSelect[BdsSystem]) ? GetVisibleSatellite(CurPos, CurTime, OutputParam, BdsSystem, BdsEph, TOTAL_BDS_SAT, BdsEphVisible) : 0;
 	GalSatNumber = (OutputParam.FreqSelect[GalileoSystem]) ? GetVisibleSatellite(CurPos, CurTime, OutputParam, GalileoSystem, GalEph, TOTAL_GAL_SAT, GalEphVisible) : 0;
 	GloSatNumber = (OutputParam.FreqSelect[GlonassSystem]) ? GetGlonassVisibleSatellite(CurPos, GlonassTime, OutputParam, GloEph, TOTAL_GLO_SAT, GloEphVisible) : 0;
+
+	CIonoKlobuchar8 IonoModel(NavData.GetGpsIono());
+	for (i = 0; i < TOTAL_GPS_SAT; i ++)
+		GpsSatParam[i].Initialize(GpsSystem, GpsEph[i], &IonoModel, PowerControl.InitCN0, PowerControl.Adjust);
+	for (i = 0; i < TOTAL_BDS_SAT; i ++)
+		BdsSatParam[i].Initialize(BdsSystem, BdsEph[i], &IonoModel, PowerControl.InitCN0, PowerControl.Adjust);
+	for (i = 0; i < TOTAL_GAL_SAT; i ++)
+		GalSatParam[i].Initialize(GalileoSystem, GalEph[i], &IonoModel, PowerControl.InitCN0, PowerControl.Adjust);
+	for (i = 0; i < TOTAL_GLO_SAT; i ++)
+		GloSatParam[i].Initialize(GlonassSystem, (PGPS_EPHEMERIS)GloEph[i], &IonoModel, PowerControl.InitCN0, PowerControl.Adjust);
+
 	ListCount = PowerControl.GetPowerControlList(0, PowerList);
 	UpdateSatParamList(CurTime, CurPos, ListCount, PowerList, NavData.GetGpsIono());
 
@@ -434,7 +447,7 @@ int main(int argc, char* argv[])
 			TotalChannelNumber++;
 			
 			if (svCount % 4 == 0) printf("|");
-			printf(" %02d | %+12d |", GpsEphVisible[i]->svid, (int)GetDoppler(&GpsSatParam[GpsEphVisible[i]->svid-1], SignalIndex));
+			printf(" %02d | %+12d |", GpsEphVisible[i]->svid, (int)GpsSatParam[GpsEphVisible[i]->svid-1].GetDoppler(SignalIndex));
 			svCount++;
 			if (svCount % 4 == 0) printf("\n");
 		}
@@ -470,7 +483,7 @@ int main(int argc, char* argv[])
 			TotalChannelNumber++;
 			
 			if (svCount % 4 == 0) printf("|");
-			printf(" %02d | %+12d |", BdsEphVisible[i]->svid, (int)GetDoppler(&BdsSatParam[BdsEphVisible[i]->svid-1], SignalIndex));
+			printf(" %02d | %+12d |", BdsEphVisible[i]->svid, (int)BdsSatParam[BdsEphVisible[i]->svid-1].GetDoppler(SignalIndex));
 			svCount++;
 			if (svCount % 4 == 0) printf("\n");
 		}
@@ -505,7 +518,7 @@ int main(int argc, char* argv[])
 			TotalChannelNumber++;
 			
 			if (svCount % 4 == 0) printf("|");
-			printf(" %02d | %+12d |", GalEphVisible[i]->svid, (int)GetDoppler(&GalSatParam[GalEphVisible[i]->svid-1], SignalIndex));
+			printf(" %02d | %+12d |", GalEphVisible[i]->svid, (int)GalSatParam[GalEphVisible[i]->svid-1].GetDoppler(SignalIndex));
 			svCount++;
 			if (svCount % 4 == 0) printf("\n");
 		}
@@ -541,7 +554,7 @@ int main(int argc, char* argv[])
 			TotalChannelNumber++;
 			
 			if (svCount % 4 == 0) printf("|");
-			printf(" %02d | %+12d |", GloEphVisible[i]->n, (int)GetDoppler(&GloSatParam[GloEphVisible[i]->n-1], SignalIndex));
+			printf(" %02d | %+12d |", GloEphVisible[i]->n, (int)GloSatParam[GloEphVisible[i]->n-1].GetDoppler(SignalIndex));
 			svCount++;
 			if (svCount % 4 == 0) printf("\n");
 		}
@@ -781,26 +794,26 @@ void UpdateSatParamList(GNSS_TIME CurTime, KINEMATIC_INFO CurPos, int ListCount,
 	for (i = 0; i < GpsSatNumber; i ++)
 	{
 		index = GpsEphVisible[i]->svid - 1;
-		GetSatelliteParam(CurPos, PosLLA, CurTime, GpsSystem, GpsEphVisible[i], IonoParam, &GpsSatParam[index]);
-		GetSatelliteCN0(ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, &GpsSatParam[index]);
+		GpsSatParam[index].CalculateParam(CurPos, PosLLA, CurTime);
+		GpsSatParam[index].UpdateCN0(ListCount, PowerList);
 	}
 	for (i = 0; i < BdsSatNumber; i ++)
 	{
 		index = BdsEphVisible[i]->svid - 1;
-		GetSatelliteParam(CurPos, PosLLA, CurTime, BdsSystem, BdsEphVisible[i], IonoParam, &BdsSatParam[index]);
-		GetSatelliteCN0(ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, &BdsSatParam[index]);
+		BdsSatParam[index].CalculateParam(CurPos, PosLLA, CurTime);
+		BdsSatParam[index].UpdateCN0(ListCount, PowerList);
 	}
 	for (i = 0; i < GalSatNumber; i ++)
 	{
 		index = GalEphVisible[i]->svid - 1;
-		GetSatelliteParam(CurPos, PosLLA, CurTime, GalileoSystem, GalEphVisible[i], IonoParam, &GalSatParam[index]);
-		GetSatelliteCN0(ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, &GalSatParam[index]);
+		GalSatParam[index].CalculateParam(CurPos, PosLLA, CurTime);
+		GalSatParam[index].UpdateCN0(ListCount, PowerList);
 	}
 	for (i = 0; i < GloSatNumber; i++)
 	{
 		index = GloEphVisible[i]->n - 1;
-		GetSatelliteParam(CurPos, PosLLA, CurTime, GlonassSystem, (PGPS_EPHEMERIS)GloEphVisible[i], IonoParam, &GloSatParam[index]);
-		GetSatelliteCN0(ListCount, PowerList, PowerControl.InitCN0, PowerControl.Adjust, &GloSatParam[index]);
+		GloSatParam[index].CalculateParam(CurPos, PosLLA, CurTime);
+		GloSatParam[index].UpdateCN0(ListCount, PowerList);
 	}
 }
 
