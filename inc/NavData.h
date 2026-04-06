@@ -14,6 +14,8 @@
 
 #define EPH_NUMBER_INIT 100
 
+enum NavFileType { NavFileUnknown = 0, AlmanacGps, AlmanacBds, AlmanacGalileo, AlmanacGlonass, Rinex3NavData, Rinex4NavData };
+
 class CNavData
 {
 public:
@@ -24,6 +26,8 @@ public:
 
 	CNavData();
 	~CNavData();
+
+	static NavFileType CheckNavFileType(FILE *fp);
 
 	bool AddNavData(NavDataType Type, void *NavData);
 	PGPS_EPHEMERIS FindEphemeris(GnssSystem system, GNSS_TIME time, int svid, int IgnoreTimeLimit = 0, unsigned char FirstPrioritySource = 0);

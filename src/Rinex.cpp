@@ -294,7 +294,7 @@ void ReadStoParam(FILE *fp_nav, PUTC_PARAM UtcParam)
 int ReadContentsTime(char *str, UTC_TIME *time, double *data)
 {
 	int Second, svid;
-	int length = strlen(str);
+	size_t length = strlen(str);
 
 	ConvertD2E(str);
 	sscanf(str+4, "%d %d %d %d %d %d", &(time->Year), &(time->Month), &(time->Day), &(time->Hour), &(time->Minute), &Second);
@@ -309,7 +309,7 @@ int ReadContentsTime(char *str, UTC_TIME *time, double *data)
 
 void ReadContentsData(char *str, double *data)
 {
-	int length = strlen(str);
+	size_t length = strlen(str);
 
 	ConvertD2E(str);
 	if (length >  5 ) sscanf(str+ 4, "%lf", &data[0]); else data[0] = 0.0;

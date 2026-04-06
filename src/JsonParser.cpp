@@ -11,30 +11,302 @@
 #include <string.h>
 #include "JsonParser.h"
 
+JsonObject::JsonObject()
+{
+	Key[0] = '\0';
+	Type = JsonObject::ValueTypeNull;	// initialize with NULL object
+	pNextObject = pObjectContent = NULL;
+	pParent = NULL;
+}
+
+JsonObject::JsonObject(JsonObject *Parent)
+{
+	Key[0] = '\0';
+	Type = JsonObject::ValueTypeNull;	// initialize with NULL object
+	pNextObject = pObjectContent = NULL;
+	pParent = Parent;
+}
+/*
+JsonObject::JsonObject(const JsonObject& Object)
+{
+	// copy all contents
+	memcpy(this, &Object, sizeof(JsonObject));
+	// this is a standalone object with only contents been copied
+	pNextObject = pObjectContent = NULL;
+	pParent = NULL;
+}*/
+
+JsonObject::~JsonObject()
+{
+}
+
+// search objects matching specified Key
+// if SearchSubitem is 1, search all subitems recursively (will only return the first found item)
+// return pointer matching Key or NULL if not found
+JsonObject *JsonObject::SearchSubitems(const char *KeyName, int SearchSubitem, const char *StrValue)
+{
+	JsonObject *MatchObject = NULL, *Content;
+	bool Match = 0;
+
+	Match = (strcmp(Key, KeyName) == 0) ? true : false;
+	if (StrValue)
+		Match = Match && (Type == JsonObject::ValueTypeString) && (strcmp(String, StrValue) == 0);
+
+	if (Match)
+		return this;
+	else if (SearchSubitem && (Type == JsonObject::ValueTypeObject || Type == JsonObject::ValueTypeArray))
+	{
+		for (Content = GetFirstObject(); Content; Content = Content->GetNextObject())
+		{
+			if ((MatchObject = Content->SearchSubitems(KeyName, 1, StrValue)) != 0)
+				break;
+		}
+	}
+	return MatchObject;
+}
+
+// get the index of the current JSON node in the parent array or object
+// return -1 if not in a array or object
+int JsonObject::GetIndex()
+{
+	int i;
+	JsonObject *pObject = pParent;
+	if (pObject->Type != JsonObject::ValueTypeArray && pObject->Type != JsonObject::ValueTypeObject)
+		return -1;
+	for (i = 0, pObject = pObject->GetFirstObject(); pObject; i ++, pObject = pObject->GetNextObject())
+	{
+		if (pObject == this)
+			return i;
+	}
+	return -1;
+}
+
+// get the size of current JSON object (number of key/value pairs or size of array)
+// return 0 if not in a array or object or an empty object or array
+int JsonObject::GetSize()
+{
+	int size = 0;
+	JsonObject *pObject;
+	if (Type != JsonObject::ValueTypeArray && Type != JsonObject::ValueTypeObject)
+		return size;
+	for (pObject = GetFirstObject(); pObject; pObject = pObject->GetNextObject())
+		size ++;
+	return size;
+}
+
+// get the indexed object in current JSON object (key/value pair for object or object for array)
+// return NULL if not in a array or object or exceed the size
+JsonObject *JsonObject::operator[](int Index)
+{
+	int i;
+	JsonObject *pObject;
+	if (Type != JsonObject::ValueTypeArray && Type != JsonObject::ValueTypeObject)
+		return NULL;
+	for (i = 0, pObject = GetFirstObject(); pObject; i ++, pObject = pObject->GetNextObject())
+	{
+		if (i == Index)
+			break;
+	}
+	return pObject;
+}
+
+int JsonObject::ReplaceValue(const char *KeyName, void *p, int SearchSubitem)
+{
+	p;	// p is not used, only as a place holder to set NULL
+	JsonObject *Object = SearchSubitems(KeyName, SearchSubitem);
+	if (Object == NULL)
+		return 0;
+	Object->Type = JsonObject::ValueTypeNull;
+	return 1;
+}
+
+int JsonObject::ReplaceValue(const char *KeyName, const char *Value, int SearchSubitem)
+{
+	JsonObject *Object = SearchSubitems(KeyName, SearchSubitem);
+	if (Object == NULL)
+		return 0;
+	Object->Type = JsonObject::ValueTypeString;
+	strcpy(Object->String, Value);
+	return 1;
+}
+
+int JsonObject::ReplaceValue(const char *KeyName, int Value, int SearchSubitem)
+{
+	JsonObject *Object = SearchSubitems(KeyName, SearchSubitem);
+	if (Object == NULL)
+		return 0;
+	Object->Type = JsonObject::ValueTypeIntNumber;
+	Object->Number.l_data = Value;
+	return 1;
+}
+
+int JsonObject::ReplaceValue(const char *KeyName, double Value, int SearchSubitem)
+{
+	JsonObject *Object = SearchSubitems(KeyName, SearchSubitem);
+	if (Object == NULL)
+		return 0;
+	Object->Type = JsonObject::ValueTypeFloatNumber;
+	Object->Number.d_data = Value;
+	return 1;
+}
+
+int JsonObject::ReplaceValue(const char *KeyName, bool Value, int SearchSubitem)
+{
+	JsonObject *Object = SearchSubitems(KeyName, SearchSubitem);
+	if (Object == NULL)
+		return 0;
+	Object->Type = Value ? JsonObject::ValueTypeTrue : JsonObject::ValueTypeFalse;
+	return 1;
+}
+
+// because delete tree may delete current object and the whole link list
+// so this function is a static function with current object as parameter
+// if DeleteLink is 0, will only delete Object and subitems
+// if DeleteLink is 1, will delete Object and whole link list from Object
+void JsonObject::DeleteTree(JsonObject *Object, int DeleteLink)
+{
+	JsonObject *NextObject;
+
+	if (Object == NULL)
+		return;
+	do
+	{
+		if (Object->Type == JsonObject::ValueTypeObject || Object->Type == JsonObject::ValueTypeArray)
+			DeleteTree(Object->pObjectContent, 1);
+		NextObject = Object->pNextObject;
+		delete Object;
+	} while (DeleteLink && (Object = NextObject) != NULL);
+}
+
+// replace the position of OldObject with NewObject
+// need to set correct pointer to maintain link list
+// OldObject will be destroyed after replacement
+// return NewObject if place successfully or OldObject if failed
+JsonObject *JsonObject::ReplaceObject(JsonObject *OldObject, JsonObject *NewObject)
+{
+	if (OldObject == NULL)
+		return NULL;
+	else if (OldObject == NewObject)
+		return NewObject;
+	JsonObject *ParentObject = OldObject->pParent, *CurObject = OldObject;
+
+	// if parent object exist, find the pointer of the previous one
+	if (ParentObject)
+	{
+		CurObject = ParentObject->pObjectContent;
+		if (CurObject == OldObject)
+		{
+			ParentObject->pObjectContent = NewObject;
+			NewObject->pNextObject = OldObject->pNextObject;
+		}
+		else
+		{
+			while (CurObject && CurObject->pNextObject != OldObject)
+				CurObject = CurObject->pNextObject;
+			if (CurObject)	// found previous object
+			{
+				// do replacement
+				CurObject->pNextObject = NewObject;
+				NewObject->pNextObject = OldObject->pNextObject;
+				// let CurObject point to OldObject
+				CurObject = OldObject;	
+			}
+		}
+	}
+
+	// if replace successfully CurObject has the value of OldObject otherwise it is NULL
+	if (CurObject)
+	{
+		NewObject->pParent = ParentObject;
+		DeleteTree(CurObject);
+		return NewObject;
+	}
+	else
+		return OldObject;
+}
+
+// remove current object from tree
+// if this object has parent remove it from the content link before delete the tree
+void JsonObject::RemoveObject(JsonObject *Object)
+{
+	JsonObject *ParentObject = Object->pParent, *CurObject = Object;
+
+	// if parent object exist, find the pointer of the previous one
+	if (ParentObject)
+	{
+		CurObject = ParentObject->pObjectContent;
+		if (CurObject == Object)
+		{
+			ParentObject->pObjectContent = Object->pNextObject;
+			Object->pNextObject = NULL;
+		}
+		else
+		{
+			while (CurObject && CurObject->pNextObject != Object)
+				CurObject = CurObject->pNextObject;
+			if (CurObject)	// found previous object
+			{
+				// skip object to be removed
+				CurObject->pNextObject = Object->pNextObject;
+				Object->pNextObject = NULL;
+			}
+		}
+	}
+	DeleteTree(Object);
+}
+
+// add a new node object to the parent
+// the parent object must be the type of object or array
+// if FollowingKey is NULL, the NewObject will be the first object
+// otherwise the NewObject will be added to the position following object with corresponding key
+// if no match for FollowingKey, NewObject will be added to last
+// if ParentObject is array, NULL pointer FollowingKey will do inserting first
+// otherwise will do appending last
+int JsonObject::AddObject(JsonObject *ParentObject, JsonObject *NewObject, const char *FollowingKey)
+{
+	JsonObject *pObj;
+
+	if (!ParentObject)
+		return 0;
+	if (ParentObject->Type != JsonObject::ValueTypeObject && ParentObject->Type != JsonObject::ValueTypeArray)
+		return 0;
+	pObj = ParentObject->GetFirstObject();
+	if (FollowingKey == NULL || pObj == NULL)
+	{
+		ParentObject->pObjectContent = NewObject;
+		NewObject->pNextObject = pObj;
+		NewObject->pParent = ParentObject;
+	}
+	else
+	{
+		while((FollowingKey[0] == '\0' || pObj->Key[0] == '\0' || strcmp(pObj->Key, FollowingKey) != 0) && pObj->pNextObject)
+			pObj = pObj->pNextObject;
+		NewObject->pNextObject = pObj->pNextObject;
+		NewObject->pParent = ParentObject;
+		pObj->pNextObject = NewObject;
+	}
+
+	return 1;
+}
+
 JsonStream::JsonStream()
 {
 	RootObject = NULL;
 	stream[0] = '\0';
 	p = stream;
+	indent = DEFAULT_INDENT;
 }
 
 JsonStream::~JsonStream()
 {
-	if (RootObject)
-		DeleteTree(RootObject);
+	DeleteAllTree();
 }
 
-void JsonStream::DeleteTree(JsonObject *Object)
+void JsonStream::DeleteAllTree()
 {
-	JsonObject *NextObject;
-
-	do
-	{
-		if (Object->Type == JsonObject::ValueTypeObject || Object->Type == JsonObject::ValueTypeArray)
-			DeleteTree(Object->pObjectContent);
-		NextObject = Object->pNextObject;
-		delete Object;
-	} while ((Object = NextObject) != NULL);
+	if (RootObject)
+		JsonObject::DeleteTree(RootObject);
+	RootObject = NULL;
 }
 
 int JsonStream::ReadFile(const char *File)
@@ -43,8 +315,7 @@ int JsonStream::ReadFile(const char *File)
 
 	if (fp == NULL)
 		return -1;
-	p = stream;
-	RootObject = ParseObject(0, &JsonStream::GetFileStream, (void *)fp);
+	ReadFile(fp);
 	fclose(fp);
 
 	return 0;
@@ -56,23 +327,41 @@ int JsonStream::WriteFile(const char *File)
 
 	if (fp == NULL)
 		return -1;
-	if (RootObject != NULL)
-	{
-		OutputObject(fp, RootObject->pObjectContent, 1, 1);
-	}
+	WriteFile(fp);
 	fclose(fp);
 
 	return 0;
 }
 
-JsonObject *JsonStream::ParseObject(int IsObject, GetStream GetStreamFunc, void *source)
+int JsonStream::ReadFile(FILE *fpFile)
+{
+	if (fpFile == NULL)
+		return -1;
+	p = stream;
+	RootObject = ParseObject(NULL, 0, &JsonStream::GetFileStream, (void *)fpFile);
+	stream[0] = '\0';
+	return 0;
+}
+
+int JsonStream::WriteFile(FILE *fpFile)
+{
+	if (fpFile == NULL)
+		return -1;
+	if (RootObject != NULL)
+	{
+		OutputObject(fpFile, RootObject->pObjectContent, 1, 1);
+	}
+	return 0;
+}
+
+JsonObject *JsonStream::ParseObject(JsonObject *Parent, int IsObject, GetStream GetStreamFunc, void *source)
 {
 	JsonObject *Object = NULL, *CurObject = NULL;
 	int stage = IsObject ? 0 : 3;
 
 	if (!IsObject)	// for array, create new object list
 	{
-		CurObject = Object = GetNewObject();
+		CurObject = Object = new JsonObject(Parent);
 		if (Object == NULL)
 			return NULL;
 	}
@@ -91,7 +380,7 @@ JsonObject *JsonStream::ParseObject(int IsObject, GetStream GetStreamFunc, void 
 			if (*p == '{')
 			{
 				stage = 1;
-				CurObject = Object = GetNewObject();
+				CurObject = Object = new JsonObject(Parent);
 				if (Object == NULL)
 					return NULL;
 			}
@@ -113,13 +402,13 @@ JsonObject *JsonStream::ParseObject(int IsObject, GetStream GetStreamFunc, void 
 			if (*p == '{')	// value is an object
 			{
 				CurObject->Type = JsonObject::ValueTypeObject;
-				CurObject->pObjectContent = ParseObject(1, GetStreamFunc, source);
+				CurObject->pObjectContent = ParseObject(CurObject, 1, GetStreamFunc, source);
 			}
 			else if (*p == '[')	// value is an array
 			{
 				p ++;
 				CurObject->Type = JsonObject::ValueTypeArray;
-				CurObject->pObjectContent = ParseObject(0, GetStreamFunc, source);
+				CurObject->pObjectContent = ParseObject(CurObject, 0, GetStreamFunc, source);
 			}
 			else if (!IsWhiteSpace(*p))
 				GetValueContent(CurObject);
@@ -132,7 +421,7 @@ JsonObject *JsonStream::ParseObject(int IsObject, GetStream GetStreamFunc, void 
 				return Object;
 			else if (*p == ',')
 			{
-				CurObject->pNextObject = GetNewObject();
+				CurObject->pNextObject = new JsonObject(Parent);
 				if (CurObject->pNextObject == NULL)
 					return Object;
 				CurObject = CurObject->pNextObject;
@@ -142,15 +431,6 @@ JsonObject *JsonStream::ParseObject(int IsObject, GetStream GetStreamFunc, void 
 		p ++;
 	}
 
-	return Object;
-}
-
-JsonObject *JsonStream::GetNewObject()
-{
-	JsonObject *Object = new JsonObject;
-	Object->Key[0] = '\0';
-	Object->Type = JsonObject::ValueTypeNull;	// initialize with NULL object
-	Object->pNextObject = Object->pObjectContent = NULL;
 	return Object;
 }
 
@@ -319,8 +599,6 @@ int JsonStream::GetNumber(JsonObject *Object)
 
 int JsonStream::OutputObject(FILE *fp, JsonObject *Object, int Depth, int HasKey)
 {
-	int i;
-
 	if (HasKey)
 		fprintf(fp, "{\n");
 	else
@@ -333,20 +611,16 @@ int JsonStream::OutputObject(FILE *fp, JsonObject *Object, int Depth, int HasKey
 			fprintf(fp, ",\n");
 	}
 	fputc('\n', fp);
-	for (i = 0; i < Depth - 1; i ++)
-	fputc('\t', fp);
+	OutputIndent(fp, Depth - 1);
 	fputc(HasKey ? '}' : ']', fp);
 	return 0;
 }
 
 int JsonStream::OutputKeyValue(FILE *fp, JsonObject *Object, int Depth, int HasKey)
 {
-	int i;
-
 	if (Object == NULL)
 		return -1;
-	for (i = 0; i < Depth; i ++)
-		fputc('\t', fp);
+	OutputIndent(fp, Depth);
 	if (HasKey)
 	{
 		OutputString(fp, Object->Key);
@@ -416,4 +690,20 @@ int JsonStream::OutputString(FILE *fp, const char *str)
 	}
 	fputc('\"', fp);
 	return 0;
+}
+
+void JsonStream::OutputIndent(FILE *fp, int Length)
+{
+	int i;
+
+	if (indent >= 0)
+	{
+		for (i = 0; i < Length * indent; i ++)
+		fputc(' ', fp);
+	}
+	else
+	{
+		for (i = 0; i < Length; i ++)
+		fputc('\t', fp);
+	}
 }

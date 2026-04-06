@@ -23,25 +23,17 @@
 #define TRAJECTORY_NEGATIVE 5
 
 enum TrajectoryType { TrajTypeUnknown = 0, TrajTypeConstSpeed, TrajTypeConstAcc, TrajTypeVerticalAcc, TrajTypeJerk, TrajTypeHorizontalCircular };
-enum TrajectoryDataType { TrajDataTimeSpan = 0, TrajDataAcceleration, TrajDataSpeed, TrajDataAccRate, TrajDataAngle, TrajDataAngularRate, TrajDataRadius };
+enum TrajectoryDataType { TrajDataUnknown = 0, TrajDataTimeSpan, TrajDataAcceleration, TrajDataSpeed, TrajDataAccRate, TrajDataAngle, TrajDataAngularRate, TrajDataRadius };
 
 class CTrajectorySegment
 {
 public:
 	CTrajectorySegment();
 	~CTrajectorySegment();
-#if 0
-	static LLA_POSITION EcefToLla(KINEMATIC_INFO ecef_pos);
-	static KINEMATIC_INFO LlaToEcef(LLA_POSITION lla_pos);
-	static CONVERT_MATRIX CalcConvMatrix(KINEMATIC_INFO Position);
-	static CONVERT_MATRIX CalcConvMatrix(LLA_POSITION Position);
-	static void SpeedEnuToCourse(LOCAL_SPEED &Speed);
-	static void SpeedCourseToEnu(LOCAL_SPEED &Speed);
-	static void SpeedEcefToLocal(CONVERT_MATRIX ConvertMatrix, KINEMATIC_INFO PosVel, LOCAL_SPEED &Speed);
-	static void SpeedLocalToEcef(CONVERT_MATRIX ConvertMatrix, LOCAL_SPEED Speed, KINEMATIC_INFO &PosVel);
-#endif
+
 	static TrajectoryType GetTrajectoryType(CTrajectorySegment *pTrajectory);
 	void GetSpeedProjection(double projection[3]);
+	void InitSegment(KINEMATIC_INFO StartPosVel);
 	void InitSegment(CTrajectorySegment *PrevSegment);
 	virtual int SetSegmentParam(CTrajectorySegment *PrevSegment, TrajectoryDataType DataType1, double Data1, TrajectoryDataType DataType2, double Data2) = 0;
 	virtual KINEMATIC_INFO GetPosVel(double RelativeTime) = 0;
@@ -101,6 +93,7 @@ public:
 
 	void SetInitPosVel(KINEMATIC_INFO InitPosVel);
 	void SetInitPosVel(LLA_POSITION InitPosition, LOCAL_SPEED InitVelocity, bool IsEnu);
+	KINEMATIC_INFO GetInitPosVel() { return m_InitPosVel; }
 
 	void ClearTrajectoryList();
 	int AppendTrajectory(TrajectoryType TrajType, TrajectoryDataType DataType1, double Data1, TrajectoryDataType DataType2, double Data2);
@@ -110,6 +103,8 @@ public:
 	double GetTimeLength();
 	void SetTrajectoryName(char *Name);
 	char *GetTrajectoryName() { return TrajectoryName; }
+	CTrajectorySegment *GetTrajectorySegment(int Index);
+	BOOL IsEmpty() { return (m_pTrajectoryList == NULL); }
 
 private:
 	KINEMATIC_INFO	m_InitPosVel;

@@ -26,36 +26,6 @@ double NormAngle(double angle);
 bool ConvertAlmanacFromEphemeris(PGPS_ALMANAC Alm, PGPS_EPHEMERIS Eph, int week, int toa);
 bool ConvertAlmanacFromEphemerisGeo(PGPS_ALMANAC Alm, PGPS_EPHEMERIS Eph, int week, int toa);
 
-AlmanacType CheckAlmnanacType(FILE *fp)
-{
-	char str[256], *p = str;
-	AlmanacType Type;
-
-	fseek(fp, 0, SEEK_SET);
-	fgets(str, 255, fp);
-
-	if (str[0] == '*')	// this is a YUMA GPS almanac file
-		Type = AlmanacGps;
-	else if (str[0] == '<')	// this is a XML Galileo almanac file
-		Type = AlmanacGalileo;
-	else
-	{
-		// check second parameter
-		while (*p != '\0' && *p != ' ' && *p != '\t') p ++;	// skip to first space
-		while (*p == ' ' || *p == '\t') p ++;	// skip first space
-		if (*p == '\0')
-			Type = AlmanacUnknown;
-		else if (p[2] == '.' && p[5] == '.')	// date format, GLONASS almanac
-			Type = AlmanacGlonass;
-//		else if (p[1] == '.')	// scientific notation of ecc, BDS almanac
-//			Type = AlmanacBds;
-		else
-			Type = AlmanacUnknown;
-	}
-	fseek(fp, 0, SEEK_SET);	// return to beginning of file
-	return Type;
-}
-
 int ReadAlmanacGps(FILE *fp, GPS_ALMANAC Almanac[])
 {
 	char str[128];

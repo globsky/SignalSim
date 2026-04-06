@@ -15,6 +15,7 @@
 
 CTrajectorySegment::CTrajectorySegment()
 {
+	m_pNextTrajectory = (CTrajectorySegment *)NULL;
 }
 
 CTrajectorySegment::~CTrajectorySegment()
@@ -23,7 +24,9 @@ CTrajectorySegment::~CTrajectorySegment()
 
 TrajectoryType CTrajectorySegment::GetTrajectoryType(CTrajectorySegment *pTrajectory)
 {
-	if ((dynamic_cast<CTrajectoryConstSpeed*>(pTrajectory)) != nullptr)
+	if (!pTrajectory)
+		return TrajTypeUnknown;
+	else if ((dynamic_cast<CTrajectoryConstSpeed*>(pTrajectory)) != nullptr)
 		return TrajTypeConstSpeed;
 	else if ((dynamic_cast<CTrajectoryConstAcc*>(pTrajectory)) != nullptr)
 		return TrajTypeConstAcc;
@@ -55,12 +58,18 @@ void CTrajectorySegment::GetSpeedProjection(double projection[3])
 	projection[2] = PosVel.vz / speed;
 }
 
+void CTrajectorySegment::InitSegment(KINEMATIC_INFO StartPosVel)
+{
+	m_StartPosVel = StartPosVel;
+	m_ConvertMatrix = CalcConvMatrix(m_StartPosVel);
+	SpeedEcefToLocal(m_ConvertMatrix, m_StartPosVel, m_LocalSpeed);
+}
+
 void CTrajectorySegment::InitSegment(CTrajectorySegment *PrevSegment)
 {
 	m_StartPosVel = PrevSegment->GetPosVel(PrevSegment->m_TimeSpan);
 	m_ConvertMatrix = CalcConvMatrix(m_StartPosVel);
 	SpeedEcefToLocal(m_ConvertMatrix, m_StartPosVel, m_LocalSpeed);
-	m_pNextTrajectory = (CTrajectorySegment *)NULL;
 }
 
 int CTrajectoryConstSpeed::SetSegmentParam(CTrajectorySegment *PrevSegment, TrajectoryDataType DataType1, double Data1, TrajectoryDataType DataType2, double Data2)
@@ -572,6 +581,7 @@ void CTrajectory::ClearTrajectoryList()
 		pSegment = pCurSegment->m_pNextTrajectory;
 		delete pCurSegment;
 	}
+	m_pTrajectoryList = m_pCurrentTrajectory = (CTrajectorySegment *)NULL;
 }
 
 int CTrajectory::AppendTrajectory(TrajectoryType TrajType, TrajectoryDataType DataType1, double Data1, TrajectoryDataType DataType2, double Data2)
@@ -597,16 +607,9 @@ int CTrajectory::AppendTrajectory(TrajectoryType TrajType, TrajectoryDataType Da
 
 	PrevTrajectorySegment = GetLastSegment();
 	if (PrevTrajectorySegment == NULL)
-	{
-		m_pTrajectoryList = TrajectorySegment;
-		// generate a constant speed segment with 0 time span 
-		PrevTrajectorySegment = new CTrajectoryConstSpeed;
-		PrevTrajectorySegment->m_StartPosVel = m_InitPosVel;
-		PrevTrajectorySegment->m_LocalSpeed = m_InitLocalSpeed;
-		PrevTrajectorySegment->m_ConvertMatrix = CalcConvMatrix(m_InitPosVel);
-		PrevTrajectorySegment->m_TimeSpan = 0.0;
-	}
-	TrajectorySegment->InitSegment(PrevTrajectorySegment);
+		TrajectorySegment->InitSegment(m_InitPosVel);
+	else
+		TrajectorySegment->InitSegment(PrevTrajectorySegment);
 	ReturnValue = TrajectorySegment->SetSegmentParam(PrevTrajectorySegment, DataType1, Data1, DataType2, Data2);
 	if (ReturnValue != TRAJECTORY_NO_ERR)
 	{
@@ -614,9 +617,12 @@ int CTrajectory::AppendTrajectory(TrajectoryType TrajType, TrajectoryDataType Da
 		delete TrajectorySegment;
 	}
 	else
-		PrevTrajectorySegment->m_pNextTrajectory = TrajectorySegment;
-	if (m_pTrajectoryList == TrajectorySegment)
-		delete PrevTrajectorySegment;
+	{
+		if (PrevTrajectorySegment == NULL)
+			m_pTrajectoryList = TrajectorySegment;
+		else
+			PrevTrajectorySegment->m_pNextTrajectory = TrajectorySegment;
+	}
 
 	return ReturnValue;
 }
@@ -688,4 +694,15 @@ double CTrajectory::GetTimeLength()
 	}
 	
 	return totalTime;
+}
+
+CTrajectorySegment *CTrajectory::GetTrajectorySegment(int Index)
+{
+	int CurIndex;
+	CTrajectorySegment* pSegment = m_pTrajectoryList;
+
+	for (CurIndex = 0, pSegment; CurIndex != Index && pSegment; CurIndex ++)
+		pSegment = pSegment->m_pNextTrajectory;
+
+	return pSegment;
 }

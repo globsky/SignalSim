@@ -96,7 +96,7 @@ int GNavBit::SetAlmanac(GPS_ALMANAC Alm[])
 	int i, frame, string;
 
 	for (i = 0; i < 24; i ++)
-		if (GloAlm->flag == 1)
+		if (GloAlm[i].flag == 1)
 			break;
 	if (i == 24)
 		return 0;
@@ -208,7 +208,7 @@ int GNavBit::ComposeStringAlm(PGLONASS_ALMANAC Almanac, int slot, unsigned int S
 	UintValue = UnscaleUint(fabs(Almanac->dt), -9); UintValue |= (Almanac->dt < 0) ? (1 << 21) : 0;
 	StreamOdd[1] |= COMPOSE_BITS(UintValue >> 11, 0, 11);
 	StreamOdd[2] = COMPOSE_BITS(UintValue, 21, 11);
-	UintValue = UnscaleUint(fabs(Almanac->dt_dot), -14); UintValue |= (Almanac->dt < 0) ? (1 << 6) : 0;
+	UintValue = UnscaleUint(fabs(Almanac->dt_dot), -14); UintValue |= (Almanac->dt_dot < 0) ? (1 << 6) : 0;
 	StreamOdd[2] |= COMPOSE_BITS(UintValue, 14, 7);
 	StreamOdd[2] |= COMPOSE_BITS(Almanac->freq, 9, 5);
 	return 0;

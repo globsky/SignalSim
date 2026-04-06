@@ -11,8 +11,10 @@
 
 #include <stdio.h>
 
+#define MAX_LINE_LENGTH 256
 #define MAX_KEY_LENGTH (32-1)
 #define MAX_STRING_LENGTH (192-1)
+#define DEFAULT_INDENT 2
 
 #define OBJ_ARRAY_INC_SIZE 128
 
@@ -39,8 +41,17 @@ typedef union
 // ValueTypeNull: the value is null
 //----------------------------------------------------------------------
 
-struct JsonObject
+class JsonObject
 {
+// constructor / destructor
+public:
+	JsonObject();
+	JsonObject(JsonObject *Parent);
+//	JsonObject(const JsonObject& Object);
+	~JsonObject();
+
+// attributes
+public:
 	// define type of value
 	enum ValueType { ValueTypeNull, ValueTypeObject, ValueTypeArray, ValueTypeString, ValueTypeIntNumber, ValueTypeFloatNumber, ValueTypeTrue, ValueTypeFalse };
 
@@ -48,9 +59,31 @@ struct JsonObject
 	ValueType Type;
 	JsonObject *pNextObject;	// pointer to next key/value pair with same parent object or in same array
 	JsonObject *pObjectContent;	// pointer to content if value type is object or array
+	JsonObject *pParent;		// pointer to parent object
 	JSON_NUMBER_UNION Number;
 	char String[MAX_STRING_LENGTH+1];
+
+// implementations
+	JsonObject *GetFirstObject() { return pObjectContent; }
+	JsonObject *GetNextObject() { return pNextObject; }
+	JsonObject *GetParent() { return pParent; }
+	JsonObject *SearchSubitems(const char *KeyName, int SearchSubitem = 1, const char *StrValue = (const char *)NULL);
+	int GetIndex();
+	int GetSize();
+	JsonObject *operator[](int Index);
+	int ReplaceValue(const char *KeyName, void *p, int SearchSubitem = 1);
+	int ReplaceValue(const char *KeyName, const char *Value, int SearchSubitem = 1);
+	int ReplaceValue(const char *KeyName, int Value, int SearchSubitem = 1);
+	int ReplaceValue(const char *KeyName, double Value, int SearchSubitem = 1);
+	int ReplaceValue(const char *KeyName, bool Value, int SearchSubitem = 1);
+
+	static void DeleteTree(JsonObject *Object, int DeleteLink = 0);
+	static JsonObject *ReplaceObject(JsonObject *OldObject, JsonObject *NewObject);
+	static void RemoveObject(JsonObject *Object);
+	static int AddObject(JsonObject *ParentObject, JsonObject *NewObject, const char *FollowingKey = (const char *)NULL);
 };
+
+#define GET_DOUBLE_VALUE(Object) ((Object->Type == JsonObject::ValueTypeIntNumber) ? (double)(Object->Number.l_data) : Object->Number.d_data)
 
 class JsonStream;
 typedef int(JsonStream::*GetStream)(void *source);
@@ -71,20 +104,23 @@ public:
 	JsonStream();
 	~JsonStream();
 
-	void DeleteTree(JsonObject *Object);
+	void DeleteAllTree();
+	// read/write with file name
 	int ReadFile(const char *File);
 	int WriteFile(const char *File);
-	JsonObject *ParseObject(int IsObject, GetStream GetStreamFunc, void *source);
+	// read/write with existing FILE pointer
+	int ReadFile(FILE *fpFile);
+	int WriteFile(FILE *fpFile);
+	JsonObject *ParseObject(JsonObject *Parent, int IsObject, GetStream GetStreamFunc, void *source);
 	JsonObject *GetRootObject() { return RootObject; }
-	static JsonObject *GetFirstObject(JsonObject *CurObject) { return CurObject->pObjectContent; }
-	static JsonObject *GetNextObject(JsonObject *CurObject) { return CurObject->pNextObject; }
+	int SetIndent(int Indent) { indent = Indent; }
 
 private:
 	JsonObject *RootObject;
-	char stream[256];	// read file buffer
+	char stream[MAX_LINE_LENGTH];	// read file buffer
 	const char *p;	// pointer of current processing character in stream
+	int indent;
 
-	JsonObject *GetNewObject();
 	int GetFileStream(void *source);
 	int CopyString(char *dest, int MaxLength);
 	int IsWhiteSpace(const char ch);
@@ -95,7 +131,7 @@ private:
 	int OutputObject(FILE *fp, JsonObject *Object, int Depth, int HasKey);
 	int OutputKeyValue(FILE *fp, JsonObject *Object, int Depth, int HasKey);
 	int OutputString(FILE *fp, const char *str);
-
+	void OutputIndent(FILE *fp, int Length);
 };
 
 

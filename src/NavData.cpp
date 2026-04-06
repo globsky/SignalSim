@@ -45,6 +45,39 @@ CNavData::~CNavData()
 	free(GlonassEphemerisPool);
 }
 
+NavFileType CNavData::CheckNavFileType(FILE *fp)
+{
+	char str[256], *p = str;
+	NavFileType Type;
+
+	fseek(fp, 0, SEEK_SET);
+	fgets(str, 255, fp);
+
+	// first check for RINEX navigation data file
+	if (strlen(str) >= 41 && str[20] == 'N' && strchr("GREJCISM", str[40]))
+		return str[5] == '3' ? Rinex3NavData : str[5] == '4' ? Rinex4NavData : NavFileUnknown;
+	else if (str[0] == '*')	// this is a YUMA GPS almanac file
+		Type = AlmanacGps;
+	else if (str[0] == '<')	// this is a XML Galileo almanac file
+		Type = AlmanacGalileo;
+	else
+	{
+		// check second parameter
+		while (*p != '\0' && *p != ' ' && *p != '\t') p ++;	// skip to first space
+		while (*p == ' ' || *p == '\t') p ++;	// skip first space
+		if (*p == '\0')
+			Type = NavFileUnknown;
+		else if (p[2] == '.' && p[5] == '.')	// date format, GLONASS almanac
+			Type = AlmanacGlonass;
+//		else if (p[1] == '.')	// scientific notation of ecc, BDS almanac
+//			Type = AlmanacBds;
+		else
+			Type = NavFileUnknown;
+	}
+	fseek(fp, 0, SEEK_SET);	// return to beginning of file
+	return Type;
+}
+
 bool CNavData::AddNavData(NavDataType Type, void *NavData)
 {
 	PGPS_EPHEMERIS NewEphmerisPool;
@@ -267,39 +300,59 @@ void CNavData::ReadNavFile(const char *filename)
 	NavDataType DataType;
 	GPS_EPHEMERIS NavData;
 	PGLONASS_EPHEMERIS pEph = (PGLONASS_EPHEMERIS)(&NavData);
+	NavFileType Type;
 
 	if ((fp = fopen(filename, "r")) == NULL)
 	{
-		MessagePrint(MSG_LEVEL_ERROR, "Unable to open ephemeris file: %s\n", filename);
+		MessagePrint(MSG_LEVEL_ERROR, "Unable to open navigation file: %s\n", filename);
 		return;	// for multiple RINEX navigation file to be loaded, one file load fail will only possibly reduce the visible satellite
 	}
 
-	while ((DataType = LoadNavFileHeader(fp, (void *)&NavData)) != NavDataEnd)
+	Type = CheckNavFileType(fp);
+	switch (Type)
 	{
-		if (DataType != NavDataUnknown)
-			AddNavData(DataType, (void *)&NavData);
-	}
-	while ((DataType = LoadNavFileContents(fp, (void *)&NavData)) != NavDataEnd)
-	{
-		if (DataType == NavDataGlonassFdma)
-			if (pEph->n > 0 && pEph->n <= 24)
-				GlonassSlotFreq[pEph->n-1] = pEph->freq;
-		if (DataType != NavDataUnknown)
-			AddNavData(DataType, (void *)&NavData);
+	case AlmanacGps:
+		ReadAlmanacGps(fp, GpsAlmanac);
+		break;
+	case AlmanacBds:
+		ReadAlmanacBds(fp, BdsAlmanac);
+		break;
+	case AlmanacGalileo:
+		ReadAlmanacGalileo(fp, GalileoAlmanac);
+		break;
+	case AlmanacGlonass:
+		ReadAlmanacGlonass(fp, GlonassAlmanac);
+		break;
+	case Rinex3NavData:
+	case Rinex4NavData:
+		while ((DataType = LoadNavFileHeader(fp, (void *)&NavData)) != NavDataEnd)
+		{
+			if (DataType != NavDataUnknown)
+				AddNavData(DataType, (void *)&NavData);
+		}
+		while ((DataType = LoadNavFileContents(fp, (void *)&NavData)) != NavDataEnd)
+		{
+			if (DataType == NavDataGlonassFdma)
+				if (pEph->n > 0 && pEph->n <= 24)
+					GlonassSlotFreq[pEph->n-1] = pEph->freq;
+			if (DataType != NavDataUnknown)
+				AddNavData(DataType, (void *)&NavData);
+		}
+		break;
 	}
 }
 
 void CNavData::ReadAlmFile(const char *filename)
 {
 	FILE *fp;
-	AlmanacType Type;
+	NavFileType Type;
 
 	if ((fp = fopen(filename, "r")) == NULL)
 	{
 		MessagePrint(MSG_LEVEL_ERROR, "Unable to open almanac file: %s\n", filename);
 		return;
 	}
-	Type = CheckAlmnanacType(fp);
+	Type = CheckNavFileType(fp);
 	switch (Type)
 	{
 	case AlmanacGps:

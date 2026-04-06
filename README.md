@@ -63,6 +63,18 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 
 ### 2026
 
+- **4/6/2026**
+  - Have following changes to JSON key values:
+    1. "time" has alias "InitTime" in start time configuration
+    2. "time" has alias "duration" in trajectory segment
+    3. "time" has alias "epoch" in "powerValue" array
+    4. "ephemeris", "almanac" and "navigationData" can be used interchangably
+  - Fix bug of rounding frequency or time epoch incorrectly
+  - Fix bugs in GLONASS navigation bit generation (thanks to claude AI)
+  - Enrich JSON tree operation functions to enable edit/modification
+  - Add JsonComposer to help generate JSON tree for different contents
+  - Minor code improvement (prepared for scenario reload and scenario edit)
+
 - **2/18/2026**
   - In CNavData::FindEphemeris(), remove the filter for ephemeris with toe not multiple of 300s
   - Adjust ephemeris parameters if toe is not multiple of 300s in CNAV/CNAV2/BCNAVx navigation message composition

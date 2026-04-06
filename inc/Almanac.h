@@ -12,9 +12,8 @@
 #include <stdio.h>
 #include "BasicTypes.h"
 
-enum AlmanacType { AlmanacUnknown = 0, AlmanacGps, AlmanacBds, AlmanacGalileo, AlmanacGlonass };
+//enum AlmanacType { AlmanacUnknown = 0, AlmanacGps, AlmanacBds, AlmanacGalileo, AlmanacGlonass };
 
-AlmanacType CheckAlmnanacType(FILE *fp);
 int ReadAlmanacGps(FILE *fp, GPS_ALMANAC Almanac[]);
 int ReadAlmanacBds(FILE *fp, GPS_ALMANAC Almanac[]);
 int ReadAlmanacGalileo(FILE *fp, GPS_ALMANAC Almanac[]);

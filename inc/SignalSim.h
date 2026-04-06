@@ -28,6 +28,7 @@
 #include "JsonParser.h"
 #include "XmlInterpreter.h"
 #include "JsonInterpreter.h"
+#include "JsonComposer.h"
 #include "SatelliteParam.h"
 #include "SatelliteSignal.h"
 #include "SatIfSignal.h"
