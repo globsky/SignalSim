@@ -71,7 +71,7 @@ int JsonObject::GetIndex()
 {
 	int i;
 	JsonObject *pObject = pParent;
-	if (pObject->Type != JsonObject::ValueTypeArray && pObject->Type != JsonObject::ValueTypeObject)
+	if (!pObject || (pObject->Type != JsonObject::ValueTypeArray && pObject->Type != JsonObject::ValueTypeObject))
 		return -1;
 	for (i = 0, pObject = pObject->GetFirstObject(); pObject; i ++, pObject = pObject->GetNextObject())
 	{
@@ -255,34 +255,64 @@ void JsonObject::RemoveObject(JsonObject *Object)
 	DeleteTree(Object);
 }
 
-// add a new node object to the parent
-// the parent object must be the type of object or array
+// add a new key/value paire to current object or array 
+// current object must be the type of object or array
 // if FollowingKey is NULL, the NewObject will be the first object
 // otherwise the NewObject will be added to the position following object with corresponding key
 // if no match for FollowingKey, NewObject will be added to last
 // if ParentObject is array, NULL pointer FollowingKey will do inserting first
 // otherwise will do appending last
-int JsonObject::AddObject(JsonObject *ParentObject, JsonObject *NewObject, const char *FollowingKey)
+int JsonObject::AddObject(JsonObject *NewObject, const char *FollowingKey)
 {
 	JsonObject *pObj;
 
-	if (!ParentObject)
+	if (Type != JsonObject::ValueTypeObject && Type != JsonObject::ValueTypeArray)
 		return 0;
-	if (ParentObject->Type != JsonObject::ValueTypeObject && ParentObject->Type != JsonObject::ValueTypeArray)
-		return 0;
-	pObj = ParentObject->GetFirstObject();
+	pObj = GetFirstObject();
 	if (FollowingKey == NULL || pObj == NULL)
 	{
-		ParentObject->pObjectContent = NewObject;
+		pObjectContent = NewObject;
 		NewObject->pNextObject = pObj;
-		NewObject->pParent = ParentObject;
+		NewObject->pParent = this;
 	}
 	else
 	{
 		while((FollowingKey[0] == '\0' || pObj->Key[0] == '\0' || strcmp(pObj->Key, FollowingKey) != 0) && pObj->pNextObject)
 			pObj = pObj->pNextObject;
 		NewObject->pNextObject = pObj->pNextObject;
-		NewObject->pParent = ParentObject;
+		NewObject->pParent = this;
+		pObj->pNextObject = NewObject;
+	}
+
+	return 1;
+}
+
+// insert a new key/value paire to current object or array 
+// current object must be the type of object or array
+// InsertPosition specifies the position to insert:
+// 0 means insert as first content
+// 1 means insert after the first content etc.
+// if InsertPosition is larger than the total number of key/value pairs for object
+// or larger than the total size of array, NewObject will be added at the end
+int JsonObject::InsertObject(JsonObject* NewObject, int InsertPosition)
+{
+	JsonObject* pObj;
+
+	if (Type != JsonObject::ValueTypeObject && Type != JsonObject::ValueTypeArray)
+		return 0;
+	pObj = GetFirstObject();
+	if (InsertPosition <= 0 || pObj == NULL)
+	{
+		pObjectContent = NewObject;
+		NewObject->pNextObject = pObj;
+		NewObject->pParent = this;
+	}
+	else
+	{
+		for (int CurIndex = 1; CurIndex < InsertPosition && pObj->pNextObject; CurIndex ++)
+			pObj = pObj->pNextObject;
+		NewObject->pNextObject = pObj->pNextObject;
+		NewObject->pParent = this;
 		pObj->pNextObject = NewObject;
 	}
 

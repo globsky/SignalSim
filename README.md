@@ -63,6 +63,12 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 
 ### 2026
 
+- **5/15/2026**
+  - Fix bug CN0 not adjusted when "elevationAdjust" set to true and no "signalPower" array present (CN0 will change following elevation change when using default CN0)
+  - Navigation file will first search directory relative to JSON file instread of current directory if SetJsonFilePath() is called
+  - Permanently remove functions depend on structure SATELLITE_PARAM, use class CSatelliteParam instead
+  - Further modifications to JSON tree operation functions to enrich edit
+
 - **4/6/2026**
   - Have following changes to JSON key values:
     1. "time" has alias "InitTime" in start time configuration

@@ -98,6 +98,15 @@ static BOOL ProcessPowerValue(JsonObject *Object, int system, int *svlist, int s
 static double FormatLonLat(double Value, int Format);
 static double FormatSpeed(double Value, int Format);
 
+#define MAX_FILENAME_LENGTH 256
+static char JsonFilePath[MAX_FILENAME_LENGTH] = { 0 };
+
+void SetJsonFilePath(const char *FilePath)
+{
+	strncpy(JsonFilePath, FilePath, MAX_FILENAME_LENGTH - 1);
+	JsonFilePath[MAX_FILENAME_LENGTH - 1] = '\0';
+}
+
 BOOL AssignParameters(JsonObject *Object, PUTC_TIME UtcTime, PLLA_POSITION StartPos, PLOCAL_SPEED StartVel, CTrajectory *Trajectory, CNavData *NavData, POUTPUT_PARAM OutputParam, CPowerControl *PowerControl, PDELAY_CONFIG DelayConfig)
 {
 	for (Object = Object->GetFirstObject(); Object; Object = Object->GetNextObject())
@@ -251,7 +260,7 @@ BOOL SetNavDataFile(JsonObject *Object, CNavData &NavData)
 	while (Object)
 	{
 		if (strcmp(Object->Key, "name") == 0)
-			NavData.ReadNavFile(Object->String);
+			NavData.ReadNavFile(Object->String, JsonFilePath);
 		Object = Object->GetNextObject();
 	}
 	return TRUE;
@@ -654,7 +663,7 @@ BOOL SetPowerControl(JsonObject *Object, CPowerControl &PowerControl)
 
 BOOL ProcessSignalPower(JsonObject *Object, CPowerControl &PowerControl)
 {
-	int system, svlist[32], sv_number;
+	int system, svlist[63], sv_number;
 	JsonObject *ObjectArray;
 
 	for (; Object; Object = Object->GetNextObject())

@@ -39,5 +39,7 @@ JsonObject *ComposeInitVelocity(LOCAL_SPEED InitVelocity, int Type, int SpeedUni
 JsonObject *ComposeTrajectorySegment(TrajectoryType TrajType, TrajectoryDataType TrajDataType1, double TrajData1, TrajectoryDataType TrajDataType2, double TrajData2);
 JsonObject *ComposeSignalSelect(GnssSystem System, int SignalIndex, bool Enable);
 JsonObject *ComposeMaskOut(GnssSystem System, unsigned long long MaskOut);
+JsonObject* ComposePowerValueItem(double Epoch, double Value, int Unit);
+JsonObject* ComposeSvList(GnssSystem System, unsigned long long MaskOut);
 
 #endif // __JSON_COMPOSER_H__

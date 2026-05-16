@@ -76,11 +76,12 @@ public:
 	int ReplaceValue(const char *KeyName, int Value, int SearchSubitem = 1);
 	int ReplaceValue(const char *KeyName, double Value, int SearchSubitem = 1);
 	int ReplaceValue(const char *KeyName, bool Value, int SearchSubitem = 1);
+	int AddObject(JsonObject* NewObject, const char* FollowingKey = (const char*)NULL);
+	int InsertObject(JsonObject* NewObject, int InsertPosition);
 
 	static void DeleteTree(JsonObject *Object, int DeleteLink = 0);
 	static JsonObject *ReplaceObject(JsonObject *OldObject, JsonObject *NewObject);
 	static void RemoveObject(JsonObject *Object);
-	static int AddObject(JsonObject *ParentObject, JsonObject *NewObject, const char *FollowingKey = (const char *)NULL);
 };
 
 #define GET_DOUBLE_VALUE(Object) ((Object->Type == JsonObject::ValueTypeIntNumber) ? (double)(Object->Number.l_data) : Object->Number.d_data)

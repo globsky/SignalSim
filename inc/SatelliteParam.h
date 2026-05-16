@@ -16,12 +16,12 @@
 
 int GetVisibleSatellite(KINEMATIC_INFO Position, GNSS_TIME time, OUTPUT_PARAM OutputParam, GnssSystem system, PGPS_EPHEMERIS Eph[], int Number, PGPS_EPHEMERIS EphVisible[]);
 int GetGlonassVisibleSatellite(KINEMATIC_INFO Position, GLONASS_TIME time, OUTPUT_PARAM OutputParam, PGLONASS_EPHEMERIS Eph[], int Number, PGLONASS_EPHEMERIS EphVisible[]);
-void GetSatelliteParam(KINEMATIC_INFO PositionEcef, LLA_POSITION PositionLla, GNSS_TIME time, GnssSystem system, PGPS_EPHEMERIS Eph, PIONO_PARAM IonoParam, PSATELLITE_PARAM SatelliteParam);
-void GetSatelliteCN0(int PowerListCount, SIGNAL_POWER PowerList[], double DefaultCN0, enum ElevationAdjust Adjust, PSATELLITE_PARAM SatelliteParam);
-double GetWaveLength(int system, int SignalIndex, int FreqID);
-double GetTravelTime(PSATELLITE_PARAM SatelliteParam, int SignalIndex);
-double GetCarrierPhase(PSATELLITE_PARAM SatelliteParam, int SignalIndex);
-double GetDoppler(PSATELLITE_PARAM SatelliteParam, int SignalIndex);
+//void GetSatelliteParam(KINEMATIC_INFO PositionEcef, LLA_POSITION PositionLla, GNSS_TIME time, GnssSystem system, PGPS_EPHEMERIS Eph, PIONO_PARAM IonoParam, PSATELLITE_PARAM SatelliteParam);
+//void GetSatelliteCN0(int PowerListCount, SIGNAL_POWER PowerList[], double DefaultCN0, enum ElevationAdjust Adjust, PSATELLITE_PARAM SatelliteParam);
+//double GetWaveLength(int system, int SignalIndex, int FreqID);
+//double GetTravelTime(PSATELLITE_PARAM SatelliteParam, int SignalIndex);
+//double GetCarrierPhase(PSATELLITE_PARAM SatelliteParam, int SignalIndex);
+//double GetDoppler(PSATELLITE_PARAM SatelliteParam, int SignalIndex);
 GNSS_TIME GetTransmitTime(GNSS_TIME ReceiverTime, double TravelTime);
 
 // new CSatelliteParam class to support ephemeris change, precise ephemeris and different troposphere delay/ionosphere delay model
@@ -48,6 +48,7 @@ public:
 	double CN0Default;
 	enum ElevationAdjust CN0Adjust;
 	int EphTransition;
+	BOOL UseDefaultCN0;
 
 	int CN0;	// scale factor 0.01
 	int TimeTag;

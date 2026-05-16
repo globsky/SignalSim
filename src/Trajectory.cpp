@@ -79,7 +79,7 @@ int CTrajectoryConstSpeed::SetSegmentParam(CTrajectorySegment *PrevSegment, Traj
 		MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter type mismatch in \"Const\", type \"time\" needed.\n");
 		return TRAJECTORY_TYPE_MISMATCH;
 	}
-	else if (Data1 <= 0)
+	else if (Data1 < 0)
 	{
 		MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter %f invalid for type \"time\" in \"Const\"\n");
 		return TRAJECTORY_INVALID_PARAM;
@@ -163,7 +163,7 @@ int CTrajectoryConstAcc::SetSegmentParam(CTrajectorySegment *PrevSegment, Trajec
 		break;
 	}
 
-	if (time <= 0)
+	if (time < 0)
 	{
 		MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter invalid in \"ConstAcc\", during time is negative\n");
 		return TRAJECTORY_INVALID_PARAM;
@@ -253,7 +253,7 @@ int CTrajectoryVerticalAcc::SetSegmentParam(CTrajectorySegment *PrevSegment, Tra
 		break;
 	}
 
-	if (time <= 0)
+	if (time < 0)
 	{
 		MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter invalid in \"VerticalAcc\", during time is negative\n");
 		return TRAJECTORY_INVALID_PARAM;
@@ -318,7 +318,7 @@ int CTrajectoryJerk::SetSegmentParam(CTrajectorySegment *PrevSegment, Trajectory
 		if (DataType2 == TrajDataAcceleration)
 			rate = (Data2 - acc) / time;
 		else if (DataType2 == TrajDataAccRate)
-			acc = Data2;
+			rate = Data2;
 		else
 		{
 			MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter type mismatch in \"Jerk\", type \"acceleration/rate\" needed.\n");
@@ -368,7 +368,7 @@ int CTrajectoryJerk::SetSegmentParam(CTrajectorySegment *PrevSegment, Trajectory
 		break;
 	}
 
-	if (time <= 0)
+	if (time < 0)
 	{
 		MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter invalid in \"Jerk\", during time is negative\n");
 		return TRAJECTORY_INVALID_PARAM;
@@ -497,14 +497,9 @@ int CTrajectoryHorizontalCircular::SetSegmentParam(CTrajectorySegment *PrevSegme
 		break;
 	}
 
-	if (time <= 0)
+	if (time < 0)
 	{
 		MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter invalid in \"HorizontalTurn\", during time is negative\n");
-		return TRAJECTORY_INVALID_PARAM;
-	}
-	if (fabs(rate) <= 1e-8)
-	{
-		MessagePrint(MSG_LEVEL_ERROR, "Trajectory parameter invalid in \"HorizontalTurn\", turn rate too small\n");
 		return TRAJECTORY_INVALID_PARAM;
 	}
 

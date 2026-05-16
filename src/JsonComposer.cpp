@@ -82,6 +82,10 @@ static const char *DictionaryListSignal[] = {
 	"E1",  "E5a", "E5b", "E5",  "E6",  "",    "", "",
 	"G1",  "G2",  "G3",  "",    "",    "",    "", "",
 };
+static const char* DictionaryListPowerUnit[] = {
+	//     0      1      2
+		"dBHz", "dBm", "dBW",
+};
 #if 0
 static const char *KeyDictionaryListParam[] = {
 //       0            1             2           3         4         5        6      7
@@ -106,10 +110,6 @@ static const char *DictionaryListOutputType[] = {
 static const char *DictionaryListOutputFormat[] = {
 //     0      1       2      3       4       5      6      7      8	
 	"ECEF", "LLA", "NMEA", "KML", "RINEX", "IQ8", "IQ4", "IQ2", "IQ16",
-};
-static const char *DictionaryListPowerUnit[] = {
-//     0      1      2
-	"dBHz", "dBm", "dBW",
 };
 #endif
 
@@ -545,10 +545,11 @@ JsonObject *ComposeSignalSelect(GnssSystem System, int SignalIndex, bool Enable)
 JsonObject *ComposeMaskOut(GnssSystem System, unsigned long long MaskOut)
 {
 	JsonObject *Root = NULL, *SvListObject = NULL, *CurObject = NULL;
-	int SvNumber = (int)popcnt64(MaskOut);
+	int SvNumber;
 	int MaxSvid[] = { 32, 63, 36, 24 };
 
-	MaskOut &= (1ULL << MaxSvid[System]) - 1;
+	MaskOut &= (((1ULL << MaxSvid[System]) - 1) << 1);
+	SvNumber = (int)popcnt64(MaskOut);
 	if (SvNumber == 0)
 		return NULL;
 	Root = CreateObjects("", (SvNumber == 1) ? 2 : 1);
@@ -558,7 +559,7 @@ JsonObject *ComposeMaskOut(GnssSystem System, unsigned long long MaskOut)
 	CurObject = Root->GetFirstObject();
 	CurObject = AssignValue(CurObject, "system", DictionaryListSystem[System - GpsSystem + 1]);	// system
 	if (SvNumber == 1)
-		CurObject = AssignValue(CurObject, "svid", ctzll(MaskOut) + 1);	// signal
+		CurObject = AssignValue(CurObject, "svid", ctzll(MaskOut));	// signal
 	else	// add a list
 	{
 		SvListObject = CreateObjects("svid", SvNumber);
@@ -568,12 +569,62 @@ JsonObject *ComposeMaskOut(GnssSystem System, unsigned long long MaskOut)
 			return NULL;
 		}
 		SvListObject->Type = JsonObject::ValueTypeArray;
-		JsonObject::AddObject(Root, SvListObject, "system");
+		Root->AddObject(SvListObject, "system");
 		CurObject = SvListObject->GetFirstObject();
 		for (int i = 0; i < SvNumber; i ++)
 		{
 			int Pos = ctzll(MaskOut);
-			CurObject = AssignValue(CurObject, "", Pos + 1);
+			CurObject = AssignValue(CurObject, "", Pos);
+			MaskOut &= ~(1ULL << Pos);
+		}
+	}
+
+	return Root;
+}
+
+JsonObject* ComposePowerValueItem(double Epoch, double Value, int Unit)
+{
+	JsonObject *Root = NULL, *CurObject = NULL;
+
+	Root = CreateObjects(KeyDictionaryListTrajectory[2], 3);
+	if (Root == NULL)
+		return Root;
+
+	CurObject = Root->GetFirstObject();
+	CurObject = AssignValue(CurObject, "epoch", Epoch);	// epoch
+	CurObject = AssignValue(CurObject, "unit", DictionaryListPowerUnit[Unit]);	// unit
+	CurObject = AssignValue(CurObject, "value", Value);	// value
+
+	return Root;
+}
+
+JsonObject* ComposeSvList(GnssSystem System, unsigned long long MaskOut)
+{
+	JsonObject* Root = NULL, * CurObject = NULL;
+	int SvNumber;
+	int MaxSvid[] = { 32, 63, 36, 24 };
+
+	MaskOut &= (((1ULL << MaxSvid[System]) - 1) << 1);
+	SvNumber = (int)popcnt64(MaskOut);
+	if (SvNumber == 0)
+		return NULL;
+	else if (SvNumber == 1)
+	{
+		Root = new JsonObject;
+		if (Root)
+			AssignValue(Root, "svid", ctzll(MaskOut));
+	}
+	else
+	{
+		Root = CreateObjects("svid", SvNumber);
+		if (Root == NULL)
+			return NULL;
+		Root->Type = JsonObject::ValueTypeArray;
+		CurObject = Root->GetFirstObject();
+		for (int i = 0; i < SvNumber; i++)
+		{
+			int Pos = ctzll(MaskOut);
+			CurObject = AssignValue(CurObject, "", Pos);
 			MaskOut &= ~(1ULL << Pos);
 		}
 	}

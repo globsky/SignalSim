@@ -8,12 +8,21 @@
 #include <malloc.h>
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
 
 #include "ConstVal.h"
 #include "NavData.h"
 #include "Almanac.h"
 #include "GnssTime.h"
 #include "MessageOutput.h"
+
+#ifdef _WIN32
+#define PATH_SEP '\\'
+#define IS_ABSOLUTE(path) (isalpha((path)[0]) && (path)[1] == ':')
+#else
+#define PATH_SEP '/'
+#define IS_ABSOLUTE(path) ((path)[0] == '/')
+#endif
 
 CNavData::CNavData()
 {
@@ -76,6 +85,35 @@ NavFileType CNavData::CheckNavFileType(FILE *fp)
 	}
 	fseek(fp, 0, SEEK_SET);	// return to beginning of file
 	return Type;
+}
+
+FILE* CNavData::OpenNavFile(const char *filename, const char *JsonFilePath)
+{
+	FILE *fpNavFile = NULL;
+	char NavFilePath[256];
+	char *dir;
+
+	if (IS_ABSOLUTE(filename))	// navigation file uses absolute path
+	{
+		fpNavFile = fopen(filename, "r");
+		return fpNavFile;
+	}
+	// try using relative path to JSON file
+	if (JsonFilePath && JsonFilePath[0] != '\0')	
+	{
+		strncpy(NavFilePath, JsonFilePath, 255);
+		dir = strrchr(NavFilePath, PATH_SEP);
+		if (dir)
+			*(dir + 1) = '\0';
+		else
+			NavFilePath[0] = '\0';
+		strcat(NavFilePath, filename);
+		fpNavFile = fopen(NavFilePath, "r");
+	}
+	// last try, using filename relative to current directory
+	if (!fpNavFile)
+		fpNavFile = fopen(filename, "r");
+	return fpNavFile;
 }
 
 bool CNavData::AddNavData(NavDataType Type, void *NavData)
@@ -294,7 +332,7 @@ PGLONASS_EPHEMERIS CNavData::FindGloEphemeris(GLONASS_TIME GlonassTime, int slot
 	return Eph;
 }
 
-void CNavData::ReadNavFile(const char *filename)
+void CNavData::ReadNavFile(const char *filename, const char *JsonFile)
 {
 	FILE *fp;
 	NavDataType DataType;
@@ -302,7 +340,8 @@ void CNavData::ReadNavFile(const char *filename)
 	PGLONASS_EPHEMERIS pEph = (PGLONASS_EPHEMERIS)(&NavData);
 	NavFileType Type;
 
-	if ((fp = fopen(filename, "r")) == NULL)
+//	if ((fp = fopen(filename, "r")) == NULL)
+	if ((fp = OpenNavFile(filename, JsonFile)) == NULL)
 	{
 		MessagePrint(MSG_LEVEL_ERROR, "Unable to open navigation file: %s\n", filename);
 		return;	// for multiple RINEX navigation file to be loaded, one file load fail will only possibly reduce the visible satellite
@@ -342,12 +381,13 @@ void CNavData::ReadNavFile(const char *filename)
 	}
 }
 
-void CNavData::ReadAlmFile(const char *filename)
+void CNavData::ReadAlmFile(const char *filename, const char *JsonFile)
 {
 	FILE *fp;
 	NavFileType Type;
 
-	if ((fp = fopen(filename, "r")) == NULL)
+//	if ((fp = fopen(filename, "r")) == NULL)
+	if ((fp = OpenNavFile(filename, JsonFile)) == NULL)
 	{
 		MessagePrint(MSG_LEVEL_ERROR, "Unable to open almanac file: %s\n", filename);
 		return;

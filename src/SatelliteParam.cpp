@@ -79,7 +79,7 @@ int GetGlonassVisibleSatellite(KINEMATIC_INFO Position, GLONASS_TIME time, OUTPU
 }
 
 #define USE_POSITION_PREDICTION 0
-
+#if 0
 void GetSatelliteParam(KINEMATIC_INFO PositionEcef, LLA_POSITION PositionLla, GNSS_TIME time, GnssSystem system, PGPS_EPHEMERIS Eph, PIONO_PARAM IonoParam, PSATELLITE_PARAM SatelliteParam)
 {
 	KINEMATIC_INFO SatPosition;
@@ -316,25 +316,6 @@ double GetDoppler(PSATELLITE_PARAM SatelliteParam, int SignalIndex)
 	return -SatelliteParam->RelativeSpeed / GetWaveLength(SatelliteParam->system, SignalIndex, SatelliteParam->FreqID);
 }
 
-GNSS_TIME GetTransmitTime(GNSS_TIME ReceiverTime, double TravelTime)
-{
-	GNSS_TIME TransmitTime = ReceiverTime;
-
-	TravelTime *= 1000.0;	// convert to ms
-	TransmitTime.MilliSeconds -= (int)TravelTime;
-	TravelTime -= (int)TravelTime;
-	TransmitTime.SubMilliSeconds -= TravelTime;
-	if (TransmitTime.SubMilliSeconds < 0)
-	{
-		TransmitTime.SubMilliSeconds += 1.0;
-		TransmitTime.MilliSeconds --;
-	}
-	if (TransmitTime.MilliSeconds < 0)
-		TransmitTime.MilliSeconds += 604800000;
-
-	return TransmitTime;
-}
-#if 0
 void GetSatPosVel(GnssSystem system, double SatelliteTime, PGPS_EPHEMERIS Eph, PSATELLITE_PARAM SatelliteParam, PKINEMATIC_INFO pPosVel)
 {
 	double TimeDiff = SatelliteTime - SatelliteParam->PosTimeTag;
@@ -376,6 +357,25 @@ void GetSatPosVel(GnssSystem system, double SatelliteTime, PGPS_EPHEMERIS Eph, P
 }
 #endif
 
+GNSS_TIME GetTransmitTime(GNSS_TIME ReceiverTime, double TravelTime)
+{
+	GNSS_TIME TransmitTime = ReceiverTime;
+
+	TravelTime *= 1000.0;	// convert to ms
+	TransmitTime.MilliSeconds -= (int)TravelTime;
+	TravelTime -= (int)TravelTime;
+	TransmitTime.SubMilliSeconds -= TravelTime;
+	if (TransmitTime.SubMilliSeconds < 0)
+	{
+		TransmitTime.SubMilliSeconds += 1.0;
+		TransmitTime.MilliSeconds --;
+	}
+	if (TransmitTime.MilliSeconds < 0)
+		TransmitTime.MilliSeconds += 604800000;
+
+	return TransmitTime;
+}
+
 CSatelliteParam::CSatelliteParam()
 {
 	TimeTag = -1;
@@ -407,6 +407,7 @@ void CSatelliteParam::Initialize(GnssSystem SatSystem, PGPS_EPHEMERIS Eph, CIono
 	CN0Default = InitCN0;
 	CN0Adjust = Adjust;
 	CN0 = (int)(InitCN0 * 100 + 0.5);
+	UseDefaultCN0 = TRUE;
 	EphTransition = 0;
 }
 
@@ -545,7 +546,8 @@ void CSatelliteParam::CalculateParam(KINEMATIC_INFO PositionEcef, LLA_POSITION P
 void CSatelliteParam::UpdateCN0(int PowerListCount, SIGNAL_POWER PowerList[])
 {
 	int i;
-	double NewCN0;
+	double NewCN0 = CN0Default;
+	BOOL CN0Updated = FALSE;
 
 	// adjust signal power
 	for (i = 0; i < PowerListCount; i ++)
@@ -553,21 +555,28 @@ void CSatelliteParam::UpdateCN0(int PowerListCount, SIGNAL_POWER PowerList[])
 		if ((PowerList[i].svid == svid || PowerList[i].svid == 0) && PowerList[i].system == system)
 		{
 			if (PowerList[i].CN0 < 0)
-			{
 				NewCN0 = CN0Default;
-				switch (CN0Adjust)
-				{
-				case ElevationAdjustNone:
-					break;
-				case ElevationAdjustSinSqrtFade:
-					NewCN0 -= (1 - sqrt(Elevation)) * 25;
-				}
-			}
 			else
+			{
 				NewCN0 = PowerList[i].CN0;
-			CN0 = (int)(NewCN0 * 100 + 0.5);
+				UseDefaultCN0 = FALSE;
+			}
+			CN0Updated = TRUE;
 		}
 	}
+	if (UseDefaultCN0)
+	{
+		switch (CN0Adjust)
+		{
+		case ElevationAdjustNone:
+			break;
+		case ElevationAdjustSinSqrtFade:
+			NewCN0 -= (1 - sqrt(sin(Elevation))) * 25;
+			CN0Updated = TRUE;
+		}
+	}
+	if (CN0Updated)
+		CN0 = (int)(NewCN0 * 100 + 0.5);
 }
 
 double CSatelliteParam::GetTravelTime(int SignalIndex)

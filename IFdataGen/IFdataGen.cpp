@@ -134,8 +134,8 @@ int main(int argc, char* argv[])
 		printf("[INFO]\tJSON file read successfully: %s\n", Arguments.ConfigFile.c_str());
 	}
 
+	SetJsonFilePath(Arguments.ConfigFile.c_str());
     Object = JsonTree.GetRootObject();
-
 	AssignParameters(Object, &UtcTime, &StartPos, &StartVel, &Trajectory, &NavData, &OutputParam, &PowerControl, NULL);
 
 	if (!Arguments.OutputFile.empty())

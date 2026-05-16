@@ -34,6 +34,9 @@ PGLONASS_EPHEMERIS GloEph[TOTAL_GLO_SAT], GloEphVisible[TOTAL_GLO_SAT];
 OUTPUT_PARAM OutputParam;
 SAT_OBSERVATION Observations[TOTAL_GPS_SAT+TOTAL_BDS_SAT+TOTAL_GAL_SAT], *Obs;
 CSatelliteParam GpsSatParam[TOTAL_GPS_SAT], BdsSatParam[TOTAL_BDS_SAT], GalSatParam[TOTAL_GAL_SAT], GloSatParam[TOTAL_GLO_SAT];
+void DumpObjects(FILE *fp, JsonObject *Object);
+
+#define JSON_FILE "test_obs2.json"
 
 int main()
 {
@@ -57,10 +60,15 @@ int main()
 
 //	memset(&DelayConfig, 0, sizeof(DelayConfig));
 
-	JsonTree.ReadFile("test_obs3.json");
+	SetJsonFilePath(JSON_FILE);
+	JsonTree.ReadFile(JSON_FILE);
 	Object = JsonTree.GetRootObject();
 	AssignParameters(Object, &UtcTime, &StartPos, &StartVel, &Trajectory, &NavData, &OutputParam, &PowerControl, NULL);
-
+#if 0
+	FILE *fpObj = fopen("Objects.txt", "w");
+	DumpObjects(fpObj, Object);
+	fclose(fpObj);
+#endif
 	Trajectory.ResetTrajectoryTime();
 	PosVel = LlaToEcef(StartPos);
 	CurPos = StartPos;
@@ -337,3 +345,20 @@ void SetSysObsType(GnssSystem system, unsigned int ObsType[], unsigned int FreqS
 		ObsTypeIndex ++;
 	}
 }
+
+#if 0
+const char *TypeString[] = {
+	"NULL ", "OBJ  ", "ARRAY", "STR  ", "INT  ", "FLOAT", "TRUE ", "FALSE"
+};
+void DumpObjects(FILE *fp, JsonObject *Object)
+{
+	Object = JsonStream::GetFirstObject(Object);
+
+	while (Object)
+	{
+		fprintf(fp, "Object=%08x Type=%s Parent=%08x Content=%08x Next=%08x Key=%s\n", (unsigned int)Object, TypeString[Object->Type], (unsigned int)Object->pParent, (unsigned int)Object->pObjectContent, (unsigned int)Object->pNextObject, Object->Key);
+		DumpObjects(fp, Object);
+		Object = JsonStream::GetNextObject(Object);
+	}
+}
+#endif

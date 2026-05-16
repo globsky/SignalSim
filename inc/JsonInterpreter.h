@@ -20,6 +20,7 @@
 #include "PowerControl.h"
 #include "Tracking.h"
 
+void SetJsonFilePath(const char *FilePath);
 BOOL AssignParameters(JsonObject *Object, PUTC_TIME UtcTime, PLLA_POSITION StartPos, PLOCAL_SPEED StartVel, CTrajectory *Trajectory, CNavData *NavData, POUTPUT_PARAM OutputParam, CPowerControl *PowerControl, PDELAY_CONFIG DelayConfig);
 
 #endif // __JSON_INTERPRETER_H__

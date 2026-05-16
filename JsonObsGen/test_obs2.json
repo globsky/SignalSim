@@ -1,7 +1,7 @@
 {
 	"version": 1.0,
 	"description": "test file with the same settings as test_obs2.xml",
-	"time": {
+	"initTime": {
 		"type": "UTC",
     "year": 2021,
     "month": 6,
@@ -27,21 +27,21 @@
     "trajectoryList": [
       {
         "type": "Const",
-        "time": 5
+        "duration": 5
       },
       {
         "type": "Jerk",
-        "time": 3,
+        "duration": 3,
         "acceleration": 3
       },
       {
         "type": "ConstAcc",
-        "time": 20,
+        "duration": 20,
         "acceleration": 3
       },
       {
         "type": "Jerk",
-        "time": 6,
+        "duration": 6,
         "acceleration": 0
       },
       {
@@ -51,7 +51,7 @@
       },
       {
         "type": "Const",
-        "time": 100
+        "duration": 100
       },
       {
         "type": "VerticalAcc",
@@ -60,7 +60,7 @@
       },
       {
         "type": "Const",
-        "time": 30
+        "duration": 30
       },
       {
         "type": "HorizontalTurn",
@@ -69,11 +69,11 @@
       },
       {
         "type": "Const",
-        "time": 200
+        "duration": 200
       },
       {
         "type": "HorizontalTurn",
-        "time": 120,
+        "duration": 120,
         "angle": -45
       },
       {
@@ -83,7 +83,7 @@
       },
       {
         "type": "Const",
-        "time": 120
+        "duration": 120
       },
       {
         "type": "HorizontalTurn",
@@ -92,7 +92,7 @@
       },
       {
         "type": "Const",
-        "time": 10
+        "duration": 10
       },
       {
         "type": "VerticalAcc",
@@ -101,7 +101,7 @@
       },
       {
         "type": "Const",
-        "time": 19.384785
+        "duration": 19.384785
       },
       {
         "type": "VerticalAcc",
@@ -111,16 +111,16 @@
       {
         "type": "VerticalAcc",
         "speed": 0,
-        "time": 1
+        "duration": 1
       },
       {
         "type": "Const",
-        "time": 2
+        "duration": 2
       },
       {
         "type": "Jerk",
         "acceleration": -6,
-        "time": 3
+        "duration": 3
       },
       {
         "type": "ConstAcc",
@@ -129,7 +129,7 @@
       },
       {
         "type": "Const",
-        "time": 5
+        "duration": 5
       }
     ]
   },
@@ -200,7 +200,7 @@
       {
         "system": "GPS",
         "powerValue": {
-          "time": 0,
+          "epoch": 0,
           "unit": "dBm",
           "value": -125
         }
@@ -210,52 +210,52 @@
         "svid": 4,
         "powerValue": [
           {
-            "time": 10,
+            "epoch": 10,
             "unit": "dBHz",
             "value": 45
           },
           {
-            "time": 20,
+            "epoch": 20,
             "unit": "dBHz",
             "value": 40
           },
           {
-            "time": 30,
+            "epoch": 30,
             "unit": "dBHz",
             "value": 35
           },
           {
-            "time": 40,
+            "epoch": 40,
             "unit": "dBHz",
             "value": 30
           },
           {
-            "time": 50,
+            "epoch": 50,
             "unit": "dBHz",
             "value": 28
           },
           {
-            "time": 60,
+            "epoch": 60,
             "unit": "dBHz",
             "value": 26
           },
           {
-            "time": 70,
+            "epoch": 70,
             "unit": "dBHz",
             "value": 24
           },
           {
-            "time": 80,
+            "epoch": 80,
             "unit": "dBHz",
             "value": 22
           },
           {
-            "time": 90,
+            "epoch": 90,
             "unit": "dBHz",
             "value": 20
           },
           {
-            "time": 100,
+            "epoch": 100,
             "unit": "dBHz",
             "value": -1
           }
