@@ -57,6 +57,14 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 - RINEX file handling
 - Trajectory calculation
 
+## Supporting Tools
+
+### ScenarioEditor
+
+ScenarioEditor is a Windows tool helping edit JSON files used by SignalSim. Preliminary version (32bit and 64bit) can be found in the following links:
+Google drive: https://drive.google.com/drive/folders/1zyaPBMmjB5JaRIhYlvVacGbsCwRC2nxM?usp=sharing
+Beidu netdisk: https://pan.baidu.com/s/13rGBkdftv3G0gjSjxDPhbA?pwd=na5y
+
 ---
 
 ## Change List
