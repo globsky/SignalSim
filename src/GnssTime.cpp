@@ -35,7 +35,7 @@ BOOL GetLeapSecond(unsigned int Seconds, int &LeapSecond)
 	return FALSE;
 }
 
-// This program handles the date from Jan. 1, 1984 00:00:00.00 UTC till year 2099
+// This program handles the date from Jan. 6, 1980 00:00:00.00 UTC till year 2099
 // date after 2020/12/31 may not have correct leap second correction
 UTC_TIME GpsTimeToUtc(GNSS_TIME GnssTime, BOOL UseLeapSecond = TRUE)
 {
@@ -114,6 +114,11 @@ UTC_TIME GlonassTimeToUtc(GLONASS_TIME GlonassTime)
 	}
 	GlonassTime.LeapYear *= 4;
 	GlonassTime.Day --;
+	while (GlonassTime.Day < 0)
+	{
+		GlonassTime.Day += (366 + 365 * 3);
+		GlonassTime.LeapYear -= 4;
+	}
 	if (GlonassTime.Day >= (366 + 365 * 2))
 	{
 		GlonassTime.Day -= (366 + 365 * 2);
@@ -216,4 +221,17 @@ UTC_TIME GalileoTimeToUtc(GNSS_TIME GnssTime)
 {
 	GnssTime.Week += 1024;
 	return GpsTimeToUtc(GnssTime);
+}
+
+unsigned int GpsTimeToTimeTag(GNSS_TIME GnssTime)
+{
+	unsigned int Seconds = GnssTime.Week * 604800 + GnssTime.MilliSeconds / 1000;
+	Seconds += 315964808;	// extra leap seconds from Jan. 1 1970 to Jan. 6 1980
+	return Seconds;
+}
+
+unsigned int UtcToTimeTag(UTC_TIME UtcTime)
+{
+	GNSS_TIME GnssTime = UtcToGpsTime(UtcTime);
+	return GpsTimeToTimeTag(GnssTime);
 }

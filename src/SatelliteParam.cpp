@@ -463,12 +463,12 @@ void CSatelliteParam::CalculateParam(KINEMATIC_INFO PositionEcef, LLA_POSITION P
 	// travel_time = (d + dtrop)/c + tgd - dts - trel + diono
 	if (system == GlonassSystem)
 	{
-		GlonassSatPosSpeedEph(SatelliteTime, GloEphCur, &PosVel, NULL);
+		GlonassSatPosSpeedEph(SatelliteTime, GloEphCur, &PosVel, Acc);
 		ClockError = GlonassClockCorrection(GloEphCur, SatelliteTime);
 	}
 	else
 	{
-		GpsSatPosSpeedEph(system, SatelliteTime, EphCur, &PosVel, NULL);
+		GpsSatPosSpeedEph(system, SatelliteTime, EphCur, &PosVel, Acc);
 		ClockError = GpsClockCorrection(EphCur, SatelliteTime);
 	}
 	if (EphTransition > 0)

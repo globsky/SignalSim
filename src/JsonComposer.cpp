@@ -13,12 +13,12 @@
 #include "ConstVal.h"
 #include "JsonComposer.h"
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && (defined(_M_X64) || defined(_M_ARM64))
     #include <intrin.h>
     #pragma intrinsic(__popcnt64)
     #pragma intrinsic(_BitScanForward64)
-    #define popcnt64(x) __popcnt64(x)
-    static inline int ctzll(unsigned long long x) {
+	inline int popcnt64(unsigned long long x) { return (int)__popcnt64(x); }
+    inline int ctzll(unsigned long long x) {
         unsigned long index;
         if (_BitScanForward64(&index, x)) {
             return (int)index;
@@ -26,10 +26,10 @@
         return 64;  // or undefined, depending on your needs
     }
 #elif defined(__GNUC__) || defined(__clang__)
-    #define popcnt64(x) __builtin_popcountll(x)
-    #define ctzll(x) __builtin_ctzll(x)
+	inline int popcnt64(unsigned long long x) { return __builtin_popcountll(x); }
+	inline int ctzll(unsigned long long x) { return __builtin_ctzll(x); }
 #else
-    static inline int popcnt64(unsigned long long x) {
+    inline int popcnt64(unsigned long long x) {
         int count = 0;
 		for (int i = 0; i < 64; i ++) {
 			if (x & 1)
@@ -38,7 +38,7 @@
         }
         return count;
     }
-    static inline int ctzll(unsigned long long x) {
+    inline int ctzll(unsigned long long x) {
         if (x == 0) return 64;
         int count = 0;
         while ((x & 1) == 0) {
@@ -49,6 +49,10 @@
     }
 #endif
 
+static const char *KeyDictionaryListParam[] = {
+//       0            1            2           3              4                  5             6         7
+	"version", "description", "initTime", "trajectory", "trajectoryList", "navigationData", "output", "power",
+};
 static const char *DictionaryListSystem[] = {
 //    0      1      2        3          4
 	"UTC", "GPS", "BDS", "Galileo", "GLONASS",
@@ -75,6 +79,18 @@ static const char *KeyDictionaryListTrajectoryList[] = {
 //     0         1             2           3        4       5        6
 	"type", "duration", "acceleration", "speed", "rate", "angle", "radius",
 };
+static const char *KeyDictionaryListOutput[] = {
+//     0        1        2         3          4            5               6             7          8        9       10        11          12            13
+	"type", "format", "name", "interval", "config", "systemSelect", "elevationMask", "maskOut", "system", "svid", "signal", "enable", "sampleFreq", "centerFreq",
+};
+static const char *DictionaryListOutputType[] = {
+//      0             1            2          3
+	"position", "observation", "IFdata", "baseband",
+};
+static const char *DictionaryListOutputFormat[] = {
+//     0      1       2      3       4        5      6      7      8	
+	"ECEF", "LLA", "NMEA", "KML", "RINEX", "IQ16", "IQ8", "IQ4", "IQ2",
+};
 static const char *DictionaryListSignal[] = {
 //    0      1      2      3      4      5     6   7
 	"L1CA","L1C", "L2C", "L2P", "L5",  "",    "", "",
@@ -82,34 +98,18 @@ static const char *DictionaryListSignal[] = {
 	"E1",  "E5a", "E5b", "E5",  "E6",  "",    "", "",
 	"G1",  "G2",  "G3",  "",    "",    "",    "", "",
 };
+static const char *KeyDictionaryListPower[] = {
+//       0             1              2                 3           4       5         6        7         8            9      10
+	"noiseFloor", "initPower", "elevationAdjust", "signalPower", "unit", "value", "system", "svid", "powerValue", "epoch", "time",
+};
 static const char* DictionaryListPowerUnit[] = {
 	//     0      1      2
 		"dBHz", "dBm", "dBW",
 };
 #if 0
-static const char *KeyDictionaryListParam[] = {
-//       0            1             2           3         4         5        6      7
-	"initTime", "trajectory", "ephemeris", "almanac", "output", "power", "delay", "time",
-};
 static const char *KeyDictionaryListEphAlm[] = {
 //     0       1
 	"type", "name",
-};
-static const char *KeyDictionaryListOutput[] = {
-//     0        1        2         3          4            5               6             7          8        9       10        11          12            13
-	"type", "format", "name", "interval", "config", "systemSelect", "elevationMask", "maskOut", "system", "svid", "signal", "enable", "sampleFreq", "centerFreq",
-};
-static const char *KeyDictionaryListPower[] = {
-//       0             1              2                 3           4       5         6        7         8            9      10
-	"noiseFloor", "initPower", "elevationAdjust", "signalPower", "unit", "value", "system", "svid", "powerValue", "epoch", "time",
-};
-static const char *DictionaryListOutputType[] = {
-//      0             1            2          3
-	"position", "observation", "IFdata", "baseband",
-};
-static const char *DictionaryListOutputFormat[] = {
-//     0      1       2      3       4       5      6      7      8	
-	"ECEF", "LLA", "NMEA", "KML", "RINEX", "IQ8", "IQ4", "IQ2", "IQ16",
 };
 #endif
 
@@ -317,6 +317,20 @@ double SpeedUnitFromMPS(double Speed, int Unit)
 	}
 }
 
+JsonObject *ComposeVersion(double Version)
+{
+	JsonObject *Object = new JsonObject;
+	AssignValue(Object, KeyDictionaryListParam[0], Version);
+	return Object;
+}
+
+JsonObject *ComposeDescription(const char *Description)
+{
+	JsonObject *Object = new JsonObject;
+	AssignValue(Object, KeyDictionaryListParam[1], Description);
+	return Object;
+}
+
 // return a JSON object tree containing the UTC time
 // Type specifies the time format:
 // 0: UTC
@@ -332,7 +346,7 @@ JsonObject *ComposeStartTime(int Type, const UTC_TIME &UtcTime)
 
 	if (Type < 0 || Type > 4)
 		return Root;
-	Root = CreateObjects("initTime", ObjectNumber);
+	Root = CreateObjects(KeyDictionaryListParam[2], ObjectNumber);
 	if (Root == NULL)
 		return Root;
 
@@ -369,6 +383,44 @@ JsonObject *ComposeStartTime(int Type, const UTC_TIME &UtcTime)
 		Second = (GnssTime.MilliSeconds + GnssTime.SubMilliSeconds) / 1000.;
 		AssignNumber(CurObject, KeyDictionaryListTime[2], Second);	// second
 	}
+
+	return Root;
+}
+
+// return a JSON object tree containing the trajectory with given position/velocity and empty trajectory list
+JsonObject *ComposeTrajectory(const char *TrajName, KINEMATIC_INFO InitPosVel)
+{
+	JsonObject *Root, *Name, *Pos, *Vel, *List;
+
+	Root = new JsonObject;
+	Name = new JsonObject;
+	Pos = ComposeInitPosition(InitPosVel);
+	Vel = ComposeInitVelocity(InitPosVel, 0, 0);
+	List = new JsonObject;
+
+	if (!(Root && Name && Pos && Vel && List))	// any object create fail
+	{
+		if (Root)
+			delete Root;
+		if (Name)
+			delete Name;
+		if (Pos)
+			JsonObject::DeleteTree(Pos);
+		if (Vel)
+			JsonObject::DeleteTree(Vel);
+		if (List)
+			delete List;
+		return NULL;
+	}
+	strcpy(Root->Key, KeyDictionaryListParam[3]);
+	Root->Type = JsonObject::ValueTypeObject;
+	AssignValue(Name, TrajName);
+	strcpy(List->Key, KeyDictionaryListParam[4]);
+	List->Type = JsonObject::ValueTypeArray;
+	Root->AddObject(Name, "");
+	Root->AddObject(Pos, "");
+	Root->AddObject(Vel, "");
+	Root->AddObject(List, "");
 
 	return Root;
 }
@@ -412,8 +464,8 @@ JsonObject *ComposeInitPosition(LLA_POSITION InitPosition, int Format, int Conve
 		InitPosition.lat = LonLatFromRad(InitPosition.lat, Format);
 	}
 	CurObject = Root->GetFirstObject();
-	CurObject = AssignValue(CurObject, KeyDictionaryListTrajectory[4], DictionaryListCoordinate[1]);	// type
-	CurObject = AssignValue(CurObject, KeyDictionaryListTrajectory[4], DictionaryListCoordinate[1]);	// type
+	CurObject = AssignValue(CurObject, KeyDictionaryListTrajectory[4], DictionaryListCoordinate[0]);	// type
+	CurObject = AssignValue(CurObject, KeyDictionaryListTrajectory[5], DictionaryListCoordinate[4+Format]);	// format
 	CurObject = AssignValue(CurObject, KeyDictionaryListTrajectory[6], InitPosition.lon);	// longitude
 	CurObject = AssignValue(CurObject, KeyDictionaryListTrajectory[7], InitPosition.lat);	// latitude
 	CurObject = AssignValue(CurObject, KeyDictionaryListTrajectory[8], InitPosition.alt);	// altitude
@@ -526,6 +578,42 @@ JsonObject *ComposeTrajectorySegment(TrajectoryType TrajType, TrajectoryDataType
 	return Root;
 }
 
+JsonObject *ComposeOutput(int Type, int Format, const char *OutputName, int IntervalMs, double ElevationMask)
+{
+	JsonObject *Root = NULL, *CurObject = NULL, *Config = NULL;
+
+	Root = CreateObjects(KeyDictionaryListParam[6], 5);
+	if (Root == NULL)
+		return Root;
+
+	CurObject = Root->GetFirstObject();
+	CurObject = AssignValue(CurObject, KeyDictionaryListOutput[0], DictionaryListOutputType[Type]);	// type
+	CurObject = AssignValue(CurObject, KeyDictionaryListOutput[1], DictionaryListOutputFormat[Type]);	// format
+	CurObject = AssignValue(CurObject, KeyDictionaryListOutput[2], OutputName);	// name
+	CurObject = AssignValue(CurObject, KeyDictionaryListOutput[3], IntervalMs / 1000.);	// interval
+	strcpy(CurObject->Key, KeyDictionaryListOutput[5]);
+	CurObject->Type = JsonObject::ValueTypeArray;
+	if ((Config = ComposeConfig(ElevationMask)) != NULL)
+		Root->AddObject(Config, KeyDictionaryListOutput[3]);
+	return Root;
+}
+
+JsonObject *ComposeConfig(double ElevationMask)
+{
+	JsonObject *Root = NULL, *CurObject = NULL;
+
+	Root = CreateObjects(KeyDictionaryListOutput[4], 2);	// config
+	if (Root == NULL)
+		return Root;
+
+	CurObject = Root->GetFirstObject();
+	CurObject = AssignValue(CurObject, "elevationMask", ElevationMask);	// elevationMask
+	strcpy(CurObject->Key, KeyDictionaryListOutput[7]);
+	CurObject->Type = JsonObject::ValueTypeArray;
+
+	return Root;
+}
+
 JsonObject *ComposeSignalSelect(GnssSystem System, int SignalIndex, bool Enable)
 {
 	JsonObject *Root = NULL, *CurObject = NULL;
@@ -582,11 +670,54 @@ JsonObject *ComposeMaskOut(GnssSystem System, unsigned long long MaskOut)
 	return Root;
 }
 
+JsonObject *ComposePower(double NoiseFloor, int PowerUnit, double InitPower)
+{
+	JsonObject *Root = NULL, *InitPowerObject = NULL, *CurObject = NULL;
+	Root = CreateObjects(KeyDictionaryListParam[7], 2);
+	InitPowerObject = CreateObjects(KeyDictionaryListPower[1], 2);
+	if (Root == NULL || InitPower == NULL)
+	{
+		if (Root)
+			JsonObject::DeleteTree(Root);
+		if (InitPowerObject)
+			JsonObject::DeleteTree(InitPowerObject);
+		return NULL;
+	}
+	CurObject = InitPowerObject->GetFirstObject();
+	CurObject = AssignValue(CurObject, KeyDictionaryListPower[4], DictionaryListPowerUnit[PowerUnit]);	// unit
+	CurObject = AssignValue(CurObject, KeyDictionaryListPower[5], InitPower);	// value
+	CurObject = Root->GetFirstObject();
+	CurObject = AssignValue(CurObject, KeyDictionaryListPower[0], NoiseFloor);	// noiseFloor
+	strcpy(CurObject->Key, KeyDictionaryListPower[3]);
+	CurObject->Type = JsonObject::ValueTypeArray;
+	Root->AddObject(InitPowerObject, KeyDictionaryListPower[0]);
+	return Root;
+}
+
+JsonObject* ComposeSignalPowerItem(GnssSystem System, double Epoch, double Value, int Unit)
+{
+	JsonObject *Root = NULL, *PowerValueObject = NULL, *CurObject = NULL;
+	Root = CreateObjects("", 1);
+	PowerValueObject = ComposePowerValueItem(Epoch, Value, Unit);
+	if (Root == NULL || PowerValueObject == NULL)
+	{
+		if (Root)
+			JsonObject::DeleteTree(Root);
+		if (PowerValueObject)
+			JsonObject::DeleteTree(PowerValueObject);
+		return NULL;
+	}
+	CurObject = Root->GetFirstObject();
+	AssignValue(CurObject, KeyDictionaryListPower[6], DictionaryListSystem[System + 1]);	// system
+	Root->AddObject(PowerValueObject, "");
+	return Root;
+}
+
 JsonObject* ComposePowerValueItem(double Epoch, double Value, int Unit)
 {
 	JsonObject *Root = NULL, *CurObject = NULL;
 
-	Root = CreateObjects(KeyDictionaryListTrajectory[2], 3);
+	Root = CreateObjects(KeyDictionaryListPower[8], 3);
 	if (Root == NULL)
 		return Root;
 

@@ -113,7 +113,7 @@ public:
 	int ReadFile(FILE *fpFile);
 	int WriteFile(FILE *fpFile);
 	JsonObject *ParseObject(JsonObject *Parent, int IsObject, GetStream GetStreamFunc, void *source);
-	JsonObject *GetRootObject() { return RootObject; }
+	JsonObject *GetRootObject(bool CreateOnEmpty = true);
 	int SetIndent(int Indent) { indent = Indent; }
 
 private:

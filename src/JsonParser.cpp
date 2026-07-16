@@ -260,7 +260,7 @@ void JsonObject::RemoveObject(JsonObject *Object)
 // if FollowingKey is NULL, the NewObject will be the first object
 // otherwise the NewObject will be added to the position following object with corresponding key
 // if no match for FollowingKey, NewObject will be added to last
-// if ParentObject is array, NULL pointer FollowingKey will do inserting first
+// if current object is an array, NULL pointer FollowingKey will do inserting first
 // otherwise will do appending last
 int JsonObject::AddObject(JsonObject *NewObject, const char *FollowingKey)
 {
@@ -462,6 +462,16 @@ JsonObject *JsonStream::ParseObject(JsonObject *Parent, int IsObject, GetStream 
 	}
 
 	return Object;
+}
+
+JsonObject *JsonStream::GetRootObject(bool CreateOnEmpty)
+{
+	if (RootObject == NULL && CreateOnEmpty)
+	{
+		if ((RootObject = new JsonObject(NULL)) != NULL)
+			RootObject->Type = JsonObject::ValueTypeObject;
+	}
+	return RootObject;
 }
 
 int JsonStream::GetFileStream(void *source)
