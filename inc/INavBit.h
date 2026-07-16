@@ -33,9 +33,11 @@ private:
 	unsigned int GalEphData[36][5*4];	// 36 SVs, Word1~5 as ephemeris, 4 DWORD each Word
 	unsigned int GalAlmData[12][4*4];	// 36 SVs, Word7~10 as almanac, 4 DWORD each Word
 	unsigned int GalRsVector[36][4*4];	// 36 Svs, Word17~20 as Reed-Solomon parity vector
+	unsigned int GalReducedEph[36][4];	// 36 Svs, Word16 as reduced CED, 4 DWORD
 	unsigned int GalUtcData[4];	// for Word6
 	unsigned int GalSpareData[4];	// for Word0
 	unsigned int GalDummyData[4];	// for Word63
+	GPS_EPHEMERIS Ephemeris[36];	// 36 SVs, ephemeris data
 
 	static const int WordAllocationE1[15];
 	static const int WordAllocationE5[15];
@@ -46,11 +48,12 @@ private:
 
 	int ComposeEphWords(PGPS_EPHEMERIS Ephemeris, unsigned int *EphData);
 	int ComposeAlmWords(GPS_ALMANAC Almanac[], unsigned int *AlmData, int week);
-	unsigned int *GetWordData(int svid, int Word, int subframe);
+	unsigned int *GetWordData(int svid, int Word, int subframe, int TOW);
 	unsigned char GalConvolutionEncode(unsigned char &ConvEncodeBits, unsigned int &EncodeWord);
 	unsigned char GF8IntMul(unsigned char a, unsigned char b);
 	void GenerateParityVector(unsigned char InformationVector[58], unsigned char ParityVector[60]);
 	void ComposeParityWords(unsigned int *EphData, unsigned int *ParityData);
+	void ConvertEphToReducedEph(PGPS_EPHEMERIS Ephemeris, int RefTime, unsigned int ReducedEph[4]);
 };
 
 #endif // __INAV_BIT_H__

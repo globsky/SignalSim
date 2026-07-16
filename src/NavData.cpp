@@ -17,10 +17,8 @@
 #include "MessageOutput.h"
 
 #ifdef _WIN32
-#define PATH_SEP '\\'
 #define IS_ABSOLUTE(path) (isalpha((path)[0]) && (path)[1] == ':')
 #else
-#define PATH_SEP '/'
 #define IS_ABSOLUTE(path) ((path)[0] == '/')
 #endif
 
@@ -91,7 +89,7 @@ FILE* CNavData::OpenNavFile(const char *filename, const char *JsonFilePath)
 {
 	FILE *fpNavFile = NULL;
 	char NavFilePath[256];
-	char *dir;
+	char *dir = NULL;
 
 	if (IS_ABSOLUTE(filename))	// navigation file uses absolute path
 	{
@@ -102,7 +100,12 @@ FILE* CNavData::OpenNavFile(const char *filename, const char *JsonFilePath)
 	if (JsonFilePath && JsonFilePath[0] != '\0')	
 	{
 		strncpy(NavFilePath, JsonFilePath, 255);
-		dir = strrchr(NavFilePath, PATH_SEP);
+#ifdef _WIN32
+		// for Windows, find last backslash first
+		dir = strrchr(NavFilePath, '\\');
+#endif
+		if (!dir)	// if not found, find last forward slash
+			dir = strrchr(NavFilePath, '/');
 		if (dir)
 			*(dir + 1) = '\0';
 		else

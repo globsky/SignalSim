@@ -61,8 +61,8 @@ The core libraries provide fundamental GNSS data processing capabilities includi
 
 ### ScenarioEditor
 
-ScenarioEditor is a Windows tool helping edit JSON files used by SignalSim. Preliminary version (32bit and 64bit) can be found in the following links:
-Google drive: https://drive.google.com/drive/folders/1zyaPBMmjB5JaRIhYlvVacGbsCwRC2nxM?usp=sharing
+ScenarioEditor is a Windows tool helping edit JSON files used by SignalSim. Preliminary version (32bit and 64bit) can be found in the following links:  
+Google drive: https://drive.google.com/drive/folders/1zyaPBMmjB5JaRIhYlvVacGbsCwRC2nxM?usp=sharing  
 Beidu netdisk: https://pan.baidu.com/s/13rGBkdftv3G0gjSjxDPhbA?pwd=na5y
 
 ---
@@ -70,6 +70,12 @@ Beidu netdisk: https://pan.baidu.com/s/13rGBkdftv3G0gjSjxDPhbA?pwd=na5y
 ## Change List
 
 ### 2026
+
+- **7/15/2026**
+  - JSON tree compose functions support all data fields
+  - GPS time to UTC extends to start from year 1980 and add conversion to/from seconds since 1970.1.1
+  - Windows path separator supports both backslash and forward slash
+  - Word type 16 to 20 added to E1 I/NAV broadcast data
 
 - **5/15/2026**
   - Fix bug CN0 not adjusted when "elevationAdjust" set to true and no "signalPower" array present (CN0 will change following elevation change when using default CN0)

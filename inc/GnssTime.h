@@ -20,5 +20,7 @@ GNSS_TIME UtcToGpsTime(UTC_TIME UtcTime, BOOL UseLeapSecond = TRUE);
 GLONASS_TIME UtcToGlonassTime(UTC_TIME UtcTime);
 GNSS_TIME UtcToBdsTime(UTC_TIME UtcTime);
 GNSS_TIME UtcToGalileoTime(UTC_TIME UtcTime);
+unsigned int GpsTimeToTimeTag(GNSS_TIME GnssTime);
+unsigned int UtcToTimeTag(UTC_TIME UtcTime);
 
 #endif //!defined(__GNSS_TIME_H__)

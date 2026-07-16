@@ -6,10 +6,12 @@
 //
 //----------------------------------------------------------------------
 
+#include <math.h>
 #include <memory.h>
 #include "ConstVal.h"
 #include "INavBit.h"
 
+#define NORMINAL_A0 29600000.
 #define SQRT_A0 5440.588203494177338011974948823
 #define NORMINAL_I0 0.97738438111682456307726683035362
 
@@ -175,12 +177,12 @@ int INavBit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits
 	subframe = ((TOW + ((Param == 1) ? 360 : 0)) % 720) / 30;
 	page = (TOW % 30) / 2;
 	Word = (Param == 1) ? WordAllocationE1[page] : WordAllocationE5[page];
-	if (Word > 10) Word = 63;	// temporarily put all word exceed 10 as dummy word
+	if (Word > 20) Word = 63;	// word type exceed 20 forced to be dummy word as protection
 	if ((subframe & 1) && ((Word == 7) || (Word == 8)))	// Word 7/9 and Word 8/10 toggle for different subframe
 		Word += 2;
 	if ((subframe & 1) && ((Word == 17) || (Word == 19)))	// Word 17/18 and Word 19/20 toggle for different subframe
 		Word ++;
-	Data = GetWordData(svid, Word, subframe);
+	Data = GetWordData(svid, Word, subframe, TOW);
 	// add WN/TOW for Word 0/5/6
 	if (Word == 0)
 		Data[3] = ((StartTime.Week - 1024) << 20) + TOW;
@@ -263,6 +265,7 @@ int INavBit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
 {
 	if (svid < 1 || svid > 36 || !Eph || !Eph->valid)
 		return 0;
+	Ephemeris[svid - 1] = *Eph;
 	ComposeEphWords(Eph, GalEphData[svid-1]);
 	ComposeParityWords(GalEphData[svid-1], GalRsVector[svid-1]);
 	return svid;
@@ -504,7 +507,7 @@ int INavBit::ComposeAlmWords(GPS_ALMANAC Almanac[], unsigned int *AlmData, int w
 	return 0;
 }
 
-unsigned int *INavBit::GetWordData(int svid, int Word, int subframe)
+unsigned int *INavBit::GetWordData(int svid, int Word, int subframe, int TOW)
 {
 	switch (Word)
 	{
@@ -523,6 +526,9 @@ unsigned int *INavBit::GetWordData(int svid, int Word, int subframe)
 	case 9:
 	case 10:
 		return GalAlmData[subframe/2] + 4 * (Word - 7);
+	case 16:
+		ConvertEphToReducedEph(&Ephemeris[svid - 1], (TOW / 30) * 30 + 1, GalReducedEph[svid - 1]);
+		return GalReducedEph[svid - 1];
 	case 17:
 	case 18:
 	case 19:
@@ -589,8 +595,8 @@ void INavBit::ComposeParityWords(unsigned int *EphData, unsigned int *ParityData
 	// put parity vector into word17~20
 	for (i = 0; i < 4; i ++)
 	{
-		ParityData[i*4] = ((17 + i) << 26) + (Iod << 24);
-		ParityData[i*4] |= (((unsigned int)ParityVector[i*15]) << 16);
+		ParityData[i*4] = ((17 + i) << 26) + (Iod << 16);
+		ParityData[i*4] |= (((unsigned int)ParityVector[i*15]) << 18);
 		ParityData[i*4] |= (((unsigned int)ParityVector[i*15+1]) << 8);
 		ParityData[i*4] |= ParityVector[i*15+2];
 		for (j = 1; j < 4; j ++)
@@ -601,4 +607,68 @@ void INavBit::ComposeParityWords(unsigned int *EphData, unsigned int *ParityData
 			ParityData[i*4+j] |= ParityVector[i*15+j*4+2];
 		}
 	}
+}
+
+void INavBit::ConvertEphToReducedEph(PGPS_EPHEMERIS Ephemeris, int RefTime, unsigned int ReducedEph[4])
+{
+	GPS_EPHEMERIS EphTemp;
+//	KINEMATIC_INFO PosVel1, PosVel2;
+//	GpsSatPosSpeedEph(GalileoSystem, RefTime, Ephemeris, &PosVel1, nullptr);
+
+	memcpy(&EphTemp, Ephemeris, sizeof(GPS_EPHEMERIS));
+	// change reference time to RefTime
+	EphTemp.toc = EphTemp.toe = RefTime;
+	double dt = RefTime - Ephemeris->toe;
+	EphTemp.M0 += Ephemeris->n * dt;
+	EphTemp.omega0 += Ephemeris->omega_dot * dt;
+	EphTemp.i0 += Ephemeris->idot * dt;
+	// set 2nd order terms of reduced ephemeris to 0
+	double Mk, Ek, Ek1;
+	Ek1 = Ek = Mk = EphTemp.M0;
+	for (int i = 0; i < 10; i ++)
+	{
+		Ek = Mk + EphTemp.ecc * sin(Ek);
+		if (fabs(Ek - Ek1) < 1e-14)
+			break;
+		Ek1 = Ek;
+	}
+	EphTemp.Ek = Ek;
+	double phi = atan2(EphTemp.root_ecc * sin(EphTemp.Ek), cos(EphTemp.Ek) - EphTemp.ecc) + EphTemp.w;
+	double sin_temp = sin(phi + phi);
+	double cos_temp = cos(phi + phi);
+	double duk = (EphTemp.cuc * cos_temp) + (EphTemp.cus * sin_temp);
+	double drk = (EphTemp.crc * cos_temp) + (EphTemp.crs * sin_temp);
+	double dik = (EphTemp.cic * cos_temp) + (EphTemp.cis * sin_temp);
+	Ek1 = 1.0 - (EphTemp.ecc * cos(EphTemp.Ek));
+	EphTemp.axis += drk / Ek1;
+	EphTemp.sqrtA = sqrt(EphTemp.axis);
+	EphTemp.w += duk;
+	EphTemp.i0 += dik;
+/*	EphTemp.delta_n = 0;
+	EphTemp.omega_dot = EphTemp.idot = 0; EphTemp.omega_delta = -WGS_OMEGDOTE;
+	EphTemp.cic = EphTemp.cis = EphTemp.cuc = EphTemp.cus = EphTemp.crc = EphTemp.crs = 0;
+	EphTemp.omega_t = EphTemp.omega0 - WGS_OMEGDOTE * EphTemp.toe;
+	GpsSatPosSpeedEph(GalileoSystem, RefTime, &EphTemp, &PosVel2, nullptr);*/
+	// convert to reduced ephemeris words
+	signed int IntValue;
+	ReducedEph[0] = (16 << 26);
+	IntValue = UnscaleInt(EphTemp.axis - NORMINAL_A0, 8);
+	ReducedEph[0] |= COMPOSE_BITS(IntValue, 21, 5);
+	IntValue = UnscaleInt(EphTemp.ecc * cos(EphTemp.w), -22);
+	ReducedEph[0] |= COMPOSE_BITS(IntValue, 8, 13);
+	IntValue = UnscaleInt(EphTemp.ecc * sin(EphTemp.w), -22);
+	ReducedEph[0] |= COMPOSE_BITS(IntValue >> 5, 0, 8);
+	ReducedEph[1] = COMPOSE_BITS(IntValue, 27, 5);
+	IntValue = UnscaleInt((EphTemp.i0 - NORMINAL_I0) / PI, -22);
+	ReducedEph[1] |= COMPOSE_BITS(IntValue, 10, 17);
+	IntValue = UnscaleInt(EphTemp.omega0 / PI, -22);
+	ReducedEph[1] |= COMPOSE_BITS(IntValue >> 13, 0, 10);
+	ReducedEph[2] = COMPOSE_BITS(IntValue, 19, 13);
+	IntValue = UnscaleInt((EphTemp.M0 + EphTemp.w) / PI, -22);
+	ReducedEph[2] |= COMPOSE_BITS(IntValue >> 4, 0, 19);
+	ReducedEph[3] = COMPOSE_BITS(IntValue, 28, 4);
+	IntValue = UnscaleInt(EphTemp.af0 + EphTemp.af1 * dt + EphTemp.af2 * dt * dt, -26);
+	ReducedEph[3] |= COMPOSE_BITS(IntValue, 6, 22);
+	IntValue = UnscaleInt(EphTemp.af1 + 2 * EphTemp.af2 * dt, -35);
+	ReducedEph[3] |= COMPOSE_BITS(IntValue, 0, 6);
 }
