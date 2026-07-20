@@ -204,7 +204,7 @@ int BCNavBit::SetEphemeris(int svid, PGPS_EPHEMERIS Eph)
 	Data[0] |= COMPOSE_BITS(IntValue, 0, 12);
 	IntValue = UnscaleInt(Eph->tgd_ext[2] - Eph->tgd_ext[3], -34);	// ISC_B2a
 	Data[1] = COMPOSE_BITS(IntValue, 12, 12);
-	IntValue = UnscaleInt(Eph->tgd_ext[1], -34);	// TGD_B2a
+	IntValue = UnscaleInt(Eph->tgd_ext[3], -34);	// TGD_B2a (B2ad)
 	Data[1] |= COMPOSE_BITS(IntValue, 0, 12);
 	IntValue = UnscaleInt(Eph->tgd_ext[4], -34);	// TGD_B2b
 	Data[2] = COMPOSE_BITS(IntValue, 0, 12);
