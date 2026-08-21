@@ -412,19 +412,25 @@ void CSatelliteParam::Initialize(GnssSystem SatSystem, PGPS_EPHEMERIS Eph, CIono
 }
 
 #define TRANSIT_PERIOD_MS 600000	// after ephemeris change, 600s period to transit to new ephemeris to avoid glitch on satellite position
-void CSatelliteParam::UpdateEphemeris(PGPS_EPHEMERIS Eph)
+BOOL CSatelliteParam::UpdateEphemeris(PGPS_EPHEMERIS Eph)
 {
-	if (system == GlonassSystem && GloEphCur != (PGLONASS_EPHEMERIS)Eph)
+	if (system == GlonassSystem)
 	{
+		if (GloEphCur == (PGLONASS_EPHEMERIS)Eph)
+			return FALSE;
 		GloEphCur = (PGLONASS_EPHEMERIS)Eph;
 		if (GloEphPrev != NULL && GloEphPrev != GloEphCur)
 			EphTransition = TRANSIT_PERIOD_MS;
+		return TRUE;
 	}
-	else if (EphCur != Eph)
+	else
 	{
+		if (EphCur == Eph)
+			return FALSE;
 		EphCur = Eph;
 		if (EphPrev != NULL && EphPrev != EphCur)
 			EphTransition = TRANSIT_PERIOD_MS;
+		return TRUE;
 	}
 }
 

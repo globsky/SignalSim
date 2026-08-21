@@ -155,14 +155,15 @@ typedef struct // GPS ephemeris, also used by BDS, Galileo, QZSS and NavIC
 } GPS_EPHEMERIS, *PGPS_EPHEMERIS;
 
 // definitions for source field
-#define EPH_SOURCE_LNAV 0
-#define EPH_SOURCE_D1D2 0
-#define EPH_SOURCE_INAV 0
-#define EPH_SOURCE_CNAV 1
-#define EPH_SOURCE_CNV1 1
-#define EPH_SOURCE_FNAV 1
-#define EPH_SOURCE_CNV2 2
-#define EPH_SOURCE_CNV3 3
+#define EPH_SOURCE_UNKNOWN 0
+#define EPH_SOURCE_LNAV 1
+#define EPH_SOURCE_D1D2 1
+#define EPH_SOURCE_INAV 1
+#define EPH_SOURCE_CNAV 2
+#define EPH_SOURCE_CNV1 2
+#define EPH_SOURCE_FNAV 2
+#define EPH_SOURCE_CNV2 3
+#define EPH_SOURCE_CNV3 4
 
 typedef struct        			
 {

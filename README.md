@@ -71,6 +71,13 @@ Beidu netdisk: https://pan.baidu.com/s/13rGBkdftv3G0gjSjxDPhbA?pwd=na5y
 
 ### 2026
 
+- **8/21/2026**
+  - Update design description documents to version 1.7
+  - New class CNavBitArray help to manage all naviagtion bit generation
+  - Add JSON tree duplicate function
+  - Fix a bug in FindEphemeris() when FirstPrioritySource specified, ephemeris from other source may overwrite found ephemeris
+  - Update IFDataGenThread.cpp using class CScenarioData and CNavBitArray
+
 - **8/15/2026**
   - Following modifications for safer and easier function call
     1. Add API for navigation bit stream operation

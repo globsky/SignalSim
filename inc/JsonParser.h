@@ -82,6 +82,8 @@ public:
 	static void DeleteTree(JsonObject *Object, int DeleteLink = 0);
 	static JsonObject *ReplaceObject(JsonObject *OldObject, JsonObject *NewObject);
 	static void RemoveObject(JsonObject *Object);
+	static void CopyObject(JsonObject *DestObject, JsonObject *SrcObject);
+	static JsonObject *DuplicateObject(JsonObject *pParent, JsonObject *SrcObject);
 };
 
 #define GET_DOUBLE_VALUE(Object) ((Object->Type == JsonObject::ValueTypeIntNumber) ? (double)(Object->Number.l_data) : Object->Number.d_data)
@@ -103,6 +105,7 @@ class JsonStream
 {
 public:
 	JsonStream();
+	JsonStream(JsonObject *Object);	// duplicate from an existing object tree
 	~JsonStream();
 
 	void DeleteAllTree();

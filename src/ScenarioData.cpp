@@ -22,12 +22,12 @@ CScenarioData::CScenarioData()
 	memset(GloEphVisible, 0, sizeof(GloEphVisible));
 	memset(&OutputParam, 0, sizeof(OutputParam));
 	GpsSatNumber = BdsSatNumber = GalSatNumber = GloSatNumber = 0;
+	GpsEphUpdateMask = BdsEphUpdateMask = GalEphUpdateMask = GloEphUpdateMask = 0;
 }
 
 CScenarioData::~CScenarioData()
 {
 }
-
 
 int CScenarioData::LoadScenarioFile(const char* filename)
 {
@@ -62,6 +62,8 @@ int CScenarioData::LoadScenarioObject(JsonObject *Object, const char* JsonFilePa
 	CurTime = UtcToGpsTime(UtcTime);
 	UtcTime = GpsTimeToUtc(CurTime, FALSE);	// convert back to UTC represented GPS time (no leap second adjustment)
 	PowerControl.ResetTime();
+	if (OutputParam.CenterFreq > 0 && OutputParam.SampleFreq > 0)
+		FilterSignal();
 
 	UpdateSatList();
 
@@ -199,19 +201,79 @@ void CScenarioData::UpdateSatList()
 	GlonassTime = UtcToGlonassTime(UtcTime);
 	int i;
 
+	GpsEphUpdateMask = BdsEphUpdateMask = GalEphUpdateMask = GloEphUpdateMask = 0;
 	// find ephemeris for all satellites in each system
 	for (i = 1; i <= TOTAL_GPS_SAT; i ++)
-		GpsSatParam[i-1].UpdateEphemeris(GpsEph[i-1] = NavData.FindEphemeris(GpsSystem, CurTime, i));
+		if (GpsSatParam[i-1].UpdateEphemeris(GpsEph[i-1] = NavData.FindEphemeris(GpsSystem, CurTime, i)))
+			GpsEphUpdateMask |= (1ULL << (i-1));
 	for (i = 1; i <= TOTAL_BDS_SAT; i ++)
-		BdsSatParam[i-1].UpdateEphemeris(BdsEph[i-1] = NavData.FindEphemeris(BdsSystem, BdsTime, i));
+		if (BdsSatParam[i-1].UpdateEphemeris(BdsEph[i-1] = NavData.FindEphemeris(BdsSystem, BdsTime, i)))
+			BdsEphUpdateMask |= (1ULL << (i-1));
 	for (i = 1; i <= TOTAL_GAL_SAT; i ++)
-		GalSatParam[i-1].UpdateEphemeris(GalEph[i-1] = NavData.FindEphemeris(GalileoSystem, CurTime, i));
+		if (GalSatParam[i-1].UpdateEphemeris(GalEph[i-1] = NavData.FindEphemeris(GalileoSystem, CurTime, i)))
+			GalEphUpdateMask |= (1ULL << (i-1));
 	for (i = 1; i <= TOTAL_GLO_SAT; i ++)
-		GloSatParam[i-1].UpdateEphemeris((PGPS_EPHEMERIS)(GloEph[i-1] = NavData.FindGloEphemeris(GlonassTime, i)));
+		if (GloSatParam[i-1].UpdateEphemeris((PGPS_EPHEMERIS)(GloEph[i-1] = NavData.FindGloEphemeris(GlonassTime, i))))
+			GloEphUpdateMask |= (1ULL << (i-1));
 
 	// determine visible satellites for each system based on current position and time
 	GpsSatNumber = (OutputParam.FreqSelect[GpsSystem]) ? GetVisibleSatellite(CurPosEcef, CurTime, OutputParam, GpsSystem, GpsEph, TOTAL_GPS_SAT, GpsEphVisible) : 0;
 	BdsSatNumber = (OutputParam.FreqSelect[BdsSystem]) ? GetVisibleSatellite(CurPosEcef, CurTime, OutputParam, BdsSystem, BdsEph, TOTAL_BDS_SAT, BdsEphVisible) : 0;
 	GalSatNumber = (OutputParam.FreqSelect[GalileoSystem]) ? GetVisibleSatellite(CurPosEcef, CurTime, OutputParam, GalileoSystem, GalEph, TOTAL_GAL_SAT, GalEphVisible) : 0;
 	GloSatNumber = (OutputParam.FreqSelect[GlonassSystem]) ? GetGlonassVisibleSatellite(CurPosEcef, GlonassTime, OutputParam, GloEph, TOTAL_GLO_SAT, GloEphVisible) : 0;
+}
+
+void CScenarioData::FilterSignal()
+{
+	int FreqLow, FreqHigh;
+
+	// determine whether signal within IF band
+	FreqLow = (OutputParam.CenterFreq - OutputParam.SampleFreq / 2) * 1000;
+	FreqHigh = (OutputParam.CenterFreq + OutputParam.SampleFreq / 2) * 1000;
+	if (OutputParam.FreqSelect[GpsSystem])
+	{
+		if ((OutputParam.FreqSelect[GpsSystem] & (1 << SIGNAL_INDEX_L1CA)) && (FREQ_GPS_L1 < FreqLow || FREQ_GPS_L1 > FreqHigh))
+			OutputParam.FreqSelect[GpsSystem] &= ~(1 << SIGNAL_INDEX_L1CA);
+		if ((OutputParam.FreqSelect[GpsSystem] & (1 << SIGNAL_INDEX_L1C)) && (FREQ_GPS_L1 < FreqLow || FREQ_GPS_L1 > FreqHigh))
+			OutputParam.FreqSelect[GpsSystem] &= ~(1 << SIGNAL_INDEX_L1C);
+		if ((OutputParam.FreqSelect[GpsSystem] & (1 << SIGNAL_INDEX_L2C)) && (FREQ_GPS_L2 < FreqLow || FREQ_GPS_L2 > FreqHigh))
+			OutputParam.FreqSelect[GpsSystem] &= ~(1 << SIGNAL_INDEX_L2C);
+		if ((OutputParam.FreqSelect[GpsSystem] & (1 << SIGNAL_INDEX_L2P)) && (FREQ_GPS_L2 < FreqLow || FREQ_GPS_L2 > FreqHigh))
+			OutputParam.FreqSelect[GpsSystem] &= ~(1 << SIGNAL_INDEX_L2P);
+		if ((OutputParam.FreqSelect[GpsSystem] & (1 << SIGNAL_INDEX_L5)) && (FREQ_GPS_L5 < FreqLow || FREQ_GPS_L5 > FreqHigh))
+			OutputParam.FreqSelect[GpsSystem] &= ~(1 << SIGNAL_INDEX_L5);
+	}
+	if (OutputParam.FreqSelect[BdsSystem])
+	{
+		if ((OutputParam.FreqSelect[BdsSystem] & (1 << SIGNAL_INDEX_B1C)) && (FREQ_BDS_B1C < FreqLow || FREQ_BDS_B1C > FreqHigh))
+			OutputParam.FreqSelect[BdsSystem] &= ~(1 << SIGNAL_INDEX_B1C);
+		if ((OutputParam.FreqSelect[BdsSystem] & (1 << SIGNAL_INDEX_B1I)) && (FREQ_BDS_B1I < FreqLow || FREQ_BDS_B1I > FreqHigh))
+			OutputParam.FreqSelect[BdsSystem] &= ~(1 << SIGNAL_INDEX_B1I);
+		if ((OutputParam.FreqSelect[BdsSystem] & (1 << SIGNAL_INDEX_B2I)) && (FREQ_BDS_B2I < FreqLow || FREQ_BDS_B2I > FreqHigh))
+			OutputParam.FreqSelect[BdsSystem] &= ~(1 << SIGNAL_INDEX_B2I);
+		if ((OutputParam.FreqSelect[BdsSystem] & (1 << SIGNAL_INDEX_B3I)) && (FREQ_BDS_B3I < FreqLow || FREQ_BDS_B3I > FreqHigh))
+			OutputParam.FreqSelect[BdsSystem] &= ~(1 << SIGNAL_INDEX_B3I);
+		if ((OutputParam.FreqSelect[BdsSystem] & (1 << SIGNAL_INDEX_B2a)) && (FREQ_BDS_B2a < FreqLow || FREQ_BDS_B2a > FreqHigh))
+			OutputParam.FreqSelect[BdsSystem] &= ~(1 << SIGNAL_INDEX_B2a);
+		if ((OutputParam.FreqSelect[BdsSystem] & (1 << SIGNAL_INDEX_B2b)) && (FREQ_BDS_B2b < FreqLow || FREQ_BDS_B2b > FreqHigh))
+			OutputParam.FreqSelect[BdsSystem] &= ~(1 << SIGNAL_INDEX_B2b);
+	}
+	if (OutputParam.FreqSelect[GalileoSystem])
+	{
+		if ((OutputParam.FreqSelect[GalileoSystem] & (1 << SIGNAL_INDEX_E1)) && (FREQ_GAL_E1 < FreqLow || FREQ_GAL_E1 > FreqHigh))
+			OutputParam.FreqSelect[GalileoSystem] &= ~(1 << SIGNAL_INDEX_E1);
+		if ((OutputParam.FreqSelect[GalileoSystem] & (1 << SIGNAL_INDEX_E5a)) && (FREQ_GAL_E5a < FreqLow || FREQ_GAL_E5a > FreqHigh))
+			OutputParam.FreqSelect[GalileoSystem] &= ~(1 << SIGNAL_INDEX_E5a);
+		if ((OutputParam.FreqSelect[GalileoSystem] & (1 << SIGNAL_INDEX_E5b)) && (FREQ_GAL_E5b < FreqLow || FREQ_GAL_E5b > FreqHigh))
+			OutputParam.FreqSelect[GalileoSystem] &= ~(1 << SIGNAL_INDEX_E5b);
+		if ((OutputParam.FreqSelect[GalileoSystem] & (1 << SIGNAL_INDEX_E6)) && (FREQ_GAL_E6 < FreqLow || FREQ_GAL_E6 > FreqHigh))
+			OutputParam.FreqSelect[GalileoSystem] &= ~(1 << SIGNAL_INDEX_E6);
+	}
+	if (OutputParam.FreqSelect[GlonassSystem])
+	{
+		if ((OutputParam.FreqSelect[GlonassSystem] & (1 << SIGNAL_INDEX_G1)) && (FREQ_GLO_G1 < FreqLow || FREQ_GLO_G1 > FreqHigh))
+			OutputParam.FreqSelect[GlonassSystem] &= ~(1 << SIGNAL_INDEX_G1);
+		if ((OutputParam.FreqSelect[GlonassSystem] & (1 << SIGNAL_INDEX_G2)) && (FREQ_GLO_G2 < FreqLow || FREQ_GLO_G2 > FreqHigh))
+			OutputParam.FreqSelect[GlonassSystem] &= ~(1 << SIGNAL_INDEX_G2);
+	}
 }

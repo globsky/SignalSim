@@ -32,7 +32,7 @@ public:
 	~CSatelliteParam();
 
 	void Initialize(GnssSystem SatSystem, PGPS_EPHEMERIS Eph, CIonoDelay *IonoModel, double InitCN0, enum ElevationAdjust Adjust);
-	void UpdateEphemeris(PGPS_EPHEMERIS Eph);
+	BOOL UpdateEphemeris(PGPS_EPHEMERIS Eph);
 	void CalculateParam(KINEMATIC_INFO PositionEcef, LLA_POSITION PositionLla, GNSS_TIME time);
 	void UpdateCN0(int PowerListCount, SIGNAL_POWER PowerList[]);
 	double GetTravelTime(int SignalIndex);

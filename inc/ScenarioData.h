@@ -51,9 +51,11 @@ public:
 	LLA_POSITION CurPosLla;
 	CSatelliteParam GpsSatParam[TOTAL_GPS_SAT], BdsSatParam[TOTAL_BDS_SAT], GalSatParam[TOTAL_GAL_SAT], GloSatParam[TOTAL_GLO_SAT];
 	int GpsSatNumber, BdsSatNumber, GalSatNumber, GloSatNumber;
+	unsigned long long GpsEphUpdateMask, BdsEphUpdateMask, GalEphUpdateMask, GloEphUpdateMask;
 protected:
 	void UpdateSatelliteParam(int TimeStepMs);
 	void UpdateSatList();
+	void FilterSignal();
 
 public:
 	// methods to process scenario data

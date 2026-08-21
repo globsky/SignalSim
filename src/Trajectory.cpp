@@ -675,6 +675,7 @@ CTrajectorySegment *CTrajectory::GetLastSegment()
 void CTrajectory::SetTrajectoryName(char *Name)
 {
 	strncpy(TrajectoryName, Name, 127);
+	TrajectoryName[127] = '\0';
 }
 
 double CTrajectory::GetTimeLength()

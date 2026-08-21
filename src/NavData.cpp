@@ -292,7 +292,7 @@ PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int sv
 //			DoAssignment = 1;
 		else if (Eph && Eph->source != FirstPrioritySource && EphemerisPool[i].source == FirstPrioritySource)	// new ephemeris from desired source
 			DoAssignment = 1;
-		else if (diff <= time_diff)	// either both old and new ephemeris do or do not from desired source, but has smaller time difference
+		else if (diff <= time_diff && (Eph == NULL || Eph->source != FirstPrioritySource))	// either both old and new ephemeris do or do not from desired source, but has smaller time difference
 			DoAssignment = 1;
 		else
 			DoAssignment = 0;

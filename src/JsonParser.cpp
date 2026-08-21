@@ -319,9 +319,50 @@ int JsonObject::InsertObject(JsonObject* NewObject, int InsertPosition)
 	return 1;
 }
 
+void JsonObject::CopyObject(JsonObject *DestObject, JsonObject *SrcObject)
+{
+	strncpy(DestObject->Key, SrcObject->Key, MAX_KEY_LENGTH);
+	DestObject->Key[MAX_KEY_LENGTH] = '\0';
+	DestObject->Type = SrcObject->Type;
+	DestObject->Number = SrcObject->Number;
+	if (SrcObject->Type == JsonObject::ValueTypeString)
+	{
+		strncpy(DestObject->String, SrcObject->String, MAX_STRING_LENGTH);
+		DestObject->String[MAX_STRING_LENGTH] = '\0';
+	}
+}
+
+JsonObject *JsonObject::DuplicateObject(JsonObject *pParent, JsonObject *SrcObject)
+{
+	if (SrcObject == NULL)
+		return NULL;
+	// create current object
+	JsonObject *CurObject = new JsonObject(pParent);
+	CopyObject(CurObject, SrcObject);
+	JsonObject *Object, *DupObject, *PrevObject = NULL;
+	for (Object = SrcObject->GetFirstObject(); Object; Object = Object->GetNextObject())
+	{
+		DupObject = DuplicateObject(CurObject, Object);
+		if (PrevObject == NULL)
+			CurObject->pObjectContent = DupObject;
+		else
+			PrevObject->pNextObject = DupObject;
+		PrevObject = DupObject;
+	}
+	return CurObject;
+}
+
 JsonStream::JsonStream()
 {
 	RootObject = NULL;
+	stream[0] = '\0';
+	p = stream;
+	indent = DEFAULT_INDENT;
+}
+
+JsonStream::JsonStream(JsonObject *Object)
+{
+	RootObject = JsonObject::DuplicateObject(NULL, Object);
 	stream[0] = '\0';
 	p = stream;
 	indent = DEFAULT_INDENT;
