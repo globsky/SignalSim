@@ -282,6 +282,10 @@ int GetAlmanacGlonass(FILE *fp, PGLONASS_ALMANAC Alm)
 
 double NormAngle(double angle)
 {
+	// guard against inf/NaN input (e.g. produced by degenerate orbit parameters),
+	// which would otherwise make the loops below spin forever
+	if (!isfinite(angle))
+		return 0.0;
 	while (angle < -PI) angle += PI2;
 	while (angle >= PI) angle -= PI2;
 	return angle;
