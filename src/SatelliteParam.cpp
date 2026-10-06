@@ -437,7 +437,7 @@ BOOL CSatelliteParam::UpdateEphemeris(PGPS_EPHEMERIS Eph)
 void CSatelliteParam::CalculateParam(KINEMATIC_INFO PositionEcef, LLA_POSITION PositionLla, GNSS_TIME time)
 {
 	KINEMATIC_INFO PosVelPrev;
-	double Distance, SatelliteTime = (time.MilliSeconds + time.SubMilliSeconds) / 1000.0, WeightPrev;
+	double Distance, SatelliteTime, WeightPrev;
 	double ClockErrorPrev;
 	int Seconds, LeapSecond, TimeStep;
 

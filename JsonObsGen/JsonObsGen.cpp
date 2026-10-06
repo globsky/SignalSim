@@ -98,6 +98,7 @@ int main()
 	{
 		ScenarioData.GetCurPosVel(CurPosVel, CurPosLla);
 		ScenarioData.GetCurTime(CurGnssTime, CurUtcTime);
+		CurUtcTime = GpsTimeToUtc(CurGnssTime, FALSE);	// recalculate UTC time without leap second adjustment
 		ObsNumber = 0;
 		Obs = Observations;
 	

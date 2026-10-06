@@ -5,8 +5,6 @@
 //          Copyright (C) 2020-2029 by Jun Mo, All rights reserved.
 //
 //----------------------------------------------------------------------
-#include <malloc.h>
-#include <string.h>
 #include <math.h>
 #include <ctype.h>
 
@@ -24,12 +22,6 @@
 
 CNavData::CNavData()
 {
-	GpsEphemerisNumber = BdsEphemerisNumber = GalileoEphemerisNumber = GlonassEphemerisNumber = 0;
-	GpsEphemerisPool = (PGPS_EPHEMERIS)malloc(sizeof(GPS_EPHEMERIS) * EPH_NUMBER_INIT);
-	BdsEphemerisPool = (PGPS_EPHEMERIS)malloc(sizeof(GPS_EPHEMERIS) * EPH_NUMBER_INIT);
-	GalileoEphemerisPool = (PGPS_EPHEMERIS)malloc(sizeof(GPS_EPHEMERIS) * EPH_NUMBER_INIT);
-	GlonassEphemerisPool = (PGLONASS_EPHEMERIS)malloc(sizeof(GLONASS_EPHEMERIS) * EPH_NUMBER_INIT);
-	GpsEphemerisPoolSize = BdsEphemerisPoolSize = GalileoEphemerisPoolSize = GlonassEphemerisPoolSize = EPH_NUMBER_INIT;
 	memset(&GpsUtcParam, 0, sizeof(UTC_PARAM));
 	memset(GpsAlmanac, 0, sizeof(GpsAlmanac));
 	memset(BdsAlmanac, 0, sizeof(BdsAlmanac));
@@ -46,10 +38,6 @@ CNavData::CNavData()
 
 CNavData::~CNavData()
 {
-	free(GpsEphemerisPool);
-	free(BdsEphemerisPool);
-	free(GalileoEphemerisPool);
-	free(GlonassEphemerisPool);
 }
 
 NavFileType CNavData::CheckNavFileType(FILE *fp)
@@ -121,7 +109,9 @@ FILE* CNavData::OpenNavFile(const char *filename, const char *JsonFilePath)
 
 bool CNavData::AddNavData(NavDataType Type, void *NavData)
 {
-	PGPS_EPHEMERIS NewEphmerisPool;
+//	PGPS_EPHEMERIS NewEphmerisPool;
+	PGPS_EPHEMERIS GpsEph = (PGPS_EPHEMERIS)NavData;
+	PGLONASS_EPHEMERIS GloEph = (PGLONASS_EPHEMERIS)NavData;
 	PIONO_PARAM Iono = (PIONO_PARAM)NavData;
 	PUTC_PARAM UtcParam = (PUTC_PARAM)NavData;
 	int TimeMark;
@@ -163,56 +153,20 @@ bool CNavData::AddNavData(NavDataType Type, void *NavData)
 	case NavDataGpsLnav:
 	case NavDataGpsCnav:
 	case NavDataGpsCnav2:
-		if (GpsEphemerisNumber == GpsEphemerisPoolSize)
-		{
-			GpsEphemerisPoolSize *= 2;
-			NewEphmerisPool = (PGPS_EPHEMERIS)realloc(GpsEphemerisPool, sizeof(GPS_EPHEMERIS) * GpsEphemerisPoolSize);
-			if (NewEphmerisPool == NULL)
-				return false;
-			GpsEphemerisPool = NewEphmerisPool;
-		}
-		memcpy(&GpsEphemerisPool[GpsEphemerisNumber], NavData, sizeof(GPS_EPHEMERIS));
-		GpsEphemerisNumber ++;
+		GpsEphemerisPool.push_back(*GpsEph);
 		break;
 	case NavDataBdsD1D2:
 	case NavDataBdsCnav1:
 	case NavDataBdsCnav2:
 	case NavDataBdsCnav3:
-		if (BdsEphemerisNumber == BdsEphemerisPoolSize)
-		{
-			BdsEphemerisPoolSize *= 2;
-			NewEphmerisPool = (PGPS_EPHEMERIS)realloc(BdsEphemerisPool, sizeof(GPS_EPHEMERIS) * BdsEphemerisPoolSize);
-			if (NewEphmerisPool == NULL)
-				return false;
-			BdsEphemerisPool = NewEphmerisPool;
-		}
-		memcpy(&BdsEphemerisPool[BdsEphemerisNumber], NavData, sizeof(GPS_EPHEMERIS));
-		BdsEphemerisNumber ++;
+		BdsEphemerisPool.push_back(*GpsEph);
 		break;
 	case NavDataGalileoINav:
 	case NavDataGalileoFNav:
-		if (GalileoEphemerisNumber == GalileoEphemerisPoolSize)
-		{
-			GalileoEphemerisPoolSize *= 2;
-			NewEphmerisPool = (PGPS_EPHEMERIS)realloc(GalileoEphemerisPool, sizeof(GPS_EPHEMERIS) * GalileoEphemerisPoolSize);
-			if (NewEphmerisPool == NULL)
-				return false;
-			GalileoEphemerisPool = NewEphmerisPool;
-		}
-		memcpy(&GalileoEphemerisPool[GalileoEphemerisNumber], NavData, sizeof(GPS_EPHEMERIS));
-		GalileoEphemerisNumber ++;
+		GalileoEphemerisPool.push_back(*GpsEph);
 		break;
 	case NavDataGlonassFdma:
-		if (GlonassEphemerisNumber == GlonassEphemerisPoolSize)
-		{
-			GlonassEphemerisPoolSize *= 2;
-			NewEphmerisPool = (PGPS_EPHEMERIS)realloc(GlonassEphemerisPool, sizeof(GLONASS_EPHEMERIS) * GlonassEphemerisPoolSize);
-			if (NewEphmerisPool == NULL)
-				return false;
-			GlonassEphemerisPool = (PGLONASS_EPHEMERIS)NewEphmerisPool;
-		}
-		memcpy(&GlonassEphemerisPool[GlonassEphemerisNumber], NavData, sizeof(GLONASS_EPHEMERIS));
-		GlonassEphemerisNumber ++;
+		GlonassEphemerisPool.push_back(*GloEph);
 		break;
 	case NavDataGpsUtc:
 		UtcParam->TLS = UtcParam->TLSF = GpsUtcParam.TLS;	// set TLS/TLSF field in UtcParam with correct before memcpy()
@@ -245,52 +199,32 @@ bool CNavData::AddNavData(NavDataType Type, void *NavData)
 // if system is BdsSystem, time uses BDS time, otherwise uses GPS time
 PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int svid, int IgnoreTimeLimit, unsigned char FirstPrioritySource)
 {
-	int i, time_diff = 0x7fffffff, diff;
+	int time_diff = 0x7fffffff, diff;
+	std::vector <GPS_EPHEMERIS> &EphemerisPool = (system == GpsSystem) ? GpsEphemerisPool : (system == BdsSystem) ? BdsEphemerisPool : GalileoEphemerisPool;
 	PGPS_EPHEMERIS Eph = NULL;
-	PGPS_EPHEMERIS EphemerisPool;
-	int EphemerisNumber;
-	int Week = time.Week;
+	int Week = (system == GalileoSystem) ? time.Week - 1024 : time.Week;
 	BOOL DoAssignment = 0;
 
-	if (system == GpsSystem)
+	for (auto& Ephemeris : EphemerisPool)
 	{
-		EphemerisPool = GpsEphemerisPool;
-		EphemerisNumber = GpsEphemerisNumber;
-	}
-	else if (system == BdsSystem)
-	{
-		EphemerisPool = BdsEphemerisPool;
-		EphemerisNumber = BdsEphemerisNumber;
-	}
-	else if (system == GalileoSystem)
-	{
-		EphemerisPool = GalileoEphemerisPool;
-		EphemerisNumber = GalileoEphemerisNumber;
-		Week -= 1024;
-	}
-	else
-		return (PGPS_EPHEMERIS)0;
-
-	for (i = 0; i < EphemerisNumber; i ++)
-	{
-		if (svid != EphemerisPool[i].svid)	// not same svid
+		if (svid != Ephemeris.svid)	// not same svid
 			continue;
-		if (EphemerisPool[i].health != 0)
+		if (Ephemeris.health != 0)
 			continue;
-/*		if ((system == GpsSystem) && (EphemerisPool[i].toe % 1200) != 0)	// filter out toe not multiple of 2^4 and 300
+/*		if ((system == GpsSystem) && (Ephemeris.toe % 1200) != 0)	// filter out toe not multiple of 2^4 and 300
 			continue;
-		else if ((system == BdsSystem) && (EphemerisPool[i].toe % 600) != 0)	// filter out toe not multiple of 2^3 and 300
+		else if ((system == BdsSystem) && (Ephemeris.toe % 600) != 0)	// filter out toe not multiple of 2^3 and 300
 			continue;
-		else if ((system == GalileoSystem) && (EphemerisPool[i].toe % 60) != 0)	// filter out toe not multiple of 60
+		else if ((system == GalileoSystem) && (Ephemeris.toe % 60) != 0)	// filter out toe not multiple of 60
 			continue;*/
-		diff = (Week - EphemerisPool[i].week) * 604800 + (time.MilliSeconds / 1000 - EphemerisPool[i].toe);
+		diff = (Week - Ephemeris.week) * 604800 + (time.MilliSeconds / 1000 - Ephemeris.toe);
 		if (diff < 0)
 			diff = -diff;
 		if (!IgnoreTimeLimit && diff > 7200) // exceed +-2 hours time span
 			DoAssignment = 0;
 //		else if (Eph == NULL)	// not assigned, assign anyway
 //			DoAssignment = 1;
-		else if (Eph && Eph->source != FirstPrioritySource && EphemerisPool[i].source == FirstPrioritySource)	// new ephemeris from desired source
+		else if (Eph && Eph->source != FirstPrioritySource && Ephemeris.source == FirstPrioritySource)	// new ephemeris from desired source
 			DoAssignment = 1;
 		else if (diff <= time_diff && (Eph == NULL || Eph->source != FirstPrioritySource))	// either both old and new ephemeris do or do not from desired source, but has smaller time difference
 			DoAssignment = 1;
@@ -299,7 +233,7 @@ PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int sv
 
 		if (DoAssignment)
 		{
-			Eph = &EphemerisPool[i];
+			Eph = &Ephemeris;
 			time_diff = diff;
 		}
 	}
@@ -309,25 +243,25 @@ PGPS_EPHEMERIS CNavData::FindEphemeris(GnssSystem system, GNSS_TIME time, int sv
 
 PGLONASS_EPHEMERIS CNavData::FindGloEphemeris(GLONASS_TIME GlonassTime, int slot)
 {
-	int i, time_diff, diff;
+	int time_diff, diff;
 	PGLONASS_EPHEMERIS Eph = NULL;
 
-	for (i = 0; i < GlonassEphemerisNumber; i ++)
+	for (auto& Ephemeris : GlonassEphemerisPool)
 	{
-		if (slot != (int)GlonassEphemerisPool[i].n)
+		if (slot != (int)Ephemeris.n)
 			continue;
-		diff = GlonassTime.Day - GlonassEphemerisPool[i].day;
+		diff = GlonassTime.Day - Ephemeris.day;
 		// day range between -730~730
 		if (diff > 730)
 			diff -= 1461;
 		else if (diff < -730)
 			diff += 1461;
-		diff = diff * 86400 + (GlonassTime.MilliSeconds / 1000 - GlonassEphemerisPool[i].tb);
+		diff = diff * 86400 + (GlonassTime.MilliSeconds / 1000 - Ephemeris.tb);
 		if (diff < 0)
 			diff = -diff;
 		if ((diff < 1800) && ((Eph == NULL) || ((Eph != NULL) && (diff < time_diff))))
 		{
-			Eph = &GlonassEphemerisPool[i];
+			Eph = &Ephemeris;
 			time_diff = diff;
 		}
 	}
@@ -481,7 +415,7 @@ void CNavData::CompleteAlmanac(GnssSystem system, UTC_TIME time)
 #define GLONASS_PERIOD 40544
 void CNavData::CompleteGlonassAlmanac(GLONASS_TIME time)
 {
-	int i, j;
+	int i;
 	int day = -1, leap_year;
 	PGLONASS_EPHEMERIS Eph;
 	double t;
@@ -508,13 +442,13 @@ void CNavData::CompleteGlonassAlmanac(GLONASS_TIME time)
 			continue;
 		// find first ephemeris within target date to estimate time of ascending
 		Eph = NULL;
-		for (j = 0; j < GlonassEphemerisNumber; j ++)
+		for (auto& Ephemeris : GlonassEphemerisPool)
 		{
-			if ((int)GlonassEphemerisPool[j].n != i + 1)
+			if ((int)Ephemeris.n != i + 1)
 				continue;
-			if (GlonassEphemerisPool[j].day == day)
+			if (Ephemeris.day == day)
 			{
-				Eph = &GlonassEphemerisPool[j];
+				Eph = &Ephemeris;
 				break;
 			}
 		}

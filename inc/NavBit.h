@@ -25,7 +25,7 @@ public:
 	enum NavParamType { ParamTypeSTO, ParamTypeEOP, ParamTypeIonKModel, ParamTypeIonGModel, ParamTypeIonBModel };
 
 	NavBit();
-	~NavBit();
+	virtual ~NavBit();
 
 	virtual int GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits) = 0;	// Param reserved for same Navigation bit structure in different signal
 	virtual int SetEphemeris(int svid, PGPS_EPHEMERIS Eph) = 0;

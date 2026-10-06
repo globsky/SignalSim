@@ -60,7 +60,7 @@ protected:
 public:
 	// methods to process scenario data
 	int LoadScenarioFile(const char* filename);
-	int LoadScenarioObject(JsonObject *Object, const char* JsonFilePath = NULL);
+	int LoadScenarioObject(JsonObject *Object, const char* JsonFilePath = nullptr);
 	int GetCurPosVel(KINEMATIC_INFO& CurPosVel, LLA_POSITION &CurPosLla);
 	int GetCurTime(GNSS_TIME& CurGnssTime, UTC_TIME& CurUtcTime);
 	int GetSatelliteParam(GnssSystem system, CSatelliteParam* SatParam[]);

@@ -9,9 +9,19 @@
 #ifndef __POWER_CONTROL_H__
 #define __POWER_CONTROL_H__
 
+#ifdef NULL
+	#pragma push_macro("NULL")
+	#undef NULL
+	#define NULL 0
+#endif
+#include <vector>
+#ifdef NULL
+	#pragma pop_macro("NULL")
+#endif
+
 #include "BasicTypes.h"
 
-typedef struct
+typedef struct _tag_SIGNAL_POWER
 {
 	int system;
 	int svid;
@@ -29,9 +39,8 @@ public:
 	enum ElevationAdjust Adjust;
 	double NoiseFloor;
 	double InitCN0;
-	int ArraySize;
-	int NextIndex;
-	PSIGNAL_POWER PowerControlArray;
+	size_t NextIndex;
+	std::vector <_tag_SIGNAL_POWER> PowerControlArray;
 	int TimeElapsMs;
 
 	void Clear();

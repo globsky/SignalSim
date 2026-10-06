@@ -6,7 +6,7 @@
 //
 //----------------------------------------------------------------------
 
-#include <malloc.h>
+#include <stdlib.h>
 #include <math.h>
 #include <string.h>
 #include "JsonParser.h"

@@ -9,10 +9,18 @@
 #ifndef __NAV_DATA_H__
 #define __NAV_DATA_H__
 
+#ifdef NULL
+	#pragma push_macro("NULL")
+	#undef NULL
+	#define NULL 0
+#endif
+#include <vector>
+#ifdef NULL
+	#pragma pop_macro("NULL")
+#endif
+
 #include "BasicTypes.h"
 #include "Rinex.h"
-
-#define EPH_NUMBER_INIT 100
 
 enum NavFileType { NavFileUnknown = 0, AlmanacGps, AlmanacBds, AlmanacGalileo, AlmanacGlonass, Rinex3NavData, Rinex4NavData };
 
@@ -50,18 +58,10 @@ public:
 	void CompleteGlonassAlmanac(GLONASS_TIME time);
 
 private:
-	int GpsEphemerisNumber;
-	int BdsEphemerisNumber;
-	int GalileoEphemerisNumber;
-	int GlonassEphemerisNumber;
-	int GpsEphemerisPoolSize;
-	int BdsEphemerisPoolSize;
-	int GalileoEphemerisPoolSize;
-	int GlonassEphemerisPoolSize;
-	PGPS_EPHEMERIS GpsEphemerisPool;
-	PGPS_EPHEMERIS BdsEphemerisPool;
-	PGPS_EPHEMERIS GalileoEphemerisPool;
-	PGLONASS_EPHEMERIS GlonassEphemerisPool;
+	std::vector <GPS_EPHEMERIS> GpsEphemerisPool;
+	std::vector <GPS_EPHEMERIS> BdsEphemerisPool;
+	std::vector <GPS_EPHEMERIS> GalileoEphemerisPool;
+	std::vector <GLONASS_EPHEMERIS> GlonassEphemerisPool;
 	GPS_ALMANAC GpsAlmanac[GpsSatNumber];
 	GPS_ALMANAC BdsAlmanac[BdsSatNumber];
 	GPS_ALMANAC GalileoAlmanac[GalileoSatNumber];

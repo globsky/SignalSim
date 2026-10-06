@@ -243,7 +243,11 @@ int LNavBit::FillGpsAlmanacPage(PGPS_ALMANAC Almanac, unsigned int Stream[8])
 	unsigned int UintValue;
 
 	if ((Almanac->valid & 1) == 0)
+	{
+		// no almanac for this SV: mark the page as dummy (SV ID 0) so receivers do not store the fill pattern
+		Stream[0] = (Stream[0] & ~0x3f0000) | COMPOSE_BITS(0x40, 16, 8);
 		return 0;
+	}
 	Stream[0] = COMPOSE_BITS(Almanac->svid + 0x40, 16, 8);
 	UintValue = UnscaleUint(Almanac->ecc, -21);
 	Stream[0] |= COMPOSE_BITS(UintValue, 0, 16);
@@ -305,13 +309,15 @@ int LNavBit::FillGpsHealthPage(GPS_ALMANAC Almanac[], unsigned int Stream4[8], u
 	for (i = 1; i < 5; i ++)
 		Stream4[i] = 0xcccccc;
 	Stream4[5] = 0xcccc00 + ((Almanac[24].valid & 1) ? 0 : 0x3f);	// SV25 health
-	Stream5[6] = COMPOSE_BITS(((Almanac[25].valid & 1) ? 0 : 0x3f), 18, 6);
-	Stream5[6] |= COMPOSE_BITS(((Almanac[26].valid & 1) ? 0 : 0x3f), 12, 6);
-	Stream5[6] |= COMPOSE_BITS(((Almanac[27].valid & 1) ? 0 : 0x3f), 6, 6);
-	Stream5[6] = COMPOSE_BITS(((Almanac[28].valid & 1) ? 0 : 0x3f), 0, 6);
-	Stream5[7] = COMPOSE_BITS(((Almanac[29].valid & 1) ? 0 : 0x3f), 18, 6);
-	Stream5[7] |= COMPOSE_BITS(((Almanac[30].valid & 1) ? 0 : 0x3f), 12, 6);
-	Stream5[7] |= COMPOSE_BITS(((Almanac[31].valid & 1) ? 0 : 0x3f), 6, 6);
+	// SV26~SV32 health in word 9 and word 10 of subframe 4 page 25
+	Stream4[6] = COMPOSE_BITS(((Almanac[25].valid & 1) ? 0 : 0x3f), 18, 6);
+	Stream4[6] |= COMPOSE_BITS(((Almanac[26].valid & 1) ? 0 : 0x3f), 12, 6);
+	Stream4[6] |= COMPOSE_BITS(((Almanac[27].valid & 1) ? 0 : 0x3f), 6, 6);
+	Stream4[6] |= COMPOSE_BITS(((Almanac[28].valid & 1) ? 0 : 0x3f), 0, 6);
+	Stream4[7] = COMPOSE_BITS(((Almanac[29].valid & 1) ? 0 : 0x3f), 18, 6);
+	Stream4[7] |= COMPOSE_BITS(((Almanac[30].valid & 1) ? 0 : 0x3f), 12, 6);
+	Stream4[7] |= COMPOSE_BITS(((Almanac[31].valid & 1) ? 0 : 0x3f), 6, 6);
+	Stream5[7] = 0;	// word 10 of subframe 5 page 25 is reserved
 
 	return 0;
 }

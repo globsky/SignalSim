@@ -9,6 +9,7 @@
 #ifndef __TRAJECTORY_H__
 #define __TRAJECTORY_H__
 
+#include <vector>
 #include "BasicTypes.h"
 
 #define TRAJECTORY_NO_ERR 0
@@ -29,7 +30,7 @@ class CTrajectorySegment
 {
 public:
 	CTrajectorySegment();
-	~CTrajectorySegment();
+	virtual ~CTrajectorySegment();
 
 	static TrajectoryType GetTrajectoryType(CTrajectorySegment *pTrajectory);
 	void GetSpeedProjection(double projection[3]);

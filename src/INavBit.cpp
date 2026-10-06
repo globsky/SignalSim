@@ -203,9 +203,9 @@ int INavBit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits
 	EncodeData[1] = (Data[0] << 2) | (Data[1] >> 30);	// 32bit Data
 	EncodeData[2] = (Data[1] << 2) | (Data[2] >> 30);	// 32bit Data
 	EncodeData[3] = (Data[2] << 2) | (Data[3] >> 30);	// 32bit Data
-	EncodeData[4] = ((Data[3] << 2) & 0xfffc0000) | (Data[3] & 0xffff) | 0x20000;	// 14bit Data, even/odd=1, page type=1, 16bit Data
-	EncodeData[5] = 0;	// 32MSB of Reserved 1
-	EncodeData[6] = 0;	// 8LSB of Reserved 1, SAR and Spare bits are 0
+	EncodeData[4] = ((Data[3] << 2) & 0xfffc0000) | (Data[3] & 0xffff) | 0x20000;	// 14bit Data, even/odd=1, page type=0, 16bit Data
+	EncodeData[5] = Param ? 0 : 0;	// 32MSB of OSNMA for E1 (all zeros, not supported yet) / Reserved 1 for E5b
+	EncodeData[6] = Param ? 0xaaaaaa : 0;	// 8LSB of OSNMA, SAR and Spare bits are 1010...10 pattern for E1 / Reserved 1 for E5b
 	CrcResult = Crc24qEncode(EncodeData, 196);
 
 // test encode and interleaving using sample stream in ICD
@@ -229,16 +229,17 @@ int INavBit::GetFrameData(GNSS_TIME StartTime, int svid, int Param, int *NavBits
 	// do convolution encode on odd part (EncodeData[4] bit17 through EncodeData[6] bit0)
 	ConvEncodeBits = 0;
 	EncodeWord = EncodeData[4] << 14;	// move to MSB
-	for (i = 0, BitCount = 142; i < 82 / 2; i ++, BitCount += 2)
+	for (i = 0, BitCount = 142; i < 82 / 2; i ++)
 	{
 		OddPart[i/2] = (OddPart[i/2] << 4) + GalConvolutionEncode(ConvEncodeBits, EncodeWord);
+		BitCount += 2;
 		if ((BitCount % 32) == 0)
 			EncodeWord = EncodeData[BitCount >> 5];
 	}
 	EncodeWord = CrcResult << 8;
 	for (; i < 106 / 2; i ++)	// encode CRC
 		OddPart[i/2] = (OddPart[i/2] << 4) + GalConvolutionEncode(ConvEncodeBits, EncodeWord);
-	EncodeWord = Param ? 0 : SSP[page % 3];
+	EncodeWord = Param ? SSP[page % 3] : 0;
 	for (; i < 114 / 2; i ++)	// encode SSP
 		OddPart[i/2] = (OddPart[i/2] << 4) + GalConvolutionEncode(ConvEncodeBits, EncodeWord);
 	EncodeWord = 0;	// append 6 zeros as tail

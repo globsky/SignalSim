@@ -60,7 +60,6 @@ int CScenarioData::LoadScenarioObject(JsonObject *Object, const char* JsonFilePa
 	SpeedLocalToEcef(StartPos, StartVel, CurPosEcef);
 	// convert UTC time to GPS, BDS and GLONASS time
 	CurTime = UtcToGpsTime(UtcTime);
-	UtcTime = GpsTimeToUtc(CurTime, FALSE);	// convert back to UTC represented GPS time (no leap second adjustment)
 	PowerControl.ResetTime();
 	if (OutputParam.CenterFreq > 0 && OutputParam.SampleFreq > 0)
 		FilterSignal();
@@ -152,7 +151,7 @@ int CScenarioData::StepForward(BOOL bUpdateSatList, BOOL bUpdateSatParam, int Ti
 		CurTime.Week ++;
 		CurTime.MilliSeconds -= 604800000;
 	}
-	UtcTime = GpsTimeToUtc(CurTime, FALSE);
+	UtcTime = GpsTimeToUtc(CurTime);
 
 	if (bUpdateSatList)
 		UpdateSatList();

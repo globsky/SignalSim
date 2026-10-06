@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include "ConstVal.h"
 #include "ComplexNumber.h"
 

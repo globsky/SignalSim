@@ -71,6 +71,11 @@ Beidu netdisk: https://pan.baidu.com/s/13rGBkdftv3G0gjSjxDPhbA?pwd=na5y
 
 ### 2026
 
+- **10/6/2026**
+  - Use vector instead of malloc/realloc in NavData and PowerControl
+  - Use include file stdlib.h to replace malloc.h to compatible with clang
+  - Fix bugs in I/NAV and LNAV data stream composition
+
 - **8/21/2026**
   - Update design description documents to version 1.7
   - New class CNavBitArray help to manage all naviagtion bit generation
