@@ -57,5 +57,5 @@ int CPowerControl::GetPowerControlList(int TimeStepMs, PSIGNAL_POWER &PowerList)
 		NextIndex ++;
 	}
 
-	return NextIndex - InitIndex;
+	return (int)(NextIndex - InitIndex);
 }

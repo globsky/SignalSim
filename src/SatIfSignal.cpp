@@ -7,7 +7,7 @@
 //----------------------------------------------------------------------
 #include <math.h>
 #include <stdio.h>
-#include <memory.h>
+#include <cstring>
 
 #include "SatIfSignal.h"
 #include "FastMath.h"

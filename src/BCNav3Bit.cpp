@@ -6,7 +6,7 @@
 //
 //----------------------------------------------------------------------
 
-#include <memory.h>
+#include <cstring>
 #include "ConstVal.h"
 #include "BCNav3Bit.h"
 

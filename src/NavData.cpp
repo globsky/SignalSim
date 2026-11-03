@@ -46,7 +46,8 @@ NavFileType CNavData::CheckNavFileType(FILE *fp)
 	NavFileType Type;
 
 	fseek(fp, 0, SEEK_SET);
-	fgets(str, 255, fp);
+	if (fgets(str, 255, fp) == NULL)
+		return NavFileUnknown;
 
 	// first check for RINEX navigation data file
 	if (strlen(str) >= 41 && str[20] == 'N' && strchr("GREJCISM", str[40]))
@@ -76,7 +77,7 @@ NavFileType CNavData::CheckNavFileType(FILE *fp)
 FILE* CNavData::OpenNavFile(const char *filename, const char *JsonFilePath)
 {
 	FILE *fpNavFile = NULL;
-	char NavFilePath[256];
+	char NavFilePath[1024];
 	char *dir = NULL;
 
 	if (IS_ABSOLUTE(filename))	// navigation file uses absolute path
@@ -98,6 +99,7 @@ FILE* CNavData::OpenNavFile(const char *filename, const char *JsonFilePath)
 			*(dir + 1) = '\0';
 		else
 			NavFilePath[0] = '\0';
+		snprintf(NavFilePath + strlen(NavFilePath), 1024 - strlen(NavFilePath), "%s", filename);
 		strcat(NavFilePath, filename);
 		fpNavFile = fopen(NavFilePath, "r");
 	}

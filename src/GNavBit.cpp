@@ -7,7 +7,7 @@
 //----------------------------------------------------------------------
 
 #include <math.h>
-#include <memory.h>
+#include <cstring>
 #include "ConstVal.h"
 #include "GNavBit.h"
 
