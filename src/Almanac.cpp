@@ -217,6 +217,8 @@ int GetAlmanacGalileo(FILE *fp, PGPS_ALMANAC Alm, int RefWeek)
 
 	if ((RefWeek & 3) != data)	// week does not match
 		return 0;
+	if (svid <= 0 || svid > 36)
+		return 0;
 
 	Alm->sqrtA += SQRT_A0;
 	Alm->i0 = Alm->i0 * PI + NORMINAL_I0;

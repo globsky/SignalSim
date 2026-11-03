@@ -8,7 +8,7 @@
 
 #include "ScenarioData.h"
 #include "JsonInterpreter.h"
-#include <memory.h>
+#include <cstring>
 
 CScenarioData::CScenarioData()
 {

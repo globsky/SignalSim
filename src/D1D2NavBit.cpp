@@ -6,7 +6,7 @@
 //
 //----------------------------------------------------------------------
 
-#include <memory.h>
+#include <cstring>
 #include "ConstVal.h"
 #include "D1D2NavBit.h"
 
