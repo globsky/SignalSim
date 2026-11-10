@@ -100,7 +100,6 @@ FILE* CNavData::OpenNavFile(const char *filename, const char *JsonFilePath)
 		else
 			NavFilePath[0] = '\0';
 		snprintf(NavFilePath + strlen(NavFilePath), 1024 - strlen(NavFilePath), "%s", filename);
-		strcat(NavFilePath, filename);
 		fpNavFile = fopen(NavFilePath, "r");
 	}
 	// last try, using filename relative to current directory
